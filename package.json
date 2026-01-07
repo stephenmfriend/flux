@@ -1,0 +1,13 @@
+{
+  "name": "flux-monorepo",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --filter @flux/web dev",
+    "dev:server": "pnpm --filter @flux/server dev",
+    "build": "pnpm -r build",
+    "preview": "pnpm --filter @flux/web preview",
+    "typecheck": "pnpm -r build"
+  }
+}

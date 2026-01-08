@@ -1,0 +1,61 @@
+name: Roadmap Proposal
+description: Propose a roadmap item for discussion
+title: "[Roadmap]: "
+labels: ["roadmap", "needs-spec"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for roadmap-level ideas. Keep scope tight and measurable.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: What user or business problem does this solve?
+      placeholder: As a ..., I need ..., so that ...
+    validations:
+      required: true
+  - type: textarea
+    id: goals
+    attributes:
+      label: Goals
+      description: What outcomes define success?
+      placeholder: Bullet list of measurable goals.
+    validations:
+      required: true
+  - type: textarea
+    id: non_goals
+    attributes:
+      label: Non-goals
+      description: What is explicitly out of scope?
+      placeholder: Optional
+    validations:
+      required: false
+  - type: textarea
+    id: approach
+    attributes:
+      label: Proposed approach
+      description: High-level solution outline.
+      placeholder: Optional
+    validations:
+      required: false
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks and open questions
+      description: Dependencies, unknowns, or tradeoffs.
+      placeholder: Optional
+    validations:
+      required: false
+  - type: dropdown
+    id: target
+    attributes:
+      label: Target timeframe
+      description: If known.
+      options:
+        - No preference
+        - Next month
+        - This quarter
+        - Later
+    validations:
+      required: true

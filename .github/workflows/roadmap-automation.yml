@@ -1,0 +1,20 @@
+name: Roadmap automation
+
+on:
+  issues:
+    types: [opened, reopened, labeled]
+
+permissions:
+  issues: read
+  repository-projects: write
+
+jobs:
+  add_to_project:
+    if: contains(github.event.issue.labels.*.name, 'roadmap')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add issue to Flux Roadmap project
+        uses: actions/add-to-project@v1
+        with:
+          project-url: ${{ vars.FLUX_ROADMAP_PROJECT_URL }}
+          github-token: ${{ secrets.PROJECTS_TOKEN }}

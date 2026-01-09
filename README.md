@@ -1,6 +1,8 @@
 # Flux &middot; [![CI](https://github.com/sirsjg/flux/actions/workflows/ci.yml/badge.svg)](https://github.com/sirsjg/flux/actions/workflows/ci.yml) [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) ![TypeScript](https://img.shields.io/badge/TypeScript-3178c6?style=flat&logo=typescript&logoColor=white) ![Preact](https://img.shields.io/badge/Preact-673ab8?style=flat&logo=preact&logoColor=white) ![Node.js](https://img.shields.io/badge/Node.js_21+-339933?style=flat&logo=node.js&logoColor=white) ![pnpm](https://img.shields.io/badge/pnpm-f69220?style=flat&logo=pnpm&logoColor=white) ![Docker](https://img.shields.io/badge/Docker-2496ed?style=flat&logo=docker&logoColor=white) ![MCP](https://img.shields.io/badge/MCP-enabled-f59e0b?style=flat)
 
-Ship with less chaos. Flux is a fast, simple Kanban board with MCP integration so your LLMs can help run the show.
+Ship with less chaos. Flux is a fast, simple Kanban board with MCP integration so your LLMs can help run the show.  Create your tasks (or let your LLM) then let you agent take you to glory.  The ultimate spec-driven vibe tool.
+
+![Demo](./docs/demo.gif)
 
 ## Features
 
@@ -12,8 +14,6 @@ Ship with less chaos. Flux is a fast, simple Kanban board with MCP integration s
 - **MCP Server** - Allow LLMs to manage your Kanban board via Model Context Protocol
 - **Real-time updates** - SSE-powered live updates when data changes
 - **Webhooks** - Push notifications to external services when events occur (Slack, GitHub, CI, etc.)
-
-![Demo](./docs/demo.gif)
 
 ## Quick Start (Docker)
 

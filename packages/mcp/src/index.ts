@@ -333,6 +333,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             project_id: { type: 'string', description: 'Project ID' },
             title: { type: 'string', description: 'Epic title' },
             notes: { type: 'string', description: 'Optional epic notes' },
+            auto: { type: 'boolean', description: 'Optional auto flag (defaults to false)' },
           },
           required: ['project_id', 'title'],
         },
@@ -355,6 +356,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               type: 'array',
               items: { type: 'string' },
               description: 'IDs of epics this epic depends on',
+            },
+            auto: {
+              type: 'boolean',
+              description: 'Enable or disable auto for the epic',
             },
           },
           required: ['epic_id'],
@@ -620,7 +625,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const epic = createEpic(
         args?.project_id as string,
         args?.title as string,
-        args?.notes as string
+        args?.notes as string,
+        args?.auto as boolean | undefined
       );
       return {
         content: [{ type: 'text', text: `Created epic "${epic.title}" with ID: ${epic.id}` }],
@@ -633,6 +639,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       if (args?.notes !== undefined) updates.notes = args.notes;
       if (args?.status) updates.status = args.status;
       if (args?.depends_on) updates.depends_on = args.depends_on;
+      if (args?.auto !== undefined) updates.auto = args.auto;
       const epic = updateEpic(args?.epic_id as string, updates);
       if (!epic) {
         return { content: [{ type: 'text', text: 'Epic not found' }], isError: true };

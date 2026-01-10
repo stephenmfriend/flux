@@ -29,10 +29,13 @@ export function initStore(): Store {
   if (!db) throw new Error('Storage adapter not set. Call setStorageAdapter first.');
   db.read();
 
+  let needsWrite = false;
+
   // Migrate from old single-project structure if needed
   const data = db.data as any;
   if (!Array.isArray(data.projects)) {
     data.projects = [];
+    needsWrite = true;
     // Migrate old project if it exists
     if (data.project) {
       const oldProject = data.project;
@@ -45,13 +48,30 @@ export function initStore(): Store {
         data.epics.forEach((e: any) => { e.project_id = oldProject.id; });
       }
       delete data.project;
-      db.write();
+      needsWrite = true;
     }
   }
 
   // Ensure arrays exist
-  if (!Array.isArray(data.tasks)) data.tasks = [];
-  if (!Array.isArray(data.epics)) data.epics = [];
+  if (!Array.isArray(data.tasks)) {
+    data.tasks = [];
+    needsWrite = true;
+  }
+  if (!Array.isArray(data.epics)) {
+    data.epics = [];
+    needsWrite = true;
+  }
+
+  data.epics.forEach((epic: any) => {
+    if (epic.auto === undefined) {
+      epic.auto = false;
+      needsWrite = true;
+    }
+  });
+
+  if (needsWrite) {
+    db.write();
+  }
 
   return db.data;
 }
@@ -129,13 +149,19 @@ export function getEpic(id: string): Epic | undefined {
   return db.data.epics.find(e => e.id === id);
 }
 
-export function createEpic(projectId: string, title: string, notes: string = ''): Epic {
+export function createEpic(
+  projectId: string,
+  title: string,
+  notes: string = '',
+  auto: boolean = false
+): Epic {
   const epic: Epic = {
     id: generateId(),
     title,
     status: 'planning',
     depends_on: [],
     notes,
+    auto,
     project_id: projectId,
   };
   db.data.epics.push(epic);

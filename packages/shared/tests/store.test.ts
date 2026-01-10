@@ -64,6 +64,7 @@ describe('store', () => {
           status: 'todo',
           depends_on: [],
           notes: '',
+          auto: false,
         } as Store['epics'][number],
       ],
     };

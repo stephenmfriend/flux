@@ -308,7 +308,7 @@ app.get('/api/epics/:id', (c) => {
 app.post('/api/projects/:projectId/epics', async (c) => {
   const body = await c.req.json();
   const projectId = c.req.param('projectId');
-  const epic = createEpic(projectId, body.title, body.notes);
+  const epic = createEpic(projectId, body.title, body.notes, body.auto);
   // Trigger webhook
   triggerWebhooks('epic.created', { epic }, projectId);
   return c.json(epic, 201);

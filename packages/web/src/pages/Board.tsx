@@ -12,6 +12,7 @@ import {
   getProject,
   getTasks,
   getEpics,
+  updateEpic,
   updateTask,
   cleanupProject,
   type TaskWithBlocked,
@@ -205,6 +206,13 @@ export function Board({ projectId }: BoardProps) {
     setEditingTask(undefined);
     setDefaultEpicId(epicId);
     setTaskFormOpen(true);
+  };
+
+  const toggleEpicAuto = async (epic: Epic, auto: boolean) => {
+    const updated = await updateEpic(epic.id, { auto });
+    if (updated) {
+      setEpics((prev) => prev.map((item) => (item.id === epic.id ? updated : item)));
+    }
   };
 
   const openEditTask = (task: TaskWithBlocked) => {
@@ -465,15 +473,41 @@ export function Board({ projectId }: BoardProps) {
                     <span class="text-base-content/40 text-sm bg-base-200 px-2 py-0.5 rounded">
                       {taskCount} task{taskCount !== 1 ? "s" : ""}
                     </span>
-                    <button
-                      class="ml-auto text-base-content/40 hover:text-base-content/60 p-1"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openEditEpic(epic);
-                      }}
-                    >
-                      <PencilSquareIcon className="h-4 w-4" />
-                    </button>
+                    <div class="ml-auto flex items-center gap-3">
+                      {/*
+                      <button
+                        class="text-base-content/40 hover:text-base-content/60 p-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEditEpic(epic);
+                        }}
+                      >
+                        <PencilSquareIcon className="h-4 w-4" />
+                      </button>
+                      */}
+                      <div
+                        class="flex items-center gap-2"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <label class="flex items-center gap-2 text-xs text-base-content/60">
+                          {epic.auto && (
+                            <span class="loading loading-infinity loading-xs text-warning" />
+                          )}
+                          <span>Auto</span>
+                          <input
+                            type="checkbox"
+                            class="toggle toggle-xs"
+                            checked={epic.auto}
+                            onChange={(e) =>
+                              toggleEpicAuto(
+                                epic,
+                                (e.target as HTMLInputElement).checked
+                              )
+                            }
+                          />
+                        </label>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Epic Content */}

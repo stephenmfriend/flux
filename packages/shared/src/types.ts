@@ -40,6 +40,7 @@ export type Epic = {
   status: string;
   depends_on: string[];
   notes: string;
+  auto: boolean;
   project_id: string;
 };
 

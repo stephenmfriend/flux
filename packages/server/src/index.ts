@@ -26,6 +26,8 @@ import {
   createTask,
   updateTask,
   deleteTask,
+  addTaskComment,
+  deleteTaskComment,
   isTaskBlocked,
   cleanupProject,
   getWebhooks,
@@ -346,6 +348,27 @@ app.get('/api/tasks/:id', (c) => {
   const task = getTask(c.req.param('id'));
   if (!task) return c.json({ error: 'Task not found' }, 404);
   return c.json({ ...task, blocked: isTaskBlocked(task.id) });
+});
+
+app.post('/api/tasks/:id/comments', async (c) => {
+  const taskId = c.req.param('id');
+  const task = getTask(taskId);
+  if (!task) return c.json({ error: 'Task not found' }, 404);
+  const body = await c.req.json().catch(() => null);
+  const commentBody = typeof body?.body === 'string' ? body.body.trim() : '';
+  if (!commentBody) return c.json({ error: 'Comment body required' }, 400);
+  const author = body?.author === 'mcp' ? 'mcp' : 'user';
+  const comment = addTaskComment(taskId, commentBody, author);
+  if (!comment) return c.json({ error: 'Task not found' }, 404);
+  return c.json(comment, 201);
+});
+
+app.delete('/api/tasks/:id/comments/:commentId', (c) => {
+  const taskId = c.req.param('id');
+  const commentId = c.req.param('commentId');
+  const deleted = deleteTaskComment(taskId, commentId);
+  if (!deleted) return c.json({ error: 'Comment not found' }, 404);
+  return c.json({ success: true });
 });
 
 app.post('/api/projects/:projectId/tasks', async (c) => {

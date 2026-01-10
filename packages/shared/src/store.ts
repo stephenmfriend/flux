@@ -1,4 +1,4 @@
-import type { Task, Epic, Project, Store, Webhook, WebhookDelivery, WebhookEventType, WebhookPayload, StoreWithWebhooks } from './types.js';
+import type { Task, Epic, Project, Store, Webhook, WebhookDelivery, WebhookEventType, WebhookPayload, StoreWithWebhooks, CommentAuthor, TaskComment } from './types.js';
 
 // Storage adapter interface - can be localStorage or file-based
 export interface StorageAdapter {
@@ -199,6 +199,7 @@ export function createTask(
     status: 'planning',
     depends_on: [],
     notes,
+    comments: [],
     epic_id: epicId,
     project_id: projectId,
   };
@@ -226,6 +227,37 @@ export function deleteTask(id: string): boolean {
       task.depends_on.splice(depIndex, 1);
     }
   });
+  db.write();
+  return true;
+}
+
+// ============ Comment Operations ============
+
+export function addTaskComment(
+  taskId: string,
+  body: string,
+  author: CommentAuthor
+): TaskComment | undefined {
+  const task = db.data.tasks.find(t => t.id === taskId);
+  if (!task) return undefined;
+  const comment: TaskComment = {
+    id: generateId(),
+    body,
+    author,
+    created_at: new Date().toISOString(),
+  };
+  if (!task.comments) task.comments = [];
+  task.comments.push(comment);
+  db.write();
+  return comment;
+}
+
+export function deleteTaskComment(taskId: string, commentId: string): boolean {
+  const task = db.data.tasks.find(t => t.id === taskId);
+  if (!task?.comments) return false;
+  const index = task.comments.findIndex(comment => comment.id === commentId);
+  if (index === -1) return false;
+  task.comments.splice(index, 1);
   db.write();
   return true;
 }

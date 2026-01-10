@@ -30,6 +30,8 @@ import {
   createTask,
   updateTask,
   deleteTask,
+  addTaskComment,
+  deleteTaskComment,
   isTaskBlocked,
   getWebhooks,
   getWebhook,
@@ -453,6 +455,35 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ['task_id', 'status'],
         },
       },
+      {
+        name: 'add_task_comment',
+        description: 'Add a comment to a task',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            task_id: { type: 'string', description: 'Task ID' },
+            body: { type: 'string', description: 'Comment body' },
+            author: {
+              type: 'string',
+              enum: ['user', 'mcp'],
+              description: 'Comment author type (defaults to mcp)',
+            },
+          },
+          required: ['task_id', 'body'],
+        },
+      },
+      {
+        name: 'delete_task_comment',
+        description: 'Delete a comment from a task',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            task_id: { type: 'string', description: 'Task ID' },
+            comment_id: { type: 'string', description: 'Comment ID' },
+          },
+          required: ['task_id', 'comment_id'],
+        },
+      },
 
       // Webhook tools
       {
@@ -713,6 +744,31 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         content: [
           { type: 'text', text: `Moved task "${task.title}" to ${args?.status}` },
         ],
+      };
+    }
+
+    case 'add_task_comment': {
+      const body = (args?.body as string | undefined)?.trim();
+      if (!body) {
+        return { content: [{ type: 'text', text: 'Comment body required' }], isError: true };
+      }
+      const author = args?.author === 'user' ? 'user' : 'mcp';
+      const comment = addTaskComment(args?.task_id as string, body, author);
+      if (!comment) {
+        return { content: [{ type: 'text', text: 'Task not found' }], isError: true };
+      }
+      return {
+        content: [{ type: 'text', text: `Added comment ${comment.id}` }],
+      };
+    }
+
+    case 'delete_task_comment': {
+      const success = deleteTaskComment(args?.task_id as string, args?.comment_id as string);
+      if (!success) {
+        return { content: [{ type: 'text', text: 'Comment not found' }], isError: true };
+      }
+      return {
+        content: [{ type: 'text', text: `Deleted comment ${args?.comment_id}` }],
       };
     }
 

@@ -10,6 +10,15 @@ export const AGENT_CONFIG: Record<Agent, { label: string }> = {
   other: { label: 'Other' },
 };
 
+export type CommentAuthor = 'user' | 'mcp';
+
+export type TaskComment = {
+  id: string;
+  body: string;
+  author: CommentAuthor;
+  created_at: string;
+};
+
 // Task represents a single work item.
 export type Task = {
   id: string;
@@ -17,6 +26,7 @@ export type Task = {
   status: string; // e.g. "todo" | "in_progress" | "done"
   depends_on: string[];
   notes: string;
+  comments?: TaskComment[];
   epic_id?: string;
   project_id: string;
   agent?: Agent; // Optional agent assignment

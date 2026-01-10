@@ -27,6 +27,12 @@ RUN pnpm install
 # ============ Build Stage ============
 FROM base AS builder
 
+ARG BUILD_SHA
+ARG BUILD_TIME
+
+ENV BUILD_SHA=$BUILD_SHA
+ENV BUILD_TIME=$BUILD_TIME
+
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
 COPY --from=deps /app/packages/mcp/node_modules ./packages/mcp/node_modules
@@ -43,6 +49,12 @@ RUN pnpm run build
 FROM node:22-alpine AS runner
 
 WORKDIR /app
+
+ARG BUILD_SHA
+ARG BUILD_TIME
+
+ENV BUILD_SHA=$BUILD_SHA
+ENV BUILD_TIME=$BUILD_TIME
 
 # Create non-root user for security
 RUN addgroup --system --gid 1001 flux && \

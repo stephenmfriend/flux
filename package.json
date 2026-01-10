@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "pnpm --filter @flux/web dev",
     "dev:server": "pnpm --filter @flux/server dev",
-    "build": "pnpm -r build",
+    "build": "node scripts/build-meta.mjs",
     "preview": "pnpm --filter @flux/web preview",
     "typecheck": "pnpm -r build",
     "test": "vitest run",

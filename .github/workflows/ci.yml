@@ -29,4 +29,4 @@ jobs:
         run: pnpm test
 
       - name: Build
-        run: pnpm build
+        run: BUILD_SHA=${GITHUB_SHA::7} BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ) pnpm build

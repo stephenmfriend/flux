@@ -43,6 +43,11 @@ import { handleWebhookEvent, testWebhookDelivery } from './webhook-service.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+const buildInfo = {
+  sha: process.env.BUILD_SHA ?? process.env.GIT_SHA ?? 'dev',
+  time: process.env.BUILD_TIME ?? new Date().toISOString(),
+};
+
 // Data file path
 const DATA_DIR = join(__dirname, '../../data');
 const DB_FILE = join(DATA_DIR, 'flux.sqlite');
@@ -239,6 +244,9 @@ app.get('/api/events', () => {
 });
 
 // ============ API Routes ============
+app.get('/version', (c) => {
+  return c.json(buildInfo);
+});
 
 // Projects
 app.get('/api/projects', (c) => {

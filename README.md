@@ -115,6 +115,17 @@ Looking for install options, assistant setup, APIs, or webhooks? Start here:
 - [`docs/architecture.md`](docs/architecture.md) - understand the monorepo, storage model, and why Flux stays fast and simple.
 - [`docs/roadmap.md`](docs/roadmap.md) - where Flux is headed and what we are shipping next.
 
+## Ecosystem
+
+Tools that work well with Flux:
+
+| Tool | Description |
+|------|-------------|
+| [Momentum](https://github.com/sirsjg/momentum) | Watches Flux for task changes and automatically spawns agents to work on them |
+| [Spec Kit](https://github.com/github/spec-kit) | Create spec-driven requirements that generate Flux epics and tasks |
+| [n8n](https://github.com/n8n-io/n8n) | Workflow automation that triggers on Flux events |
+| [Zapier](https://zapier.com) | Connect Flux to 5,000+ apps via REST API and webhooks |
+
 ## Contributing
 
 Flux is early and moving quickly. If you want to help shape it, contributions are welcome.

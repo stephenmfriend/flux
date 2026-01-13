@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "flux": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-v",
+        "flux-data:/app/packages/data",
+        "flux-mcp"
+      ]
+    }
+  }
+}

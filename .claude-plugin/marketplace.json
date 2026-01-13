@@ -1,0 +1,13 @@
+{
+  "name": "flux",
+  "owner": {
+    "name": "sirsjg"
+  },
+  "plugins": [
+    {
+      "name": "flux",
+      "source": "./packages/plugin",
+      "description": "Generate epics and tasks in Flux from project requirements"
+    }
+  ]
+}

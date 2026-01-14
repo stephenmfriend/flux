@@ -276,14 +276,14 @@ export function createTask(
   projectId: string,
   title: string,
   epicId?: string,
-  options?: { priority?: Priority }
+  options?: { priority?: Priority; depends_on?: string[] }
 ): Task {
   const now = new Date().toISOString();
   const task: Task = {
     id: generateId(),
     title,
     status: 'planning',
-    depends_on: [],
+    depends_on: options?.depends_on ?? [],
     comments: [],
     epic_id: epicId,
     project_id: projectId,

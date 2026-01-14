@@ -116,6 +116,27 @@ Looking for install options, assistant setup, APIs, or webhooks? Start here:
 - [`docs/architecture.md`](docs/architecture.md) - understand the monorepo, storage model, and why Flux stays fast and simple.
 - [`docs/roadmap.md`](docs/roadmap.md) - where Flux is headed and what we are shipping next.
 
+## Dogfooding
+
+Flux uses itself for task management. Tasks are stored on the `flux-data` branch and synced via git:
+
+```bash
+flux pull               # Fetch latest tasks from flux-data branch
+flux ready              # Show unblocked tasks sorted by priority
+flux task update <id> --status in_progress
+flux push "message"     # Commit and push task changes
+```
+
+Configure remote server in `.flux/config.json`:
+```json
+{
+  "server": "https://app.getflux.dev",
+  "apiKey": "$FLUX_API_KEY"
+}
+```
+
+The `$FLUX_API_KEY` expands from `.env.local`.
+
 ## Ecosystem
 
 Tools that work well with Flux:

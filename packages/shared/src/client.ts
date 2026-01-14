@@ -249,13 +249,14 @@ export async function createTask(
   projectId: string,
   title: string,
   epicId?: string,
-  options?: { priority?: Priority }
+  options?: { priority?: Priority; depends_on?: string[] }
 ): Promise<Task> {
   if (serverUrl) {
     return http('POST', `/api/projects/${projectId}/tasks`, {
       title,
       epic_id: epicId,
       priority: options?.priority,
+      depends_on: options?.depends_on,
     });
   }
   return localCreateTask(projectId, title, epicId, options);

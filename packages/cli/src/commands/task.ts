@@ -77,7 +77,7 @@ export async function taskCommand(
         title = args[1];
       }
       if (!projectId || !title) {
-        console.error('Usage: flux task create [project] <title> [-P priority] [-e epic] [--note]');
+        console.error('Usage: flux task create [project] <title> [-P priority] [-e epic] [--depends id,...] [--note]');
         console.error('Tip: Set default project with: flux project use <id>');
         process.exit(1);
       }
@@ -86,8 +86,10 @@ export async function taskCommand(
       const priority = priorityStr !== undefined && PRIORITIES.includes(parseInt(priorityStr, 10) as Priority)
         ? parseInt(priorityStr, 10) as Priority
         : undefined;
+      const dependsStr = (flags.depends || flags.d) as string | undefined;
+      const depends_on = dependsStr ? dependsStr.split(',').map(s => s.trim()).filter(Boolean) : undefined;
 
-      const task = await createTask(projectId, title, epicId, { priority });
+      const task = await createTask(projectId, title, epicId, { priority, depends_on });
       // Add initial comment if --note provided
       if (flags.note) {
         await addTaskComment(task.id, flags.note as string, 'user');
@@ -99,7 +101,7 @@ export async function taskCommand(
     case 'update': {
       const id = args[0];
       if (!id) {
-        console.error('Usage: flux task update <id> [--title] [--status] [--note] [--epic] [--blocked "reason"|clear]');
+        console.error('Usage: flux task update <id> [--title] [--status] [--note] [--epic] [--depends id,...] [--blocked "reason"|clear]');
         process.exit(1);
       }
 
@@ -117,12 +119,16 @@ export async function taskCommand(
         }
       }
 
-      const updates: { title?: string; status?: string; epic_id?: string; priority?: Priority; blocked_reason?: string } = {};
+      const updates: { title?: string; status?: string; epic_id?: string; priority?: Priority; blocked_reason?: string; depends_on?: string[] } = {};
       if (flags.title) updates.title = flags.title as string;
       if (flags.status) updates.status = flags.status as string;
       if (flags.epic) updates.epic_id = flags.epic as string;
       if (flags.P || flags.priority) {
         updates.priority = parseInt((flags.P || flags.priority) as string, 10) as Priority;
+      }
+      if (flags.depends || flags.d) {
+        const dependsStr = (flags.depends || flags.d) as string;
+        updates.depends_on = dependsStr.split(',').map(s => s.trim()).filter(Boolean);
       }
       if (flags.blocked !== undefined) {
         // Handle --blocked flag: string value sets blocker, "clear" or "-" clears

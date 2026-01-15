@@ -392,6 +392,7 @@ export function wouldCreateCycle(taskId: string, newDeps: string[]): boolean {
 export function addDependency(taskId: string, dependsOnId: string): boolean {
   const task = db.data.tasks.find(t => t.id === taskId);
   if (!task) return false;
+  if (!db.data.tasks.find(t => t.id === dependsOnId)) return false;
   if (task.depends_on.includes(dependsOnId)) return true;
   if (wouldCreateCycle(taskId, [dependsOnId])) return false;
   task.depends_on.push(dependsOnId);

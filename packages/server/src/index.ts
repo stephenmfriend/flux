@@ -441,6 +441,9 @@ app.get('/api/webhook-deliveries', (c) => {
   return c.json(deliveries);
 });
 
+// API 404 handler - must be before SPA fallback
+app.all('/api/*', (c) => c.json({ error: 'Not found' }, 404));
+
 // Serve static files from web build (production)
 const webDistPath = join(__dirname, '../../web/dist');
 if (existsSync(webDistPath)) {

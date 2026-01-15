@@ -184,4 +184,18 @@ describe('store', () => {
     // B -> A would create a cycle, addDependency returns false
     expect(addDependency(taskB.id, taskA.id)).toBe(false);
   });
+
+  it('detects self-dependency as circular', () => {
+    const project = createProject('Project');
+    const task = createTask(project.id, 'Task');
+
+    expect(() => updateTask(task.id, { depends_on: [task.id] })).toThrow('Circular dependency detected');
+  });
+
+  it('addDependency rejects nonexistent dependency', () => {
+    const project = createProject('Project');
+    const task = createTask(project.id, 'Task');
+
+    expect(addDependency(task.id, 'nonexistent')).toBe(false);
+  });
 });

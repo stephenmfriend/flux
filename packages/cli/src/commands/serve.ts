@@ -222,6 +222,9 @@ export async function serveCommand(
     }
   }
 
+  // API 404 handler - must be before SPA fallback
+  app.all('/api/*', (c) => c.json({ error: 'Not found' }, 404));
+
   if (webDistPath) {
     app.use('/*', serveStatic({ root: webDistPath }));
     // SPA fallback: serve index.html for non-API routes that don't match static files

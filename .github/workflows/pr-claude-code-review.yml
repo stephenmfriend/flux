@@ -1,13 +1,11 @@
 name: PR - Claude Code Review
 
 on:
-  pull_request_target:
-    types: [opened, synchronize, reopened]
   issue_comment:
     types: [created]
 
 concurrency:
-  group: ${{ github.workflow }}-pr-${{ github.event.pull_request.number || github.event.issue.number }}
+  group: ${{ github.workflow }}-pr-${{ github.event.issue.number }}
   cancel-in-progress: true
 
 permissions:
@@ -18,18 +16,13 @@ permissions:
 
 jobs:
   review:
-    # Run on PR events (skip forks - see anthropics/claude-code-action#821), or on issue comments that mention @claude
+    # Only run on PR comments that mention @claude
     if: |
-      (github.event_name == 'pull_request_target' &&
-       github.event.pull_request.head.repo.full_name == github.repository) ||
-      (github.event_name == 'issue_comment' &&
-       github.event.issue.pull_request &&
-       contains(github.event.comment.body, '@claude'))
+      github.event.issue.pull_request &&
+      contains(github.event.comment.body, '@claude')
     runs-on: ubuntu-latest
     steps:
-      # Skip fork PRs for issue_comment (action bug: anthropics/claude-code-action#821)
       - name: Check if fork PR
-        if: github.event_name == 'issue_comment'
         id: fork-check
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -40,22 +33,14 @@ jobs:
             gh pr comment ${{ github.event.issue.number }} --repo ${{ github.repository }} --body "⚠️ Claude Code Review doesn't support fork PRs yet. See [anthropics/claude-code-action#821](https://github.com/anthropics/claude-code-action/issues/821)"
           fi
 
-      - name: Checkout repository (PR event)
-        if: github.event_name == 'pull_request_target'
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 0
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
-
-      - name: Checkout repository (issue_comment event)
-        if: github.event_name == 'issue_comment' && steps.fork-check.outputs.is_fork != 'true'
+      - name: Checkout repository
+        if: steps.fork-check.outputs.is_fork != 'true'
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Checkout PR branch (issue_comment event)
-        if: github.event_name == 'issue_comment' && steps.fork-check.outputs.is_fork != 'true'
+      - name: Checkout PR branch
+        if: steps.fork-check.outputs.is_fork != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh pr checkout ${{ github.event.issue.number }}
@@ -66,12 +51,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ "${{ github.event_name }}" == "pull_request_target" ]; then
-            echo "base_ref=${{ github.event.pull_request.base.ref }}" >> $GITHUB_OUTPUT
-          else
-            BASE_REF=$(gh pr view ${{ github.event.issue.number }} --json baseRefName -q '.baseRefName')
-            echo "base_ref=$BASE_REF" >> $GITHUB_OUTPUT
-          fi
+          BASE_REF=$(gh pr view ${{ github.event.issue.number }} --json baseRefName -q '.baseRefName')
+          echo "base_ref=$BASE_REF" >> $GITHUB_OUTPUT
 
       - name: Claude Code Review
         if: steps.fork-check.outputs.is_fork != 'true'

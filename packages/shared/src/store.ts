@@ -276,14 +276,22 @@ export function createTask(
   projectId: string,
   title: string,
   epicId?: string,
-  options?: { priority?: Priority }
+  options?: { priority?: Priority; depends_on?: string[] }
 ): Task {
   const now = new Date().toISOString();
+  const id = generateId();
+  // Validate dependencies exist (can't have cycles for new task, but deps should exist)
+  const depends_on = options?.depends_on ?? [];
+  for (const depId of depends_on) {
+    if (!db.data.tasks.find(t => t.id === depId)) {
+      throw new Error(`Dependency not found: ${depId}`);
+    }
+  }
   const task: Task = {
-    id: generateId(),
+    id,
     title,
     status: 'planning',
-    depends_on: [],
+    depends_on,
     comments: [],
     epic_id: epicId,
     project_id: projectId,
@@ -299,6 +307,17 @@ export function createTask(
 export function updateTask(id: string, updates: Partial<Omit<Task, 'id'>>): Task | undefined {
   const index = db.data.tasks.findIndex(t => t.id === id);
   if (index === -1) return undefined;
+  // Validate dependencies
+  if (updates.depends_on) {
+    for (const depId of updates.depends_on) {
+      if (!db.data.tasks.find(t => t.id === depId)) {
+        throw new Error(`Dependency not found: ${depId}`);
+      }
+    }
+    if (wouldCreateCycle(id, updates.depends_on)) {
+      throw new Error('Circular dependency detected');
+    }
+  }
   db.data.tasks[index] = {
     ...db.data.tasks[index],
     ...updates,
@@ -356,10 +375,26 @@ export function deleteTaskComment(taskId: string, commentId: string): boolean {
 
 // ============ Dependency Operations ============
 
+// Check if adding dependencies would create a cycle
+export function wouldCreateCycle(taskId: string, newDeps: string[]): boolean {
+  const visited = new Set<string>();
+  const checkCycle = (id: string): boolean => {
+    if (id === taskId) return true;
+    if (visited.has(id)) return false;
+    visited.add(id);
+    const task = db.data.tasks.find(t => t.id === id);
+    if (!task) return false;
+    return task.depends_on.some(depId => checkCycle(depId));
+  };
+  return newDeps.some(depId => checkCycle(depId));
+}
+
 export function addDependency(taskId: string, dependsOnId: string): boolean {
   const task = db.data.tasks.find(t => t.id === taskId);
   if (!task) return false;
+  if (!db.data.tasks.find(t => t.id === dependsOnId)) return false;
   if (task.depends_on.includes(dependsOnId)) return true;
+  if (wouldCreateCycle(taskId, [dependsOnId])) return false;
   task.depends_on.push(dependsOnId);
   db.write();
   return true;

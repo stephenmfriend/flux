@@ -135,4 +135,67 @@ describe('store', () => {
     expect(deleted).toBe(true);
     expect(task.comments).toHaveLength(0);
   });
+
+  it('detects circular dependencies on update', () => {
+    const project = createProject('Project');
+    const taskA = createTask(project.id, 'Task A');
+    const taskB = createTask(project.id, 'Task B');
+
+    // A depends on B
+    updateTask(taskA.id, { depends_on: [taskB.id] });
+
+    // B depending on A would create a cycle
+    expect(() => updateTask(taskB.id, { depends_on: [taskA.id] })).toThrow('Circular dependency detected');
+  });
+
+  it('detects indirect circular dependencies', () => {
+    const project = createProject('Project');
+    const taskA = createTask(project.id, 'Task A');
+    const taskB = createTask(project.id, 'Task B');
+    const taskC = createTask(project.id, 'Task C');
+
+    // A -> B -> C
+    updateTask(taskA.id, { depends_on: [taskB.id] });
+    updateTask(taskB.id, { depends_on: [taskC.id] });
+
+    // C -> A would create a cycle
+    expect(() => updateTask(taskC.id, { depends_on: [taskA.id] })).toThrow('Circular dependency detected');
+  });
+
+  it('rejects non-existent dependencies on create', () => {
+    const project = createProject('Project');
+
+    expect(() => createTask(project.id, 'Task', undefined, { depends_on: ['nonexistent'] })).toThrow('Dependency not found');
+  });
+
+  it('rejects non-existent dependencies on update', () => {
+    const project = createProject('Project');
+    const task = createTask(project.id, 'Task');
+
+    expect(() => updateTask(task.id, { depends_on: ['nonexistent'] })).toThrow('Dependency not found');
+  });
+
+  it('prevents circular dependency via addDependency', () => {
+    const project = createProject('Project');
+    const taskA = createTask(project.id, 'Task A');
+    const taskB = createTask(project.id, 'Task B');
+
+    addDependency(taskA.id, taskB.id);
+    // B -> A would create a cycle, addDependency returns false
+    expect(addDependency(taskB.id, taskA.id)).toBe(false);
+  });
+
+  it('detects self-dependency as circular', () => {
+    const project = createProject('Project');
+    const task = createTask(project.id, 'Task');
+
+    expect(() => updateTask(task.id, { depends_on: [task.id] })).toThrow('Circular dependency detected');
+  });
+
+  it('addDependency rejects nonexistent dependency', () => {
+    const project = createProject('Project');
+    const task = createTask(project.id, 'Task');
+
+    expect(addDependency(task.id, 'nonexistent')).toBe(false);
+  });
 });

@@ -4,7 +4,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { existsSync, watchFile, statSync } from 'fs';
+import { existsSync, watchFile, statSync, readFileSync } from 'fs';
 import {
   setStorageAdapter,
   initStore,
@@ -297,7 +297,7 @@ app.delete('/api/tasks/:id/comments/:commentId', (c) => {
 app.post('/api/projects/:projectId/tasks', async (c) => {
   const body = await c.req.json();
   const projectId = c.req.param('projectId');
-  const task = createTask(projectId, body.title, body.epic_id, { priority: body.priority });
+  const task = createTask(projectId, body.title, body.epic_id, { priority: body.priority, depends_on: body.depends_on });
   // Trigger webhook
   triggerWebhooks('task.created', { task }, projectId);
   return c.json(task, 201);
@@ -441,10 +441,19 @@ app.get('/api/webhook-deliveries', (c) => {
   return c.json(deliveries);
 });
 
+// API 404 handler - must be before SPA fallback
+app.all('/api/*', (c) => c.json({ error: 'Not found' }, 404));
+
 // Serve static files from web build (production)
 const webDistPath = join(__dirname, '../../web/dist');
 if (existsSync(webDistPath)) {
   app.use('/*', serveStatic({ root: webDistPath }));
+  // SPA fallback: serve index.html for non-API routes that don't match static files
+  const indexPath = join(webDistPath, 'index.html');
+  if (existsSync(indexPath)) {
+    const indexHtml = readFileSync(indexPath, 'utf-8');
+    app.get('*', (c) => c.html(indexHtml));
+  }
 }
 
 // Start server

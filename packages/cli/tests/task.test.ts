@@ -154,6 +154,22 @@ describe('task command', () => {
       expect(mockAddTaskComment).toHaveBeenCalledWith('task-1', 'Initial note', 'user');
     });
 
+    it('creates task with dependencies', async () => {
+      mockCreateTask.mockResolvedValue({ id: 'task-2', title: 'Dependent', status: 'todo', depends_on: ['task-1'] });
+
+      await taskCommand('create', ['proj-1', 'Dependent'], { depends: 'task-1' }, false);
+
+      expect(mockCreateTask).toHaveBeenCalledWith('proj-1', 'Dependent', undefined, { priority: undefined, depends_on: ['task-1'] });
+    });
+
+    it('creates task with multiple dependencies using -d', async () => {
+      mockCreateTask.mockResolvedValue({ id: 'task-3', title: 'Multi', status: 'todo', depends_on: ['task-1', 'task-2'] });
+
+      await taskCommand('create', ['proj-1', 'Multi'], { d: 'task-1, task-2' }, false);
+
+      expect(mockCreateTask).toHaveBeenCalledWith('proj-1', 'Multi', undefined, { priority: undefined, depends_on: ['task-1', 'task-2'] });
+    });
+
     it('exits with error when missing args', async () => {
       await expect(taskCommand('create', ['proj-1'], {}, false)).rejects.toThrow('process.exit(1)');
       expect(getErrors().some(e => e.includes('Usage:'))).toBe(true);
@@ -194,6 +210,14 @@ describe('task command', () => {
 
       await expect(taskCommand('update', ['bad-id'], { title: 'Test' }, false)).rejects.toThrow('process.exit(1)');
       expect(getErrors()).toContain('Task not found: bad-id');
+    });
+
+    it('updates task dependencies', async () => {
+      mockUpdateTask.mockResolvedValue({ id: 'task-2', title: 'Test', status: 'todo', depends_on: ['task-1'] });
+
+      await taskCommand('update', ['task-2'], { depends: 'task-1' }, false);
+
+      expect(mockUpdateTask).toHaveBeenCalledWith('task-2', { depends_on: ['task-1'] });
     });
 
     it('exits with error when no id provided', async () => {

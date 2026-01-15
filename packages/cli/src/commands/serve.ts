@@ -4,7 +4,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { join, dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
-import { existsSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import {
   setStorageAdapter,
   initStore,
@@ -222,9 +222,14 @@ export async function serveCommand(
     }
   }
 
+  // API 404 handler - must be before SPA fallback
+  app.all('/api/*', (c) => c.json({ error: 'Not found' }, 404));
+
   if (webDistPath) {
     app.use('/*', serveStatic({ root: webDistPath }));
-    app.get('/', serveStatic({ path: join(webDistPath, 'index.html') }));
+    // SPA fallback: serve index.html for non-API routes that don't match static files
+    const indexHtml = readFileSync(join(webDistPath, 'index.html'), 'utf-8');
+    app.get('*', (c) => c.html(indexHtml));
   } else {
     app.get('/', (c) => c.text('Web UI not found. API available at /api/*'));
   }

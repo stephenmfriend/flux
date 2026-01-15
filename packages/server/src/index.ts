@@ -446,13 +446,11 @@ const webDistPath = join(__dirname, '../../web/dist');
 if (existsSync(webDistPath)) {
   app.use('/*', serveStatic({ root: webDistPath }));
   // SPA fallback: serve index.html for non-API routes that don't match static files
-  app.get('*', (c) => {
-    const indexPath = join(webDistPath, 'index.html');
-    if (existsSync(indexPath)) {
-      return c.html(readFileSync(indexPath, 'utf-8'));
-    }
-    return c.notFound();
-  });
+  const indexPath = join(webDistPath, 'index.html');
+  if (existsSync(indexPath)) {
+    const indexHtml = readFileSync(indexPath, 'utf-8');
+    app.get('*', (c) => c.html(indexHtml));
+  }
 }
 
 // Start server

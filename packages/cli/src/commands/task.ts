@@ -77,7 +77,7 @@ export async function taskCommand(
         title = args[1];
       }
       if (!projectId || !title) {
-        console.error('Usage: flux task create [project] <title> [-P priority] [-e epic] [--depends id,...] [--note]');
+        console.error('Usage: flux task create [project] <title> [-P priority] [-e epic] [-d|--depends id,...] [--note]');
         console.error('Tip: Set default project with: flux project use <id>');
         process.exit(1);
       }
@@ -101,7 +101,7 @@ export async function taskCommand(
     case 'update': {
       const id = args[0];
       if (!id) {
-        console.error('Usage: flux task update <id> [--title] [--status] [--note] [--epic] [--depends id,...] [--blocked "reason"|clear]');
+        console.error('Usage: flux task update <id> [--title] [--status] [--note] [--epic] [-d|--depends id,...] [--blocked "reason"|clear]');
         process.exit(1);
       }
 

@@ -23,4 +23,4 @@ echo ""
 echo "Starting MCP server (Claude/Codex)..."
 echo "Press Ctrl+C to stop the MCP server"
 echo ""
-docker run -i --rm -v flux-data:/app/packages/data -e FLUX_DATA=/app/packages/data/flux.sqlite "$IMAGE"
+docker run -i --rm -v flux-data:/app/packages/data -e FLUX_DATA=/app/packages/data/flux.sqlite "$IMAGE" bun packages/mcp/dist/index.js

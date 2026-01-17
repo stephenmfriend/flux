@@ -1,4 +1,26 @@
-import type { Task, Epic, Project, Store, Webhook, WebhookDelivery, WebhookEventType, WebhookPayload, StoreWithWebhooks, Priority, CommentAuthor, TaskComment, Guardrail } from './types.js';
+import type { Task, Epic, Project, Store, Webhook, WebhookDelivery, WebhookEventType, WebhookPayload, StoreWithWebhooks, Priority, CommentAuthor, TaskComment, Guardrail, ApiKey, KeyScope, CliAuthRequest } from './types.js';
+
+// Auth functions injected at runtime (server-side only, uses Node crypto)
+type AuthFunctions = {
+  generateKey: () => { key: string; prefix: string; hash: string };
+  generateTempToken: () => string;
+  validateKey: (key: string, storedHash: string) => boolean;
+  encrypt: (value: string, password: string) => string;
+  decrypt: (encrypted: string, password: string) => string | null;
+};
+
+let authFunctions: AuthFunctions | null = null;
+
+export function setAuthFunctions(fns: AuthFunctions): void {
+  authFunctions = fns;
+}
+
+function requireAuth(): AuthFunctions {
+  if (!authFunctions) {
+    throw new Error('Auth functions not initialized. Call setAuthFunctions first (server-side only).');
+  }
+  return authFunctions;
+}
 
 // Storage adapter interface - can be localStorage or file-based
 export interface StorageAdapter {
@@ -162,11 +184,12 @@ export function getProject(id: string): Project | undefined {
   return (db.data.projects || []).find(p => p.id === id);
 }
 
-export function createProject(name: string, description?: string): Project {
+export function createProject(name: string, description?: string, visibility?: 'public' | 'private'): Project {
   const project: Project = {
     id: generateId(),
     name,
     description,
+    visibility,
   };
   if (!db.data.projects) db.data.projects = [];
   db.data.projects.push(project);
@@ -709,4 +732,155 @@ export async function triggerWebhooks(
       console.error(`Failed to trigger webhook ${webhook.id}:`, error);
     }
   }
+}
+
+// ============ API Key Operations ============
+
+function ensureApiKeysArrays(): void {
+  const data = getWebhookData();
+  if (!data.api_keys) data.api_keys = [];
+  if (!data.cli_auth_requests) data.cli_auth_requests = [];
+}
+
+export function getApiKeys(): ApiKey[] {
+  ensureApiKeysArrays();
+  return [...(getWebhookData().api_keys || [])];
+}
+
+export function getApiKey(id: string): ApiKey | undefined {
+  ensureApiKeysArrays();
+  return getWebhookData().api_keys?.find(k => k.id === id);
+}
+
+/**
+ * Create a new API key
+ * Returns the raw key (shown once to user) and the stored key record
+ */
+export function createApiKey(
+  name: string,
+  scope: KeyScope
+): { rawKey: string; apiKey: ApiKey } {
+  ensureApiKeysArrays();
+  const { key, prefix, hash } = requireAuth().generateKey();
+  const apiKey: ApiKey = {
+    id: generateId(),
+    prefix,
+    hash,
+    name,
+    scope,
+    created_at: new Date().toISOString(),
+  };
+  getWebhookData().api_keys!.push(apiKey);
+  db.write();
+  return { rawKey: key, apiKey };
+}
+
+export function deleteApiKey(id: string): boolean {
+  ensureApiKeysArrays();
+  const data = getWebhookData();
+  const index = data.api_keys!.findIndex(k => k.id === id);
+  if (index === -1) return false;
+  data.api_keys!.splice(index, 1);
+  db.write();
+  return true;
+}
+
+/**
+ * Validate an API key and return the key record if valid
+ * Also updates last_used_at timestamp
+ */
+export function validateApiKey(rawKey: string): ApiKey | undefined {
+  ensureApiKeysArrays();
+  const { validateKey } = requireAuth();
+  const keys = getWebhookData().api_keys || [];
+  for (const key of keys) {
+    if (validateKey(rawKey, key.hash)) {
+      key.last_used_at = new Date().toISOString();
+      db.write();
+      return key;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Check if any API keys are configured
+ */
+export function hasApiKeys(): boolean {
+  ensureApiKeysArrays();
+  return (getWebhookData().api_keys?.length || 0) > 0;
+}
+
+// ============ CLI Auth Request Operations ============
+
+const CLI_AUTH_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
+
+export function createCliAuthRequest(): CliAuthRequest {
+  ensureApiKeysArrays();
+  const request: CliAuthRequest = {
+    token: requireAuth().generateTempToken(),
+    expires_at: new Date(Date.now() + CLI_AUTH_EXPIRY_MS).toISOString(),
+  };
+  getWebhookData().cli_auth_requests!.push(request);
+  db.write();
+  return request;
+}
+
+export function getCliAuthRequest(token: string): CliAuthRequest | undefined {
+  ensureApiKeysArrays();
+  const requests = getWebhookData().cli_auth_requests || [];
+  return requests.find(r => r.token === token);
+}
+
+export function completeCliAuthRequest(
+  token: string,
+  name: string,
+  scope: KeyScope
+): { rawKey: string; apiKey: ApiKey } | undefined {
+  ensureApiKeysArrays();
+  const data = getWebhookData();
+  const request = data.cli_auth_requests?.find(r => r.token === token);
+  if (!request) return undefined;
+  if (new Date(request.expires_at) < new Date()) return undefined;
+  if (request.completed_at) return undefined;
+
+  const { rawKey, apiKey } = createApiKey(name, scope);
+  request.name = name;
+  request.scope = scope;
+  // Encrypt the key with the temp token so it's not stored in plaintext
+  request.api_key = requireAuth().encrypt(rawKey, token);
+  request.completed_at = new Date().toISOString();
+  db.write();
+  return { rawKey, apiKey };
+}
+
+export function pollCliAuthRequest(token: string): { status: 'pending' | 'completed' | 'expired'; apiKey?: string } {
+  ensureApiKeysArrays();
+  const request = getCliAuthRequest(token);
+  if (!request) return { status: 'expired' };
+  if (new Date(request.expires_at) < new Date()) return { status: 'expired' };
+  if (request.completed_at && request.api_key) {
+    // Decrypt the key using the temp token
+    const apiKey = requireAuth().decrypt(request.api_key, token);
+    if (!apiKey) return { status: 'expired' }; // Decrypt failed
+    return { status: 'completed', apiKey };
+  }
+  return { status: 'pending' };
+}
+
+export function cleanupExpiredAuthRequests(): number {
+  ensureApiKeysArrays();
+  const data = getWebhookData();
+  const now = new Date();
+  const cutoff = new Date(now.getTime() - CLI_AUTH_EXPIRY_MS * 2); // Keep completed for 2x expiry
+  const original = data.cli_auth_requests?.length || 0;
+  data.cli_auth_requests = data.cli_auth_requests?.filter(r => {
+    if (r.completed_at) {
+      return new Date(r.completed_at) > cutoff;
+    }
+    return new Date(r.expires_at) > now;
+  });
+  const removed = original - (data.cli_auth_requests?.length || 0);
+  if (removed > 0) db.write();
+  return removed;
 }

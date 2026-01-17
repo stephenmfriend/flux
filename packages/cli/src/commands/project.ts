@@ -34,7 +34,8 @@ export async function projectCommand(
         } else {
           for (const p of withStats) {
             const marker = p.current ? ' *' : '';
-            console.log(`${p.id}  ${p.name}  (${p.stats.done}/${p.stats.total} done)${marker}`);
+            const vis = p.visibility === 'private' ? ' [private]' : '';
+            console.log(`${p.id}  ${p.name}  (${p.stats.done}/${p.stats.total} done)${vis}${marker}`);
           }
         }
       }
@@ -63,24 +64,28 @@ export async function projectCommand(
     case 'create': {
       const name = args[0];
       if (!name) {
-        console.error('Usage: flux project create <name>');
+        console.error('Usage: flux project create <name> [--private]');
         process.exit(1);
       }
       const desc = flags.desc as string | undefined;
-      const project = await createProject(name, desc);
-      output(json ? project : `Created project: ${project.id}`, json);
+      const visibility = flags.private === true ? 'private' : undefined;
+      const project = await createProject(name, desc, visibility);
+      const label = visibility === 'private' ? ' (private)' : '';
+      output(json ? project : `Created project: ${project.id}${label}`, json);
       break;
     }
 
     case 'update': {
       const id = args[0];
       if (!id) {
-        console.error('Usage: flux project update <id> [--name] [--desc]');
+        console.error('Usage: flux project update <id> [--name] [--desc] [--private|--public]');
         process.exit(1);
       }
-      const updates: { name?: string; description?: string } = {};
+      const updates: { name?: string; description?: string; visibility?: 'public' | 'private' } = {};
       if (flags.name) updates.name = flags.name as string;
       if (flags.desc) updates.description = flags.desc as string;
+      if (flags.private === true) updates.visibility = 'private';
+      if (flags.public === true) updates.visibility = 'public';
       const project = await updateProject(id, updates);
       if (!project) {
         console.error(`Project not found: ${id}`);

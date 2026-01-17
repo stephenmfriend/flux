@@ -38,12 +38,23 @@ import {
   getWebhookDeliveries,
   setWebhookEventHandler,
   triggerWebhooks,
+  getApiKeys,
+  createApiKey,
+  deleteApiKey,
+  createCliAuthRequest,
+  completeCliAuthRequest,
+  pollCliAuthRequest,
+  cleanupExpiredAuthRequests,
+  setAuthFunctions,
   type WebhookEventType,
+  type KeyScope,
 } from '@flux/shared';
+import { generateKey, generateTempToken, validateKey, encrypt, decrypt } from '@flux/shared/auth';
 import { findFluxDir, loadEnvLocal, readConfig, resolveDataPath } from '@flux/shared/config';
 import { createAdapter } from '@flux/shared/adapters';
 import { handleWebhookEvent, testWebhookDelivery } from './webhook-service.js';
-import { authMiddleware } from './middleware/auth.js';
+import { authMiddleware, filterProjects, canReadProject, canWriteProject, type AuthContext } from './middleware/auth.js';
+import { rateLimit } from './middleware/rate-limit.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -60,6 +71,7 @@ const DATA_FILE = resolveDataPath(fluxDir, config);
 
 const adapter = createAdapter(DATA_FILE);
 setStorageAdapter(adapter);
+setAuthFunctions({ generateKey, generateTempToken, validateKey, encrypt, decrypt });
 initStore();
 
 console.log(`Flux server using: ${DATA_FILE}`);
@@ -94,8 +106,8 @@ function validateTaskFields(body: Record<string, unknown>): { error?: string } {
   return {};
 }
 
-// Create Hono app
-const app = new Hono();
+// Create Hono app with auth context
+const app = new Hono<{ Variables: { auth: AuthContext } }>();
 
 // Enable CORS for development
 app.use('*', cors());
@@ -210,7 +222,8 @@ app.get('/version', (c) => {
 
 // Projects
 app.get('/api/projects', (c) => {
-  const projects = getProjects().map(p => ({
+  const auth = c.get('auth');
+  const projects = filterProjects(auth).map(p => ({
     ...p,
     stats: getProjectStats(p.id),
   }));
@@ -218,14 +231,19 @@ app.get('/api/projects', (c) => {
 });
 
 app.get('/api/projects/:id', (c) => {
-  const project = getProject(c.req.param('id'));
-  if (!project) return c.json({ error: 'Project not found' }, 404);
+  const auth = c.get('auth');
+  const projectId = c.req.param('id');
+  const project = getProject(projectId);
+  // Return 404 for both non-existent and private projects (hide existence)
+  if (!project || !canReadProject(auth, projectId)) {
+    return c.json({ error: 'Project not found' }, 404);
+  }
   return c.json({ ...project, stats: getProjectStats(project.id) });
 });
 
 app.post('/api/projects', async (c) => {
   const body = await c.req.json();
-  const project = createProject(body.name, body.description);
+  const project = createProject(body.name, body.description, body.visibility);
   // Trigger webhook
   triggerWebhooks('project.created', { project });
   return c.json(project, 201);
@@ -273,23 +291,31 @@ app.post('/api/projects/:projectId/epics', async (c) => {
 });
 
 app.patch('/api/epics/:id', async (c) => {
+  const auth = c.get('auth');
+  const epicId = c.req.param('id');
+  const previous = getEpic(epicId);
+  if (!previous) return c.json({ error: 'Epic not found' }, 404);
+  if (!canWriteProject(auth, previous.project_id)) {
+    return c.json({ error: 'Epic not found' }, 404); // Hide existence
+  }
   const body = await c.req.json();
-  const previous = getEpic(c.req.param('id'));
-  const epic = updateEpic(c.req.param('id'), body);
+  const epic = updateEpic(epicId, body);
   if (!epic) return c.json({ error: 'Epic not found' }, 404);
-  // Trigger webhook
   triggerWebhooks('epic.updated', { epic, previous }, epic.project_id);
   return c.json(epic);
 });
 
 app.delete('/api/epics/:id', (c) => {
-  const epic = getEpic(c.req.param('id'));
-  const success = deleteEpic(c.req.param('id'));
-  if (!success) return c.json({ error: 'Epic not found' }, 404);
-  // Trigger webhook
-  if (epic) {
-    triggerWebhooks('epic.deleted', { epic }, epic.project_id);
+  const auth = c.get('auth');
+  const epicId = c.req.param('id');
+  const epic = getEpic(epicId);
+  if (!epic) return c.json({ error: 'Epic not found' }, 404);
+  if (!canWriteProject(auth, epic.project_id)) {
+    return c.json({ error: 'Epic not found' }, 404);
   }
+  const success = deleteEpic(epicId);
+  if (!success) return c.json({ error: 'Epic not found' }, 404);
+  triggerWebhooks('epic.deleted', { epic }, epic.project_id);
   return c.json({ success: true });
 });
 
@@ -309,9 +335,13 @@ app.get('/api/tasks/:id', (c) => {
 });
 
 app.post('/api/tasks/:id/comments', async (c) => {
+  const auth = c.get('auth');
   const taskId = c.req.param('id');
   const task = getTask(taskId);
   if (!task) return c.json({ error: 'Task not found' }, 404);
+  if (!canWriteProject(auth, task.project_id)) {
+    return c.json({ error: 'Task not found' }, 404);
+  }
   const body = await c.req.json().catch(() => null);
   const commentBody = typeof body?.body === 'string' ? body.body.trim() : '';
   if (!commentBody) return c.json({ error: 'Comment body required' }, 400);
@@ -322,7 +352,13 @@ app.post('/api/tasks/:id/comments', async (c) => {
 });
 
 app.delete('/api/tasks/:id/comments/:commentId', (c) => {
+  const auth = c.get('auth');
   const taskId = c.req.param('id');
+  const task = getTask(taskId);
+  if (!task) return c.json({ error: 'Comment not found' }, 404);
+  if (!canWriteProject(auth, task.project_id)) {
+    return c.json({ error: 'Comment not found' }, 404);
+  }
   const commentId = c.req.param('commentId');
   const deleted = deleteTaskComment(taskId, commentId);
   if (!deleted) return c.json({ error: 'Comment not found' }, 404);
@@ -346,27 +382,27 @@ app.post('/api/projects/:projectId/tasks', async (c) => {
 });
 
 app.patch('/api/tasks/:id', async (c) => {
+  const auth = c.get('auth');
+  const taskId = c.req.param('id');
+  const previous = getTask(taskId);
+  if (!previous) return c.json({ error: 'Task not found' }, 404);
+  if (!canWriteProject(auth, previous.project_id)) {
+    return c.json({ error: 'Task not found' }, 404);
+  }
   const body = await c.req.json();
   const validation = validateTaskFields(body);
   if (validation.error) return c.json({ error: validation.error }, 400);
-  const previous = getTask(c.req.param('id'));
-  const task = updateTask(c.req.param('id'), body);
+  const task = updateTask(taskId, body);
   if (!task) return c.json({ error: 'Task not found' }, 404);
 
   // Determine which webhook events to trigger
   const events: WebhookEventType[] = ['task.updated'];
-
-  // Check for status change
-  if (previous && body.status && previous.status !== body.status) {
+  if (body.status && previous.status !== body.status) {
     events.push('task.status_changed');
   }
-
-  // Check for archive
-  if (body.archived === true && (!previous || !previous.archived)) {
+  if (body.archived === true && !previous.archived) {
     events.push('task.archived');
   }
-
-  // Trigger webhooks
   for (const event of events) {
     triggerWebhooks(event, { task, previous }, task.project_id);
   }
@@ -375,13 +411,16 @@ app.patch('/api/tasks/:id', async (c) => {
 });
 
 app.delete('/api/tasks/:id', (c) => {
-  const task = getTask(c.req.param('id'));
-  const success = deleteTask(c.req.param('id'));
-  if (!success) return c.json({ error: 'Task not found' }, 404);
-  // Trigger webhook
-  if (task) {
-    triggerWebhooks('task.deleted', { task }, task.project_id);
+  const auth = c.get('auth');
+  const taskId = c.req.param('id');
+  const task = getTask(taskId);
+  if (!task) return c.json({ error: 'Task not found' }, 404);
+  if (!canWriteProject(auth, task.project_id)) {
+    return c.json({ error: 'Task not found' }, 404);
   }
+  const success = deleteTask(taskId);
+  if (!success) return c.json({ error: 'Task not found' }, 404);
+  triggerWebhooks('task.deleted', { task }, task.project_id);
   return c.json({ success: true });
 });
 
@@ -483,6 +522,110 @@ app.get('/api/webhook-deliveries', (c) => {
   const limit = parseInt(c.req.query('limit') || '50');
   const deliveries = getWebhookDeliveries(undefined, limit);
   return c.json(deliveries);
+});
+
+// ============ Auth Routes ============
+
+// Rate limit auth endpoints: 10 requests per minute for init/poll, 5 for key creation
+const authRateLimit = rateLimit({ windowMs: 60000, maxRequests: 10 });
+const keyCreateRateLimit = rateLimit({ windowMs: 60000, maxRequests: 5 });
+
+// Check if auth is required (for web UI to show login prompt)
+app.get('/api/auth/status', (c) => {
+  const auth = c.get('auth');
+  return c.json({
+    authenticated: auth.keyType !== 'anonymous',
+    keyType: auth.keyType,
+    projectIds: auth.projectIds,
+  });
+});
+
+// List API keys (server/env key required)
+app.get('/api/auth/keys', (c) => {
+  const auth = c.get('auth');
+  if (auth.keyType !== 'env' && auth.keyType !== 'server') {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+  // Return keys without hash (security)
+  const keys = getApiKeys().map(k => ({
+    id: k.id,
+    prefix: k.prefix,
+    name: k.name,
+    scope: k.scope,
+    created_at: k.created_at,
+    last_used_at: k.last_used_at,
+  }));
+  return c.json(keys);
+});
+
+// Create API key (server/env key required)
+app.post('/api/auth/keys', keyCreateRateLimit, async (c) => {
+  const auth = c.get('auth');
+  if (auth.keyType !== 'env' && auth.keyType !== 'server') {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+  const body = await c.req.json();
+  if (!body.name) {
+    return c.json({ error: 'Name required' }, 400);
+  }
+  const scope: KeyScope = body.project_ids
+    ? { type: 'project', project_ids: body.project_ids }
+    : { type: 'server' };
+  const { rawKey, apiKey } = createApiKey(body.name, scope);
+  return c.json({
+    key: rawKey,  // Only shown once!
+    id: apiKey.id,
+    prefix: apiKey.prefix,
+    name: apiKey.name,
+    scope: apiKey.scope,
+    created_at: apiKey.created_at,
+  }, 201);
+});
+
+// Delete API key (server/env key required)
+app.delete('/api/auth/keys/:id', (c) => {
+  const auth = c.get('auth');
+  if (auth.keyType !== 'env' && auth.keyType !== 'server') {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+  const success = deleteApiKey(c.req.param('id'));
+  if (!success) return c.json({ error: 'Key not found' }, 404);
+  return c.json({ success: true });
+});
+
+// CLI auth flow: Start auth request
+app.post('/api/auth/cli-init', authRateLimit, (c) => {
+  cleanupExpiredAuthRequests();
+  const request = createCliAuthRequest();
+  return c.json({ token: request.token, expires_at: request.expires_at });
+});
+
+// CLI auth flow: Poll for completion
+app.post('/api/auth/cli-poll', authRateLimit, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  if (!body.token) return c.json({ error: 'Token required' }, 400);
+  const result = pollCliAuthRequest(body.token);
+  return c.json(result);
+});
+
+// CLI auth flow: Complete from web (requires existing auth)
+app.post('/api/auth/cli-complete', async (c) => {
+  const auth = c.get('auth');
+  if (auth.keyType === 'anonymous') {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+  const body = await c.req.json();
+  if (!body.token || !body.name) {
+    return c.json({ error: 'Token and name required' }, 400);
+  }
+  const scope: KeyScope = body.project_ids
+    ? { type: 'project', project_ids: body.project_ids }
+    : { type: 'server' };
+  const result = completeCliAuthRequest(body.token, body.name, scope);
+  if (!result) {
+    return c.json({ error: 'Invalid or expired token' }, 400);
+  }
+  return c.json({ success: true });
 });
 
 // API 404 handler - must be before SPA fallback

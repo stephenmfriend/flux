@@ -1,5 +1,5 @@
 import Router from 'preact-router'
-import { ProjectCreate, ProjectList, Board, Webhooks } from './pages'
+import { ProjectCreate, ProjectList, Board, Webhooks, Auth } from './pages'
 import { BuildInfoFooter, ThemeProvider } from './components'
 
 export function App() {
@@ -10,6 +10,7 @@ export function App() {
         <ProjectCreate path="/new" />
         <Board path="/board/:projectId" />
         <Webhooks path="/webhooks" />
+        <Auth path="/auth" />
       </Router>
       <BuildInfoFooter />
     </ThemeProvider>

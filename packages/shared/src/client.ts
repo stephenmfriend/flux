@@ -48,6 +48,8 @@ import type {
   WebhookDelivery,
   WebhookEventType,
   Guardrail,
+  ApiKey,
+  KeyScope,
 } from './types.js';
 
 // Re-export types and constants
@@ -133,11 +135,11 @@ export async function getProject(id: string): Promise<Project | undefined> {
   return localGetProject(id);
 }
 
-export async function createProject(name: string, description?: string): Promise<Project> {
+export async function createProject(name: string, description?: string, visibility?: 'public' | 'private'): Promise<Project> {
   if (serverUrl) {
-    return http('POST', '/api/projects', { name, description });
+    return http('POST', '/api/projects', { name, description, visibility });
   }
-  return localCreateProject(name, description);
+  return localCreateProject(name, description, visibility);
 }
 
 export async function updateProject(id: string, updates: Partial<Project>): Promise<Project | undefined> {
@@ -426,4 +428,85 @@ export async function getWebhookDeliveries(webhookId: string, limit?: number): P
     return http('GET', `/api/webhooks/${webhookId}/deliveries${query}`);
   }
   return localGetWebhookDeliveries(webhookId, limit);
+}
+
+// ============ Auth (server mode only) ============
+
+export type ApiKeyInfo = Omit<ApiKey, 'hash'>;
+
+export async function getAuthStatus(): Promise<{
+  authenticated: boolean;
+  keyType: 'server' | 'project' | 'env' | 'anonymous';
+  projectIds?: string[];
+}> {
+  if (!serverUrl) {
+    return { authenticated: true, keyType: 'env' };
+  }
+  return http('GET', '/api/auth/status');
+}
+
+export async function getApiKeys(): Promise<ApiKeyInfo[]> {
+  if (!serverUrl) {
+    throw new Error('API keys only available in server mode');
+  }
+  return http('GET', '/api/auth/keys');
+}
+
+export async function createApiKeyRemote(
+  name: string,
+  projectIds?: string[]
+): Promise<{ key: string } & ApiKeyInfo> {
+  if (!serverUrl) {
+    throw new Error('API keys only available in server mode');
+  }
+  return http('POST', '/api/auth/keys', {
+    name,
+    project_ids: projectIds,
+  });
+}
+
+export async function deleteApiKeyRemote(id: string): Promise<boolean> {
+  if (!serverUrl) {
+    throw new Error('API keys only available in server mode');
+  }
+  try {
+    await http('DELETE', `/api/auth/keys/${id}`);
+    return true;
+  } catch (e) {
+    if (e instanceof FluxHttpError && e.isNotFound) return false;
+    throw e;
+  }
+}
+
+// CLI auth flow
+export async function initCliAuth(): Promise<{ token: string; expires_at: string }> {
+  if (!serverUrl) {
+    throw new Error('CLI auth only available in server mode');
+  }
+  return http('POST', '/api/auth/cli-init', {});
+}
+
+export async function pollCliAuth(token: string): Promise<{
+  status: 'pending' | 'completed' | 'expired';
+  apiKey?: string;
+}> {
+  if (!serverUrl) {
+    throw new Error('CLI auth only available in server mode');
+  }
+  return http('POST', '/api/auth/cli-poll', { token });
+}
+
+export async function completeCliAuth(
+  token: string,
+  name: string,
+  projectIds?: string[]
+): Promise<{ success: boolean }> {
+  if (!serverUrl) {
+    throw new Error('CLI auth only available in server mode');
+  }
+  return http('POST', '/api/auth/cli-complete', {
+    token,
+    name,
+    project_ids: projectIds,
+  });
 }

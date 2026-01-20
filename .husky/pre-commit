@@ -1,0 +1,27 @@
+#!/bin/sh
+# Pre-commit hook to check for leftover temp test files
+
+# Check for temp SQLite test files
+TEMP_FILES=$(find . -maxdepth 1 -name "file::memory:*" 2>/dev/null)
+
+if [ -n "$TEMP_FILES" ]; then
+  echo "❌ ERROR: Temporary test database files detected!"
+  echo ""
+  echo "The following temp files were found in the project root:"
+  echo "$TEMP_FILES"
+  echo ""
+  echo "These files are created by tests but should be cleaned up automatically."
+  echo ""
+  echo "To fix this issue:"
+  echo "  1. Run: rm -f file::memory:*"
+  echo "  2. Ensure test cleanup is working properly (afterAll hooks)"
+  echo "  3. Try your commit again"
+  echo ""
+  echo "If this happens repeatedly, there may be a bug in test cleanup."
+  echo "Please report this issue."
+  echo ""
+  exit 1
+fi
+
+# All checks passed
+exit 0

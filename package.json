@@ -3,7 +3,9 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "workspaces": ["packages/*"],
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "dev": "bun --filter @flux/web dev",
     "dev:server": "bun --filter @flux/server dev",
@@ -12,7 +14,8 @@
     "typecheck": "bun --filter @flux/shared build && bun --filter '*' build",
     "lint": "bun run typecheck",
     "clean": "find packages -name dist -type d -exec rm -rf {} + 2>/dev/null || true",
-    "test": "bun test"
+    "test": "NODE_ENV=test bun test",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@semantic-release/changelog": "^6.0.3",
@@ -22,6 +25,7 @@
     "@semantic-release/npm": "^13.1.3",
     "@semantic-release/release-notes-generator": "^14.1.0",
     "conventional-changelog-conventionalcommits": "^9.1.0",
+    "husky": "^9.1.7",
     "semantic-release": "^25.0.2"
   }
 }

@@ -146,3 +146,19 @@ export function filterProjects(auth: AuthContext): ReturnType<typeof getProjects
   // Anonymous sees only public projects
   return projects.filter(p => p.visibility !== 'private');
 }
+
+/**
+ * Check if auth is required (any keys configured)
+ */
+export function isAuthRequired(): boolean {
+  return !!FLUX_API_KEY || hasApiKeys();
+}
+
+/**
+ * Check if auth context has server-level access
+ * In dev mode (no auth configured), always returns true
+ */
+export function hasServerAccess(auth: AuthContext): boolean {
+  if (!isAuthRequired()) return true;
+  return auth.keyType === 'env' || auth.keyType === 'server';
+}

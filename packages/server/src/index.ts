@@ -53,7 +53,7 @@ import { generateKey, generateTempToken, validateKey, encrypt, decrypt } from '@
 import { findFluxDir, loadEnvLocal, readConfig, resolveDataPath } from '@flux/shared/config';
 import { createAdapter } from '@flux/shared/adapters';
 import { handleWebhookEvent, testWebhookDelivery } from './webhook-service.js';
-import { authMiddleware, filterProjects, canReadProject, canWriteProject, type AuthContext } from './middleware/auth.js';
+import { authMiddleware, filterProjects, canReadProject, canWriteProject, hasServerAccess, type AuthContext } from './middleware/auth.js';
 import { rateLimit } from './middleware/rate-limit.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -242,6 +242,10 @@ app.get('/api/projects/:id', (c) => {
 });
 
 app.post('/api/projects', async (c) => {
+  const auth = c.get('auth');
+  if (!hasServerAccess(auth)) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
   const body = await c.req.json();
   const project = createProject(body.name, body.description, body.visibility);
   // Trigger webhook
@@ -250,6 +254,10 @@ app.post('/api/projects', async (c) => {
 });
 
 app.patch('/api/projects/:id', async (c) => {
+  const auth = c.get('auth');
+  if (!hasServerAccess(auth)) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
   const body = await c.req.json();
   const previous = getProject(c.req.param('id'));
   const project = updateProject(c.req.param('id'), body);
@@ -260,6 +268,10 @@ app.patch('/api/projects/:id', async (c) => {
 });
 
 app.delete('/api/projects/:id', (c) => {
+  const auth = c.get('auth');
+  if (!hasServerAccess(auth)) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
   const project = getProject(c.req.param('id'));
   deleteProject(c.req.param('id'));
   // Trigger webhook
@@ -442,22 +454,35 @@ app.post('/api/projects/:projectId/cleanup', async (c) => {
   return c.json({ success: true, ...result });
 });
 
-// Reset database (wipe all data)
+// Reset database (wipe all data) - requires server access
 app.post('/api/reset', (c) => {
+  const auth = c.get('auth');
+  if (!hasServerAccess(auth)) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
   resetStore();
   return c.json({ success: true });
 });
 
 // ============ Webhook Routes ============
+// All webhook routes require server access (admin-only)
 
 // List all webhooks
 app.get('/api/webhooks', (c) => {
+  const auth = c.get('auth');
+  if (!hasServerAccess(auth)) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
   const webhooks = getWebhooks();
   return c.json(webhooks);
 });
 
 // Get a single webhook
 app.get('/api/webhooks/:id', (c) => {
+  const auth = c.get('auth');
+  if (!hasServerAccess(auth)) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
   const webhook = getWebhook(c.req.param('id'));
   if (!webhook) return c.json({ error: 'Webhook not found' }, 404);
   return c.json(webhook);
@@ -465,6 +490,10 @@ app.get('/api/webhooks/:id', (c) => {
 
 // Create a webhook
 app.post('/api/webhooks', async (c) => {
+  const auth = c.get('auth');
+  if (!hasServerAccess(auth)) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
   const body = await c.req.json();
   if (!body.name || !body.url || !body.events || !Array.isArray(body.events)) {
     return c.json({ error: 'Missing required fields: name, url, events' }, 400);
@@ -479,6 +508,10 @@ app.post('/api/webhooks', async (c) => {
 
 // Update a webhook
 app.patch('/api/webhooks/:id', async (c) => {
+  const auth = c.get('auth');
+  if (!hasServerAccess(auth)) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
   const body = await c.req.json();
   const webhook = updateWebhook(c.req.param('id'), body);
   if (!webhook) return c.json({ error: 'Webhook not found' }, 404);
@@ -487,6 +520,10 @@ app.patch('/api/webhooks/:id', async (c) => {
 
 // Delete a webhook
 app.delete('/api/webhooks/:id', (c) => {
+  const auth = c.get('auth');
+  if (!hasServerAccess(auth)) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
   const success = deleteWebhook(c.req.param('id'));
   if (!success) return c.json({ error: 'Webhook not found' }, 404);
   return c.json({ success: true });
@@ -494,6 +531,10 @@ app.delete('/api/webhooks/:id', (c) => {
 
 // Test a webhook
 app.post('/api/webhooks/:id/test', async (c) => {
+  const auth = c.get('auth');
+  if (!hasServerAccess(auth)) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
   const webhook = getWebhook(c.req.param('id'));
   if (!webhook) return c.json({ error: 'Webhook not found' }, 404);
 
@@ -508,6 +549,10 @@ app.post('/api/webhooks/:id/test', async (c) => {
 
 // Get webhook deliveries
 app.get('/api/webhooks/:id/deliveries', (c) => {
+  const auth = c.get('auth');
+  if (!hasServerAccess(auth)) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
   const webhookId = c.req.param('id');
   const webhook = getWebhook(webhookId);
   if (!webhook) return c.json({ error: 'Webhook not found' }, 404);
@@ -519,6 +564,10 @@ app.get('/api/webhooks/:id/deliveries', (c) => {
 
 // Get all recent deliveries (admin view)
 app.get('/api/webhook-deliveries', (c) => {
+  const auth = c.get('auth');
+  if (!hasServerAccess(auth)) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
   const limit = parseInt(c.req.query('limit') || '50');
   const deliveries = getWebhookDeliveries(undefined, limit);
   return c.json(deliveries);
@@ -568,6 +617,12 @@ app.post('/api/auth/keys', keyCreateRateLimit, async (c) => {
   if (!body.name) {
     return c.json({ error: 'Name required' }, 400);
   }
+  // Validate project_ids if provided
+  if (body.project_ids !== undefined) {
+    if (!Array.isArray(body.project_ids) || body.project_ids.length === 0) {
+      return c.json({ error: 'project_ids must be a non-empty array' }, 400);
+    }
+  }
   const scope: KeyScope = body.project_ids
     ? { type: 'project', project_ids: body.project_ids }
     : { type: 'server' };
@@ -608,15 +663,22 @@ app.post('/api/auth/cli-poll', authRateLimit, async (c) => {
   return c.json(result);
 });
 
-// CLI auth flow: Complete from web (requires existing auth)
+// CLI auth flow: Complete from web (requires server auth to create keys)
 app.post('/api/auth/cli-complete', async (c) => {
   const auth = c.get('auth');
-  if (auth.keyType === 'anonymous') {
+  // Require server access to create new keys (prevents privilege escalation)
+  if (!hasServerAccess(auth)) {
     return c.json({ error: 'Unauthorized' }, 401);
   }
   const body = await c.req.json();
   if (!body.token || !body.name) {
     return c.json({ error: 'Token and name required' }, 400);
+  }
+  // Validate project_ids if provided
+  if (body.project_ids !== undefined) {
+    if (!Array.isArray(body.project_ids) || body.project_ids.length === 0) {
+      return c.json({ error: 'project_ids must be a non-empty array' }, 400);
+    }
   }
   const scope: KeyScope = body.project_ids
     ? { type: 'project', project_ids: body.project_ids }

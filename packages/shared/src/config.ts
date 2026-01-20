@@ -1,5 +1,5 @@
 import { resolve, dirname } from 'path';
-import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync, chmodSync } from 'fs';
 
 export type FluxConfig = {
   server?: string;    // Server URL (server mode)
@@ -86,6 +86,12 @@ export function readConfig(fluxDir: string): FluxConfig {
 export function writeConfig(fluxDir: string, config: FluxConfig): void {
   const configPath = resolve(fluxDir, 'config.json');
   writeFileSync(configPath, JSON.stringify(config, null, 2));
+  // Set file permissions to 0600 (owner read/write only) since config may contain API keys
+  try {
+    chmodSync(configPath, 0o600);
+  } catch {
+    // Ignore chmod errors on Windows
+  }
 }
 
 // Resolve the data file path from config (respects FLUX_DATA env, config.dataFile, defaults)

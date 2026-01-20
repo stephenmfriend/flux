@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'preact/hooks'
+import { useState, useEffect, useRef } from 'preact/hooks'
 import { route, RoutableProps } from 'preact-router'
 import { completeCliAuth, getAuthStatus, getProjects, type ProjectWithStats } from '../stores/api'
 import { setToken, clearToken } from '../stores/auth'
@@ -7,7 +7,9 @@ interface AuthProps extends RoutableProps {
   token?: string
 }
 
-export function Auth({ token }: AuthProps) {
+export function Auth({ token: urlToken }: AuthProps) {
+  // Store token in ref to persist after URL clear
+  const tokenRef = useRef(urlToken)
   const [name, setName] = useState('')
   const [scope, setScope] = useState<'server' | 'project'>('server')
   const [selectedProjects, setSelectedProjects] = useState<string[]>([])
@@ -17,6 +19,13 @@ export function Auth({ token }: AuthProps) {
   const [success, setSuccess] = useState(false)
   const [authenticated, setAuthenticated] = useState(false)
   const [loading, setLoading] = useState(true)
+
+  // Clear token from URL to prevent leakage via history/referrer
+  useEffect(() => {
+    if (urlToken && window.history.replaceState) {
+      window.history.replaceState({}, '', '/auth')
+    }
+  }, [urlToken])
 
   useEffect(() => {
     checkAuth()
@@ -46,7 +55,7 @@ export function Auth({ token }: AuthProps) {
   const handleSubmit = async (e: Event) => {
     e.preventDefault()
     if (!name.trim() || submitting) return
-    if (!token) {
+    if (!tokenRef.current) {
       setError('No auth token provided')
       return
     }
@@ -56,7 +65,7 @@ export function Auth({ token }: AuthProps) {
 
     try {
       const projectIds = scope === 'project' ? selectedProjects : undefined
-      const result = await completeCliAuth(token, name.trim(), projectIds)
+      const result = await completeCliAuth(tokenRef.current!, name.trim(), projectIds)
       if (result.success) {
         setSuccess(true)
       } else {
@@ -76,7 +85,7 @@ export function Auth({ token }: AuthProps) {
     if (tokenInput?.value) {
       setToken(tokenInput.value)
       setAuthenticated(true)
-      if (token) {
+      if (tokenRef.current) {
         // CLI auth flow - refresh to re-check auth
         window.location.reload()
       } else {
@@ -95,7 +104,7 @@ export function Auth({ token }: AuthProps) {
   }
 
   // If not authenticated and this is CLI auth, show login prompt
-  if (!authenticated && token) {
+  if (!authenticated && tokenRef.current) {
     return (
       <div class="min-h-screen bg-base-200 flex items-center justify-center">
         <div class="card w-96 bg-base-100 shadow-xl">
@@ -150,7 +159,7 @@ export function Auth({ token }: AuthProps) {
   }
 
   // No token - show login form or auth info
-  if (!token) {
+  if (!tokenRef.current) {
     return (
       <div class="min-h-screen bg-base-200 flex items-center justify-center">
         <div class="card w-96 bg-base-100 shadow-xl">

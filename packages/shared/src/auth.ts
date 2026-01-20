@@ -41,13 +41,6 @@ export function validateKey(key: string, storedHash: string): boolean {
 }
 
 /**
- * Check if a string looks like a Flux API key
- */
-export function isFluxKey(key: string): boolean {
-  return key.startsWith(KEY_PREFIX) && key.length === KEY_PREFIX.length + KEY_LENGTH;
-}
-
-/**
  * Encrypt a value using a password (for storing API keys temporarily)
  * Uses AES-256-GCM with password-derived key
  */

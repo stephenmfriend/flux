@@ -1,4 +1,4 @@
-import { exec } from 'child_process';
+import { spawn } from 'child_process';
 import {
   isServerMode,
   getServerUrl,
@@ -22,16 +22,21 @@ const c = {
   red: '\x1b[31m',
 };
 
-// Open URL in default browser
+// Open URL in default browser (using spawn to avoid shell injection)
 function openBrowser(url: string): void {
   const cmd = process.platform === 'darwin'
-    ? `open "${url}"`
+    ? 'open'
     : process.platform === 'win32'
-    ? `start "${url}"`
-    : `xdg-open "${url}"`;
-  exec(cmd, (err) => {
-    if (err) console.error('Failed to open browser:', err.message);
+    ? 'cmd'
+    : 'xdg-open';
+  const args = process.platform === 'win32'
+    ? ['/c', 'start', '', url]
+    : [url];
+  const child = spawn(cmd, args, { detached: true, stdio: 'ignore' });
+  child.on('error', (err) => {
+    console.error('Failed to open browser:', err.message);
   });
+  child.unref();
 }
 
 // Sleep helper

@@ -21,24 +21,6 @@ function safeCompare(a: string, b: string): boolean {
   return timingSafeEqual(Buffer.from(a), Buffer.from(b));
 }
 
-// Extract project ID from request path
-function extractProjectId(path: string): string | undefined {
-  // /api/projects/:id, /api/projects/:id/tasks, /api/projects/:id/epics, etc.
-  const projectsMatch = path.match(/^\/api\/projects\/([^\/]+)/);
-  if (projectsMatch) return projectsMatch[1];
-
-  // /api/tasks/:id - need to look up task to get project
-  // /api/epics/:id - need to look up epic to get project
-  // These are handled separately in the route handlers
-  return undefined;
-}
-
-// Check if a key scope allows access to a project
-function scopeAllowsProject(scope: KeyScope, projectId: string): boolean {
-  if (scope.type === 'server') return true;
-  return scope.project_ids.includes(projectId);
-}
-
 /**
  * Auth middleware for Flux server.
  *
@@ -162,3 +144,15 @@ export function hasServerAccess(auth: AuthContext): boolean {
   if (!isAuthRequired()) return true;
   return auth.keyType === 'env' || auth.keyType === 'server';
 }
+
+/**
+ * Middleware that requires server-level access
+ * Use: app.post('/route', requireServerAccess, handler)
+ */
+export const requireServerAccess = createMiddleware<{ Variables: { auth: AuthContext } }>(async (c, next) => {
+  const auth = c.get('auth');
+  if (!hasServerAccess(auth)) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+  return next();
+});

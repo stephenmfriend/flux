@@ -785,9 +785,11 @@ export function deleteApiKey(id: string): boolean {
   return true;
 }
 
+const LAST_USED_UPDATE_INTERVAL_MS = 60000; // Update last_used_at at most once per minute
+
 /**
  * Validate an API key and return the key record if valid
- * Also updates last_used_at timestamp
+ * Also updates last_used_at timestamp (throttled to once per minute)
  */
 export function validateApiKey(rawKey: string): ApiKey | undefined {
   ensureApiKeysArrays();
@@ -795,8 +797,13 @@ export function validateApiKey(rawKey: string): ApiKey | undefined {
   const keys = getWebhookData().api_keys || [];
   for (const key of keys) {
     if (validateKey(rawKey, key.hash)) {
-      key.last_used_at = new Date().toISOString();
-      db.write();
+      // Throttle last_used_at updates to reduce disk I/O
+      const now = Date.now();
+      const lastUsed = key.last_used_at ? new Date(key.last_used_at).getTime() : 0;
+      if (now - lastUsed > LAST_USED_UPDATE_INTERVAL_MS) {
+        key.last_used_at = new Date().toISOString();
+        db.write();
+      }
       return key;
     }
   }

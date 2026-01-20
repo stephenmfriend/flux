@@ -55,7 +55,8 @@ export function Auth({ token: urlToken }: AuthProps) {
   const handleSubmit = async (e: Event) => {
     e.preventDefault()
     if (!name.trim() || submitting) return
-    if (!tokenRef.current) {
+    const token = tokenRef.current
+    if (!token) {
       setError('No auth token provided')
       return
     }
@@ -65,7 +66,7 @@ export function Auth({ token: urlToken }: AuthProps) {
 
     try {
       const projectIds = scope === 'project' ? selectedProjects : undefined
-      const result = await completeCliAuth(tokenRef.current!, name.trim(), projectIds)
+      const result = await completeCliAuth(token, name.trim(), projectIds)
       if (result.success) {
         setSuccess(true)
       } else {

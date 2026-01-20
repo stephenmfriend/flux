@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { Store } from '../src/types.js';
 import {
@@ -12,36 +12,26 @@ import {
   deleteProject,
   deleteTaskComment,
   getProject,
+  getReadyTasks,
   getTasks,
-  initStore,
   isTaskBlocked,
   removeDependency,
-  setStorageAdapter,
   updateTask,
 } from '../src/store.js';
+import { cleanupTempDatabases } from './test-cleanup.js';
+import { setupTestStore, createTestAdapter } from './test-helpers.js';
+import { setStorageAdapter, initStore } from '../src/store.js';
 
 type AdapterData = Store & { project?: Store['projects'][number] };
 
-function createAdapter(initial?: Partial<AdapterData>) {
-  const data: AdapterData = {
-    projects: [],
-    epics: [],
-    tasks: [],
-    ...initial,
-  };
-
-  return {
-    data,
-    read: vi.fn(),
-    write: vi.fn(),
-  };
-}
-
 describe('store', () => {
   beforeEach(() => {
-    const adapter = createAdapter();
-    setStorageAdapter(adapter);
-    initStore();
+    setupTestStore();
+  });
+
+  afterAll(() => {
+    // Clean up any temp SQLite files that may have been created
+    cleanupTempDatabases();
   });
 
   it('migrates legacy project data on init', () => {
@@ -68,7 +58,7 @@ describe('store', () => {
         } as Store['epics'][number],
       ],
     };
-    const adapter = createAdapter(legacyData);
+    const adapter = createTestAdapter(legacyData);
 
     setStorageAdapter(adapter);
     initStore();

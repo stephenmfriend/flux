@@ -1,10 +1,12 @@
 import type { Task, Epic, Project, Store, Webhook, WebhookDelivery, WebhookEventType, WebhookPayload, StoreWithWebhooks, Priority, CommentAuthor, TaskComment, Guardrail } from './types.js';
+import { PRIORITIES } from './types.js';
 
 // Storage adapter interface - can be localStorage or file-based
 export interface StorageAdapter {
   read(): void;
   write(): void;
   data: Store;
+  isTest?: boolean; // Flag to mark test adapters for safety checks
 }
 
 let db: StorageAdapter;
@@ -20,8 +22,29 @@ function ensureGuardrailIds(guardrails?: Guardrail[]): Guardrail[] | undefined {
   return guardrails.map(g => g.id ? g : { ...g, id: generateId() });
 }
 
+// Validate priority value
+function validatePriority(priority: any): void {
+  if (priority === undefined || priority === null) {
+    return; // null/undefined are allowed
+  }
+  if (!PRIORITIES.includes(priority)) {
+    throw new Error(`Invalid priority value: ${priority}. Must be 0, 1, or 2.`);
+  }
+}
+
 // Set the storage adapter (called once at app startup)
 export function setStorageAdapter(adapter: StorageAdapter): void {
+  // SAFETY: Prevent tests from accidentally using production database
+  const nodeEnv = typeof process !== 'undefined' ? process.env.NODE_ENV : undefined;
+  if (nodeEnv === 'test' && !adapter.isTest) {
+    throw new Error(
+      'Cannot use production storage adapter in test environment. ' +
+      'NODE_ENV=test but adapter.isTest is not set. ' +
+      'Use createTestAdapter() or set adapter.isTest = true for test adapters. ' +
+      'This prevents accidental production data corruption during tests.'
+    );
+  }
+
   db = adapter;
 }
 
@@ -107,6 +130,16 @@ export function initStore(): Store {
 
 export function resetStore(): void {
   if (!db) throw new Error('Storage adapter not set. Call setStorageAdapter first.');
+
+  // SAFETY: Prevent wiping production database
+  if (!db.isTest) {
+    throw new Error(
+      'resetStore() can only be called on test adapters. ' +
+      'Set adapter.isTest = true when creating test adapters. ' +
+      'This prevents accidental production data loss.'
+    );
+  }
+
   db.data.projects = [];
   db.data.epics = [];
   db.data.tasks = [];

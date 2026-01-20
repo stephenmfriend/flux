@@ -10,17 +10,25 @@ const defaultData: Store = {
   tasks: [],
 };
 
-export function createSqliteAdapter(filePath: string): StorageAdapter {
-  // Ensure directory exists
-  const dir = dirname(filePath);
-  if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true });
+export function createSqliteAdapter(filePath: string, isTest = false): StorageAdapter {
+  const isMemory = filePath === ':memory:';
+
+  // Only create directory for file-based databases
+  if (!isMemory) {
+    const dir = dirname(filePath);
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
+    }
   }
 
-  const db = new Database(filePath, { create: true });
+  // For in-memory databases, use proper SQLite URI
+  const dbPath = isMemory ? ':memory:' : filePath;
+  const db = new Database(dbPath, { create: true });
 
-  // WAL mode for better concurrency with multiple readers
-  db.exec('PRAGMA journal_mode = WAL');
+  // WAL mode for better concurrency (skip for in-memory databases)
+  if (!isMemory) {
+    db.exec('PRAGMA journal_mode = WAL');
+  }
   db.exec('CREATE TABLE IF NOT EXISTS store (id INTEGER PRIMARY KEY CHECK (id = 1), data TEXT NOT NULL)');
 
   const selectStmt = db.prepare('SELECT data FROM store WHERE id = 1');
@@ -72,5 +80,6 @@ export function createSqliteAdapter(filePath: string): StorageAdapter {
       }
       _dirty = false;  // Clear dirty flag after write
     },
+    isTest, // Mark test adapters for safety checks
   };
 }

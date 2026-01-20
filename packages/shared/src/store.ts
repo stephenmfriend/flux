@@ -35,7 +35,9 @@ function validatePriority(priority: any): void {
 // Set the storage adapter (called once at app startup)
 export function setStorageAdapter(adapter: StorageAdapter): void {
   // SAFETY: Prevent tests from accidentally using production database
+  // When NODE_ENV=test, only allow adapters marked as test adapters
   const nodeEnv = typeof process !== 'undefined' ? process.env.NODE_ENV : undefined;
+
   if (nodeEnv === 'test' && !adapter.isTest) {
     throw new Error(
       'Cannot use production storage adapter in test environment. ' +

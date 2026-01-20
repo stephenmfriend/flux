@@ -3,7 +3,6 @@ import { setStorageAdapter } from '../src/store.js';
 import type { Store } from '../src/types.js';
 
 describe('NODE_ENV protection', () => {
-
   it('blocks production adapter when NODE_ENV=test', () => {
     // Create a production-like adapter (isTest not set)
     const productionAdapter = {
@@ -41,6 +40,7 @@ describe('NODE_ENV protection', () => {
       write: vi.fn(),
     };
 
+    // Should throw with helpful error message
     try {
       setStorageAdapter(productionAdapter);
       // Should not reach here

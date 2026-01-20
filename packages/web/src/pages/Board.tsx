@@ -46,7 +46,7 @@ interface BoardProps extends RoutableProps {
 // Get color for epic based on index
 const getEpicColor = (epicId: string, epics: Epic[]): string => {
   const index = epics.findIndex((e) => e.id === epicId);
-  return EPIC_COLORS[index % EPIC_COLORS.length];
+  return EPIC_COLORS[index % EPIC_COLORS.length] ?? EPIC_COLORS[0] ?? '#9ca3af';
 };
 
 export function Board({ projectId }: BoardProps) {

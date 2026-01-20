@@ -109,15 +109,19 @@ export function DraggableTaskCard({
           <span class="font-medium text-sm truncate flex-1">{task.title}</span>
           {(() => {
             const taskType = task.type || 'task'
+            const typeConfig = TASK_TYPE_CONFIG?.[taskType as TaskType]
+            if (!typeConfig) {
+              console.error('TASK_TYPE_CONFIG is undefined or missing type:', taskType, 'Available config:', TASK_TYPE_CONFIG)
+              return null
+            }
             const TypeIcon = getTypeIcon(taskType as TaskType)
-            const typeConfig = TASK_TYPE_CONFIG[taskType as TaskType]
             return (
               <span class={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium flex-shrink-0 ${getTypeColor(typeConfig.color)}`} title={typeConfig.label}>
                 <TypeIcon className="h-3 w-3" />
               </span>
             )
           })()}
-          {task.priority !== undefined && (
+          {task.priority !== undefined && task.priority !== null && (
             <span
               class="text-xs px-1.5 py-0.5 rounded font-medium flex-shrink-0"
               style={{
@@ -176,8 +180,12 @@ export function DraggableTaskCard({
         <span class="text-xs text-base-content/50 font-medium">{epicTitle}</span>
         {(() => {
           const taskType = task.type || 'task'
+          const typeConfig = TASK_TYPE_CONFIG?.[taskType as TaskType]
+          if (!typeConfig) {
+            console.error('TASK_TYPE_CONFIG is undefined or missing type:', taskType, 'Available config:', TASK_TYPE_CONFIG)
+            return null
+          }
           const TypeIcon = getTypeIcon(taskType as TaskType)
-          const typeConfig = TASK_TYPE_CONFIG[taskType as TaskType]
           return (
             <span class={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium ${getTypeColor(typeConfig.color)}`} title={typeConfig.label}>
               <TypeIcon className="h-3 w-3" />
@@ -185,7 +193,7 @@ export function DraggableTaskCard({
             </span>
           )
         })()}
-        {task.priority !== undefined && (
+        {task.priority !== undefined && task.priority !== null && (
           <span
             class="text-xs px-1.5 py-0.5 rounded font-medium"
             style={{
@@ -209,7 +217,7 @@ export function DraggableTaskCard({
       {/* Latest comment preview */}
       {task.comments && task.comments.length > 0 && (
         <p class="text-xs text-base-content/50 mb-3 line-clamp-2">
-          {task.comments[task.comments.length - 1].body}
+          {task.comments[task.comments.length - 1]?.body}
         </p>
       )}
 

@@ -38,8 +38,33 @@ interface TaskCardProps {
 
 export function TaskCard({ task, onClick }: TaskCardProps) {
   const taskType = task.type || 'task'
+  const typeConfig = TASK_TYPE_CONFIG?.[taskType as TaskType]
+
+  if (!typeConfig) {
+    console.error('TASK_TYPE_CONFIG is undefined or missing type:', taskType, 'Available config:', TASK_TYPE_CONFIG)
+    // Render without type badge if config is missing
+    return (
+      <div
+        class="card bg-base-100 shadow-sm mb-2 cursor-pointer hover:shadow-md transition-shadow"
+        onClick={onClick}
+      >
+        <div class="card-body p-3">
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex items-center gap-2 flex-1">
+              <h4 class="font-medium text-sm">{task.title}</h4>
+            </div>
+            {task.blocked && (
+              <span class="badge badge-warning badge-sm" title={task.blocked_reason || undefined}>
+                {task.blocked_reason ? 'Waiting' : 'Blocked'}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   const TypeIcon = getTypeIcon(taskType as TaskType)
-  const typeConfig = TASK_TYPE_CONFIG[taskType as TaskType]
 
   return (
     <div
@@ -67,7 +92,7 @@ export function TaskCard({ task, onClick }: TaskCardProps) {
         )}
         {task.comments && task.comments.length > 0 && !task.blocked_reason && (
           <p class="text-xs text-base-content/60 mt-1 line-clamp-2">
-            {task.comments[task.comments.length - 1].body}
+            {task.comments[task.comments.length - 1]?.body}
           </p>
         )}
         {task.blocked && !task.blocked_reason && task.depends_on.length > 0 && (

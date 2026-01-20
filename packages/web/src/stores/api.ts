@@ -1,4 +1,6 @@
 import type { Task, Epic, Project, Webhook, WebhookDelivery, WebhookEventType, TaskComment, CommentAuthor } from '@flux/shared';
+import { ProjectSchema } from '../schemas';
+import { z } from 'zod';
 
 const API_BASE = import.meta.env.DEV ? 'http://localhost:3000/api' : '/api';
 
@@ -16,7 +18,13 @@ export interface TaskWithBlocked extends Task {
 
 export async function getProjects(): Promise<ProjectWithStats[]> {
   const res = await fetch(`${API_BASE}/projects`);
-  return res.json();
+  const data = await res.json();
+
+  // Validate with Zod schema
+  const ProjectWithStatsSchema = ProjectSchema.extend({
+    stats: z.object({ total: z.number(), done: z.number() })
+  });
+  return z.array(ProjectWithStatsSchema).parse(data);
 }
 
 export async function getProject(id: string): Promise<ProjectWithStats | null> {

@@ -2,6 +2,7 @@ import { ArrowDownIcon, CheckCircleIcon, ShieldCheckIcon } from '@heroicons/reac
 import { useDraggable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 import type { TaskWithBlocked } from '../stores'
+import { PRIORITY_CONFIG, type Priority } from '@flux/shared'
 
 interface DraggableTaskCardProps {
   task: TaskWithBlocked
@@ -77,6 +78,17 @@ export function DraggableTaskCard({
             style={{ backgroundColor: epicColor }}
           />
           <span class="font-medium text-sm truncate flex-1">{task.title}</span>
+          {task.priority !== undefined && (
+            <span
+              class="text-xs px-1.5 py-0.5 rounded font-medium flex-shrink-0"
+              style={{
+                backgroundColor: `${PRIORITY_CONFIG[task.priority as Priority].color}20`,
+                color: PRIORITY_CONFIG[task.priority as Priority].color
+              }}
+            >
+              {PRIORITY_CONFIG[task.priority as Priority].label}
+            </span>
+          )}
           {task.blocked && (
             <span class="text-xs bg-warning/20 text-warning px-1.5 py-0.5 rounded font-medium flex-shrink-0">
               Blocked
@@ -123,6 +135,17 @@ export function DraggableTaskCard({
           style={{ backgroundColor: epicColor }}
         />
         <span class="text-xs text-base-content/50 font-medium">{epicTitle}</span>
+        {task.priority !== undefined && (
+          <span
+            class="text-xs px-1.5 py-0.5 rounded font-medium"
+            style={{
+              backgroundColor: `${PRIORITY_CONFIG[task.priority as Priority].color}20`,
+              color: PRIORITY_CONFIG[task.priority as Priority].color
+            }}
+          >
+            {PRIORITY_CONFIG[task.priority as Priority].label}
+          </span>
+        )}
         {task.blocked && (
           <span class="ml-auto text-xs bg-warning/20 text-warning px-1.5 py-0.5 rounded font-medium">
             Blocked

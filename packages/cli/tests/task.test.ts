@@ -117,6 +117,73 @@ describe('task command', () => {
       expect(output).toHaveLength(1);
       expect(output[0].blocked).toBe(false);
     });
+
+    it('displays priority in task list with P0', async () => {
+      mockGetTasks.mockResolvedValue([
+        { id: 'task-1', title: 'Urgent', status: 'todo', priority: 0 },
+      ]);
+      mockIsTaskBlocked.mockResolvedValue(false);
+
+      await taskCommand('list', ['proj-1'], {}, false);
+
+      expect(getLogs().some(l => l.includes('P0'))).toBe(true);
+      expect(getLogs().some(l => l.includes('Urgent'))).toBe(true);
+    });
+
+    it('displays priority in task list with P1', async () => {
+      mockGetTasks.mockResolvedValue([
+        { id: 'task-2', title: 'Normal', status: 'todo', priority: 1 },
+      ]);
+      mockIsTaskBlocked.mockResolvedValue(false);
+
+      await taskCommand('list', ['proj-1'], {}, false);
+
+      expect(getLogs().some(l => l.includes('P1'))).toBe(true);
+      expect(getLogs().some(l => l.includes('Normal'))).toBe(true);
+    });
+
+    it('displays priority in task list with P2', async () => {
+      mockGetTasks.mockResolvedValue([
+        { id: 'task-3', title: 'Low', status: 'todo', priority: 2 },
+      ]);
+      mockIsTaskBlocked.mockResolvedValue(false);
+
+      await taskCommand('list', ['proj-1'], {}, false);
+
+      expect(getLogs().some(l => l.includes('P2'))).toBe(true);
+      expect(getLogs().some(l => l.includes('Low'))).toBe(true);
+    });
+
+    it('displays default priority P2 when priority is undefined', async () => {
+      mockGetTasks.mockResolvedValue([
+        { id: 'task-4', title: 'No Priority', status: 'todo' },
+      ]);
+      mockIsTaskBlocked.mockResolvedValue(false);
+
+      await taskCommand('list', ['proj-1'], {}, false);
+
+      expect(getLogs().some(l => l.includes('P2'))).toBe(true);
+      expect(getLogs().some(l => l.includes('No Priority'))).toBe(true);
+    });
+
+    it('displays multiple tasks with different priorities', async () => {
+      mockGetTasks.mockResolvedValue([
+        { id: 'task-1', title: 'High', status: 'todo', priority: 0 },
+        { id: 'task-2', title: 'Medium', status: 'todo', priority: 1 },
+        { id: 'task-3', title: 'Low', status: 'todo', priority: 2 },
+      ]);
+      mockIsTaskBlocked.mockResolvedValue(false);
+
+      await taskCommand('list', ['proj-1'], {}, false);
+
+      const logs = getLogs().join(' ');
+      expect(logs.includes('P0')).toBe(true);
+      expect(logs.includes('P1')).toBe(true);
+      expect(logs.includes('P2')).toBe(true);
+      expect(logs.includes('High')).toBe(true);
+      expect(logs.includes('Medium')).toBe(true);
+      expect(logs.includes('Low')).toBe(true);
+    });
   });
 
   describe('create', () => {
@@ -135,6 +202,62 @@ describe('task command', () => {
       await taskCommand('create', ['proj-1', 'Urgent'], { P: '0' }, false);
 
       expect(mockCreateTask).toHaveBeenCalledWith('proj-1', 'Urgent', undefined, { priority: 0 });
+    });
+
+    it('creates task with -P 0 (P0 priority)', async () => {
+      mockCreateTask.mockResolvedValue({ id: 'task-1', title: 'P0 Task', status: 'todo', priority: 0 });
+
+      await taskCommand('create', ['proj-1', 'P0 Task'], { P: '0' }, false);
+
+      expect(mockCreateTask).toHaveBeenCalledWith('proj-1', 'P0 Task', undefined, { priority: 0 });
+    });
+
+    it('creates task with -P 1 (P1 priority)', async () => {
+      mockCreateTask.mockResolvedValue({ id: 'task-2', title: 'P1 Task', status: 'todo', priority: 1 });
+
+      await taskCommand('create', ['proj-1', 'P1 Task'], { P: '1' }, false);
+
+      expect(mockCreateTask).toHaveBeenCalledWith('proj-1', 'P1 Task', undefined, { priority: 1 });
+    });
+
+    it('creates task with -P 2 (P2 priority)', async () => {
+      mockCreateTask.mockResolvedValue({ id: 'task-3', title: 'P2 Task', status: 'todo', priority: 2 });
+
+      await taskCommand('create', ['proj-1', 'P2 Task'], { P: '2' }, false);
+
+      expect(mockCreateTask).toHaveBeenCalledWith('proj-1', 'P2 Task', undefined, { priority: 2 });
+    });
+
+    it('creates task with invalid -P value (defaults to undefined)', async () => {
+      mockCreateTask.mockResolvedValue({ id: 'task-4', title: 'Invalid Priority', status: 'todo' });
+
+      await taskCommand('create', ['proj-1', 'Invalid Priority'], { P: '5' }, false);
+
+      expect(mockCreateTask).toHaveBeenCalledWith('proj-1', 'Invalid Priority', undefined, { priority: undefined });
+    });
+
+    it('creates task with invalid -P value as string (defaults to undefined)', async () => {
+      mockCreateTask.mockResolvedValue({ id: 'task-5', title: 'Invalid String Priority', status: 'todo' });
+
+      await taskCommand('create', ['proj-1', 'Invalid String Priority'], { P: 'high' }, false);
+
+      expect(mockCreateTask).toHaveBeenCalledWith('proj-1', 'Invalid String Priority', undefined, { priority: undefined });
+    });
+
+    it('creates task with negative -P value (defaults to undefined)', async () => {
+      mockCreateTask.mockResolvedValue({ id: 'task-6', title: 'Negative Priority', status: 'todo' });
+
+      await taskCommand('create', ['proj-1', 'Negative Priority'], { P: '-1' }, false);
+
+      expect(mockCreateTask).toHaveBeenCalledWith('proj-1', 'Negative Priority', undefined, { priority: undefined });
+    });
+
+    it('creates task with --priority flag alias', async () => {
+      mockCreateTask.mockResolvedValue({ id: 'task-7', title: 'Long Flag', status: 'todo', priority: 1 });
+
+      await taskCommand('create', ['proj-1', 'Long Flag'], { priority: '1' }, false);
+
+      expect(mockCreateTask).toHaveBeenCalledWith('proj-1', 'Long Flag', undefined, { priority: 1 });
     });
 
     it('creates task with epic', async () => {
@@ -222,6 +345,46 @@ describe('task command', () => {
 
     it('exits with error when no id provided', async () => {
       await expect(taskCommand('update', [], {}, false)).rejects.toThrow('process.exit(1)');
+    });
+
+    it('updates task priority to P0', async () => {
+      mockUpdateTask.mockResolvedValue({ id: 'task-1', title: 'Test', status: 'todo', priority: 0 });
+
+      await taskCommand('update', ['task-1'], { P: '0' }, false);
+
+      expect(mockUpdateTask).toHaveBeenCalledWith('task-1', { priority: 0 });
+    });
+
+    it('updates task priority to P1', async () => {
+      mockUpdateTask.mockResolvedValue({ id: 'task-1', title: 'Test', status: 'todo', priority: 1 });
+
+      await taskCommand('update', ['task-1'], { P: '1' }, false);
+
+      expect(mockUpdateTask).toHaveBeenCalledWith('task-1', { priority: 1 });
+    });
+
+    it('updates task priority to P2', async () => {
+      mockUpdateTask.mockResolvedValue({ id: 'task-1', title: 'Test', status: 'todo', priority: 2 });
+
+      await taskCommand('update', ['task-1'], { P: '2' }, false);
+
+      expect(mockUpdateTask).toHaveBeenCalledWith('task-1', { priority: 2 });
+    });
+
+    it('updates task priority using --priority flag alias', async () => {
+      mockUpdateTask.mockResolvedValue({ id: 'task-1', title: 'Test', status: 'todo', priority: 1 });
+
+      await taskCommand('update', ['task-1'], { priority: '1' }, false);
+
+      expect(mockUpdateTask).toHaveBeenCalledWith('task-1', { priority: 1 });
+    });
+
+    it('updates task priority with invalid value (parses as NaN)', async () => {
+      mockUpdateTask.mockResolvedValue({ id: 'task-1', title: 'Test', status: 'todo', priority: NaN });
+
+      await taskCommand('update', ['task-1'], { P: 'invalid' }, false);
+
+      expect(mockUpdateTask).toHaveBeenCalledWith('task-1', { priority: NaN });
     });
   });
 

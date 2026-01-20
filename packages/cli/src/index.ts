@@ -6,7 +6,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync, appendFileSync } fr
 import { fileURLToPath } from 'url';
 import { createInterface } from 'readline';
 import { setStorageAdapter, initStore } from '@flux/shared';
-import { createAdapter } from '@flux/shared/adapters';
+import { createAdapter, createAdapterFromConfig } from '@flux/shared/adapters';
 import { type FluxConfig, findFluxDir, readConfig, writeConfig, loadEnvLocal, resolveDataPath } from './config.js';
 
 // ANSI colors
@@ -160,8 +160,16 @@ function initStorage(): { mode: 'file' | 'server'; serverUrl?: string; project?:
   }
 
   // File mode - use local storage + initialize client without server
-  const dataPath = resolveDataPath(fluxDir, config);
-  const adapter = createAdapter(dataPath);
+  let adapter;
+  if (config.storage) {
+    // New provider-based configuration (Supabase, etc.)
+    adapter = createAdapterFromConfig(config.storage);
+  } else {
+    // Legacy file-based configuration
+    const dataPath = resolveDataPath(fluxDir, config);
+    adapter = createAdapter(dataPath);
+  }
+
   setStorageAdapter(adapter);
   initStore();
   initClient(); // No server = local mode

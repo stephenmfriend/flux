@@ -41,7 +41,7 @@ import {
   type WebhookEventType,
 } from '@flux/shared';
 import { findFluxDir, loadEnvLocal, readConfig, resolveDataPath } from '@flux/shared/config';
-import { createAdapter } from '@flux/shared/adapters';
+import { createAdapter, createAdapterFromConfig } from '@flux/shared/adapters';
 import { handleWebhookEvent, testWebhookDelivery } from './webhook-service.js';
 import { authMiddleware } from './middleware/auth.js';
 
@@ -56,13 +56,25 @@ const buildInfo = {
 const fluxDir = findFluxDir();
 loadEnvLocal(fluxDir);
 const config = readConfig(fluxDir);
-const DATA_FILE = resolveDataPath(fluxDir, config);
 
-const adapter = createAdapter(DATA_FILE);
+// Check if new storage config exists, otherwise fall back to legacy file-based config
+let adapter;
+let DATA_FILE: string | undefined;
+
+if (config.storage) {
+  // New provider-based configuration
+  adapter = createAdapterFromConfig(config.storage);
+  console.log(`Flux server using: ${config.storage.provider} (${config.storage.connectionString})`);
+  // No DATA_FILE for cloud providers (realtime subscriptions handle updates)
+} else {
+  // Legacy file-based configuration
+  DATA_FILE = resolveDataPath(fluxDir, config);
+  adapter = createAdapter(DATA_FILE);
+  console.log(`Flux server using: ${DATA_FILE}`);
+}
+
 setStorageAdapter(adapter);
 initStore();
-
-console.log(`Flux server using: ${DATA_FILE}`);
 
 // Set up webhook event handler
 setWebhookEventHandler(handleWebhookEvent);
@@ -151,32 +163,35 @@ const notifyDataChange = () => {
   }, 75);
 };
 
-// Watch JSON file for external changes (e.g., CLI updates)
-const getMtime = (filePath: string): number => {
-  try {
-    return statSync(filePath).mtimeMs;
-  } catch {
-    return 0;
-  }
-};
+// Watch file for external changes (e.g., CLI updates) - only for legacy file-based storage
+// Cloud providers use realtime subscriptions instead
+if (DATA_FILE) {
+  const getMtime = (filePath: string): number => {
+    try {
+      return statSync(filePath).mtimeMs;
+    } catch {
+      return 0;
+    }
+  };
 
-let lastMtime = getMtime(DATA_FILE);
-let lastWalMtime = getMtime(DATA_FILE + '-wal');
+  let lastMtime = getMtime(DATA_FILE);
+  let lastWalMtime = getMtime(DATA_FILE + '-wal');
 
-const handleFileChange = () => {
-  const nextMtime = getMtime(DATA_FILE);
-  const nextWalMtime = getMtime(DATA_FILE + '-wal');
-  if (nextMtime !== lastMtime || nextWalMtime !== lastWalMtime) {
-    lastMtime = nextMtime;
-    lastWalMtime = nextWalMtime;
-    adapter.read();
-    notifyDataChange();
-  }
-};
+  const handleFileChange = () => {
+    const nextMtime = getMtime(DATA_FILE!);
+    const nextWalMtime = getMtime(DATA_FILE! + '-wal');
+    if (nextMtime !== lastMtime || nextWalMtime !== lastWalMtime) {
+      lastMtime = nextMtime;
+      lastWalMtime = nextWalMtime;
+      adapter.read();
+      notifyDataChange();
+    }
+  };
 
-watchFile(DATA_FILE, { interval: 100 }, handleFileChange);
-// Also watch SQLite WAL file for changes (WAL mode writes here first)
-watchFile(DATA_FILE + '-wal', { interval: 100 }, handleFileChange);
+  watchFile(DATA_FILE, { interval: 100 }, handleFileChange);
+  // Also watch SQLite WAL file for changes (WAL mode writes here first)
+  watchFile(DATA_FILE + '-wal', { interval: 100 }, handleFileChange);
+}
 
 app.get('/api/events', () => {
   let clientController: ReadableStreamDefaultController<Uint8Array> | null = null;

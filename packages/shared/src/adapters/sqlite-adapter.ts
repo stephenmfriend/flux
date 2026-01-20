@@ -10,6 +10,29 @@ const defaultData: Store = {
   tasks: [],
 };
 
+/**
+ * SQLite Storage Adapter
+ *
+ * Implements the Universal Schema pattern:
+ * - Single row with id = 1
+ * - data column containing JSON-serialized Store object
+ *
+ * Table schema:
+ * ```sql
+ * CREATE TABLE store (
+ *   id INTEGER PRIMARY KEY CHECK (id = 1),
+ *   data TEXT NOT NULL
+ * );
+ * ```
+ *
+ * This matches the universal pattern used by all providers:
+ * - Supabase: Single row with id='main', data JSONB
+ * - JSON: Single file with Store structure
+ * - S3/Firebase/Cosmos: Single document/object with Store structure
+ *
+ * @param filePath Path to SQLite database file or ':memory:' for in-memory
+ * @param isTest Mark as test adapter for safety checks
+ */
 export function createSqliteAdapter(filePath: string, isTest = false): StorageAdapter {
   const isMemory = filePath === ':memory:';
 

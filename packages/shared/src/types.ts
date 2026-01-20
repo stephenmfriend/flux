@@ -96,6 +96,33 @@ export type Store = {
   tasks: Task[];
 };
 
+// ============ Storage Provider Types ============
+
+// Universal Schema Definition
+// All storage providers use this schema:
+// - Single entry (id = 'main')
+// - data field containing the full Store object
+// - updated_at timestamp (optional, provider-specific)
+export type UniversalStoreSchema = {
+  id: 'main';
+  data: Store;
+  updated_at?: string | number;
+};
+
+// Storage Provider Types
+export type StorageProviderType =
+  | 'sqlite'    // Local SQLite database
+  | 'json'      // Local JSON file
+  | 'supabase'; // Supabase (PostgreSQL)
+
+export type StorageProviderConfig = {
+  provider: StorageProviderType;
+  connectionString: string;  // File path, connection string, or URL
+  options?: Record<string, any>;  // Provider-specific options
+};
+
+// ============ Status Types ============
+
 // Status columns for the Kanban board
 export type Status = 'planning' | 'todo' | 'in_progress' | 'done';
 

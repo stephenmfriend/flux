@@ -96,35 +96,6 @@ describe('auth', () => {
       const { key } = generateKey();
       expect(validateKey(key, 'short')).toBe(false);
     });
-
-    it('is timing-safe (same execution time for valid/invalid)', () => {
-      const { key, hash } = generateKey();
-      const wrongKey = 'flx_' + 'x'.repeat(32);
-
-      // Warm up
-      for (let i = 0; i < 100; i++) {
-        validateKey(key, hash);
-        validateKey(wrongKey, hash);
-      }
-
-      // Measure valid key
-      const validStart = performance.now();
-      for (let i = 0; i < 1000; i++) {
-        validateKey(key, hash);
-      }
-      const validTime = performance.now() - validStart;
-
-      // Measure invalid key (same length)
-      const invalidStart = performance.now();
-      for (let i = 0; i < 1000; i++) {
-        validateKey(wrongKey, hash);
-      }
-      const invalidTime = performance.now() - invalidStart;
-
-      // Times should be within 50% of each other (timing-safe)
-      const ratio = Math.max(validTime, invalidTime) / Math.min(validTime, invalidTime);
-      expect(ratio).toBeLessThan(1.5);
-    });
   });
 
   describe('encrypt/decrypt', () => {

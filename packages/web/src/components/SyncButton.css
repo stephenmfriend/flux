@@ -1,0 +1,47 @@
+/* Sync Button with Timestamp */
+.sync-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  color: var(--text-medium);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sync-button:hover {
+  color: var(--text-high);
+  border-color: var(--border-focus);
+  background: var(--bg-surface-hover);
+}
+
+.sync-button-icon {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2px;
+  flex-shrink: 0;
+}
+
+.sync-button-icon.syncing {
+  animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.sync-button-timestamp {
+  opacity: 0.5;
+  font-size: 11px;
+  margin-left: 4px;
+}

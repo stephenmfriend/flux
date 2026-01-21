@@ -240,7 +240,7 @@ app.get('/api/projects/:id', (c) => {
 
 app.post('/api/projects', async (c) => {
   const body = await c.req.json();
-  const project = createProject(body.name, body.description);
+  const project = await createProject(body.name, body.description);
   // Trigger webhook
   triggerWebhooks('project.created', { project });
   return c.json(project, 201);
@@ -249,16 +249,16 @@ app.post('/api/projects', async (c) => {
 app.patch('/api/projects/:id', async (c) => {
   const body = await c.req.json();
   const previous = getProject(c.req.param('id'));
-  const project = updateProject(c.req.param('id'), body);
+  const project = await updateProject(c.req.param('id'), body);
   if (!project) return c.json({ error: 'Project not found' }, 404);
   // Trigger webhook
   triggerWebhooks('project.updated', { project, previous }, project.id);
   return c.json(project);
 });
 
-app.delete('/api/projects/:id', (c) => {
+app.delete('/api/projects/:id', async (c) => {
   const project = getProject(c.req.param('id'));
-  deleteProject(c.req.param('id'));
+  await deleteProject(c.req.param('id'));
   // Trigger webhook
   if (project) {
     triggerWebhooks('project.deleted', { project }, project.id);
@@ -281,7 +281,7 @@ app.get('/api/epics/:id', (c) => {
 app.post('/api/projects/:projectId/epics', async (c) => {
   const body = await c.req.json();
   const projectId = c.req.param('projectId');
-  const epic = createEpic(projectId, body.title, body.notes, body.auto);
+  const epic = await createEpic(projectId, body.title, body.notes, body.auto);
   // Trigger webhook
   triggerWebhooks('epic.created', { epic }, projectId);
   return c.json(epic, 201);
@@ -290,16 +290,16 @@ app.post('/api/projects/:projectId/epics', async (c) => {
 app.patch('/api/epics/:id', async (c) => {
   const body = await c.req.json();
   const previous = getEpic(c.req.param('id'));
-  const epic = updateEpic(c.req.param('id'), body);
+  const epic = await updateEpic(c.req.param('id'), body);
   if (!epic) return c.json({ error: 'Epic not found' }, 404);
   // Trigger webhook
   triggerWebhooks('epic.updated', { epic, previous }, epic.project_id);
   return c.json(epic);
 });
 
-app.delete('/api/epics/:id', (c) => {
+app.delete('/api/epics/:id', async (c) => {
   const epic = getEpic(c.req.param('id'));
-  const success = deleteEpic(c.req.param('id'));
+  const success = await deleteEpic(c.req.param('id'));
   if (!success) return c.json({ error: 'Epic not found' }, 404);
   // Trigger webhook
   if (epic) {
@@ -331,15 +331,15 @@ app.post('/api/tasks/:id/comments', async (c) => {
   const commentBody = typeof body?.body === 'string' ? body.body.trim() : '';
   if (!commentBody) return c.json({ error: 'Comment body required' }, 400);
   const author = body?.author === 'mcp' ? 'mcp' : 'user';
-  const comment = addTaskComment(taskId, commentBody, author);
+  const comment = await addTaskComment(taskId, commentBody, author);
   if (!comment) return c.json({ error: 'Task not found' }, 404);
   return c.json(comment, 201);
 });
 
-app.delete('/api/tasks/:id/comments/:commentId', (c) => {
+app.delete('/api/tasks/:id/comments/:commentId', async (c) => {
   const taskId = c.req.param('id');
   const commentId = c.req.param('commentId');
-  const deleted = deleteTaskComment(taskId, commentId);
+  const deleted = await deleteTaskComment(taskId, commentId);
   if (!deleted) return c.json({ error: 'Comment not found' }, 404);
   return c.json({ success: true });
 });
@@ -349,7 +349,7 @@ app.post('/api/projects/:projectId/tasks', async (c) => {
   const validation = validateTaskFields(body);
   if (validation.error) return c.json({ error: validation.error }, 400);
   const projectId = c.req.param('projectId');
-  const task = createTask(projectId, body.title, body.epic_id, {
+  const task = await createTask(projectId, body.title, body.epic_id, {
     priority: body.priority,
     type: body.type,
     depends_on: body.depends_on,
@@ -366,7 +366,7 @@ app.patch('/api/tasks/:id', async (c) => {
   const validation = validateTaskFields(body);
   if (validation.error) return c.json({ error: validation.error }, 400);
   const previous = getTask(c.req.param('id'));
-  const task = updateTask(c.req.param('id'), body);
+  const task = await updateTask(c.req.param('id'), body);
   if (!task) return c.json({ error: 'Task not found' }, 404);
 
   // Determine which webhook events to trigger
@@ -390,9 +390,9 @@ app.patch('/api/tasks/:id', async (c) => {
   return c.json({ ...task, blocked: isTaskBlocked(task.id) });
 });
 
-app.delete('/api/tasks/:id', (c) => {
+app.delete('/api/tasks/:id', async (c) => {
   const task = getTask(c.req.param('id'));
-  const success = deleteTask(c.req.param('id'));
+  const success = await deleteTask(c.req.param('id'));
   if (!success) return c.json({ error: 'Task not found' }, 404);
   // Trigger webhook
   if (task) {

@@ -225,7 +225,7 @@ export async function testWebhook(id: string): Promise<{
   return res.json();
 }
 
-export async function getWebhookDeliveries(webhookId: string, limit: number = 50): Promise<WebhookDelivery[]> {
+export async function getWebhookDeliveries(webhookId: string, limit = 50): Promise<WebhookDelivery[]> {
   const res = await fetch(`${API_BASE}/webhooks/${webhookId}/deliveries?limit=${limit}`);
   return res.json();
 }

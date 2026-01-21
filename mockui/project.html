@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flux | Project Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="flux_supabase.css">
+</head>
+
+<body>
+
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <div class="brand">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+            </svg>
+            <span>Flux</span>
+        </div>
+
+        <div class="nav-group">
+            <div class="nav-label">Platform</div>
+            <div class="nav-item active">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+                Projects
+            </div>
+            <div class="nav-item">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <line x1="8" y1="6" x2="21" y2="6"></line>
+                    <line x1="8" y1="12" x2="21" y2="12"></line>
+                    <line x1="8" y1="18" x2="21" y2="18"></line>
+                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                </svg>
+                My Tasks
+            </div>
+            <div class="nav-item">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+                Inbox
+            </div>
+        </div>
+
+        <div class="nav-group">
+            <div class="nav-label">Configuration</div>
+            <div class="nav-item">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M17 21v-2a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a2 2 0 0 0-2-2-3-3 0 0 0-3-3"></path>
+                    <circle cx="16" cy="3.13" r="4"></circle>
+                </svg>
+                Team Members
+            </div>
+            <div class="nav-item">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path
+                        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                    </path>
+                </svg>
+                Settings
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-wrapper">
+        <!-- Top Header -->
+        <header class="top-header">
+            <div class="breadcrumbs">
+                <span>Projects</span>
+                <span class="slash">/</span>
+                <span class="current-page">Flux</span>
+            </div>
+            <div class="header-actions">
+                <div class="btn-secondary" style="padding: 6px 12px; font-size: 12px; border-radius: 99px;">
+                    Feedback
+                </div>
+                <div class="avatar">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="content-area">
+
+            <!-- Dashboard Logic -->
+            <!-- Dashboard Stats Widgets -->
+            <link rel="stylesheet" href="dashboard_widgets.css">
+            <div class="dashboard-stats-grid">
+                <!-- 1. Repo Activity Overview -->
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <span class="stat-title">Repo Activity Overview</span>
+                        <div class="stat-dropdown"
+                            style="font-size:12px; color:var(--text-medium); cursor:pointer; display:flex; align-items:center; gap:4px;">
+                            Merged PRs <svg width="12" height="12" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path d="M6 9l6 6 6-6" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="git-activity-container">
+                        <div class="heatmap-grid" style="grid-template-columns: repeat(12, 1fr);">
+                            <!-- Week 1 -->
+                            <div class="heat-cell l1"></div>
+                            <div class="heat-cell l2"></div>
+                            <div class="heat-cell l1"></div>
+                            <div class="heat-cell l1"></div>
+                            <div class="heat-cell"></div>
+                            <!-- Week 2 -->
+                            <div class="heat-cell l2"></div>
+                            <div class="heat-cell l3"></div>
+                            <div class="heat-cell l2"></div>
+                            <div class="heat-cell l1"></div>
+                            <div class="heat-cell l2"></div>
+                            <!-- Week 3 -->
+                            <div class="heat-cell l1"></div>
+                            <div class="heat-cell l2"></div>
+                            <div class="heat-cell l1"></div>
+                            <div class="heat-cell"></div>
+                            <div class="heat-cell l1"></div>
+                            <!-- Week 4 -->
+                            <div class="heat-cell l3"></div>
+                            <div class="heat-cell l3"></div>
+                            <div class="heat-cell l2"></div>
+                            <div class="heat-cell l2"></div>
+                            <div class="heat-cell l1"></div>
+                            <!-- Week 5 -->
+                            <div class="heat-cell l1"></div>
+                            <div class="heat-cell l1"></div>
+                            <div class="heat-cell l2"></div>
+                            <div class="heat-cell l3"></div>
+                            <div class="heat-cell l2"></div>
+                            <!-- Week 6 -->
+                            <div class="heat-cell l1"></div>
+                            <div class="heat-cell"></div>
+                            <div class="heat-cell l1"></div>
+                            <div class="heat-cell l1"></div>
+                            <div class="heat-cell l1"></div>
+                            <!-- Week 7 -->
+                            <div class="heat-cell l2"></div>
+                            <div class="heat-cell l2"></div>
+                            <div class="heat-cell l3"></div>
+                            <div class="heat-cell l1"></div>
+                            <div class="heat-cell l2"></div>
+                            <!-- Week 8 -->
+                            <div class="heat-cell l1"></div>
+                            <div class="heat-cell l1"></div>
+                            <div class="heat-cell l2"></div>
+                            <div class="heat-cell l2"></div>
+                            <div class="heat-cell"></div>
+                            <!-- Week 9 -->
+                            <div class="heat-cell l3"></div>
+                            <div class="heat-cell l2"></div>
+                            <div class="heat-cell l1"></div>
+                            <div class="heat-cell l1"></div>
+                            <div class="heat-cell l2"></div>
+                            <!-- Week 10 -->
+                            <div class="heat-cell l2"></div>
+                            <div class="heat-cell l1"></div>
+                            <div class="heat-cell l2"></div>
+                            <div class="heat-cell l3"></div>
+                            <div class="heat-cell l1"></div>
+                            <!-- Week 11 -->
+                            <div class="heat-cell l1"></div>
+                            <div class="heat-cell l2"></div>
+                            <div class="heat-cell l1"></div>
+                            <div class="heat-cell l1"></div>
+                            <div class="heat-cell l1"></div>
+                            <!-- Week 12 -->
+                            <div class="heat-cell l2"></div>
+                            <div class="heat-cell l2"></div>
+                            <div class="heat-cell l3"></div>
+                            <div class="heat-cell l2"></div>
+                            <div class="heat-cell l1"></div>
+                        </div>
+                        <div class="heatmap-legend">
+                            <span>Less</span>
+                            <div class="legend-item">
+                                <div class="legend-box" style="background:rgba(255,255,255,0.05)"></div>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-box" style="background:rgba(62,207,142,0.2)"></div>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-box" style="background:rgba(62,207,142,0.5)"></div>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-box" style="background:rgba(62,207,142,1)"></div>
+                            </div>
+                            <span>More</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Open Pull Requests -->
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <span class="stat-title">Open Pull Requests</span>
+                        <span class="stat-subtitle">4 Active</span>
+                    </div>
+                    <div class="pr-list" style="display:flex; flex-direction:column; gap:12px; flex:1;">
+                        <!-- PR Item 1 -->
+                        <div class="pr-item" style="display:flex; gap:10px; align-items:flex-start;">
+                            <div class="pr-icon" style="color:#a855f7; margin-top:2px;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <circle cx="18" cy="18" r="3"></circle>
+                                    <circle cx="6" cy="6" r="3"></circle>
+                                    <path d="M13 6h3a2 2 0 0 1 2 2v7"></path>
+                                    <line x1="6" y1="9" x2="6" y2="21"></line>
+                                </svg>
+                            </div>
+                            <div class="pr-content" style="flex:1;">
+                                <a href="#"
+                                    style="text-decoration:none; display:block; font-size:13px; font-weight:500; color:var(--text-high); margin-bottom:2px;">Fix
+                                    legacy auth race condition</a>
+                                <div style="font-size:11px; color:var(--text-medium);">riagenic/core #402 • opened 2h
+                                    ago by @steve</div>
+                            </div>
+                        </div>
+                        <!-- PR Item 2 -->
+                        <div class="pr-item" style="display:flex; gap:10px; align-items:flex-start;">
+                            <div class="pr-icon" style="color:#2ba6ff; margin-top:2px;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <circle cx="18" cy="18" r="3"></circle>
+                                    <circle cx="6" cy="6" r="3"></circle>
+                                    <path d="M13 6h3a2 2 0 0 1 2 2v7"></path>
+                                    <line x1="6" y1="9" x2="6" y2="21"></line>
+                                </svg>
+                            </div>
+                            <div class="pr-content" style="flex:1;">
+                                <a href="#"
+                                    style="text-decoration:none; display:block; font-size:13px; font-weight:500; color:var(--text-high); margin-bottom:2px;">Update
+                                    landing page copy</a>
+                                <div style="font-size:11px; color:var(--text-medium);">riagenic/web #109 • opened 5h ago
+                                    by @karen</div>
+                            </div>
+                        </div>
+                        <!-- PR Item 3 -->
+                        <div class="pr-item" style="display:flex; gap:10px; align-items:flex-start;">
+                            <div class="pr-icon" style="color:#2ba6ff; margin-top:2px;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <circle cx="18" cy="18" r="3"></circle>
+                                    <circle cx="6" cy="6" r="3"></circle>
+                                    <path d="M13 6h3a2 2 0 0 1 2 2v7"></path>
+                                    <line x1="6" y1="9" x2="6" y2="21"></line>
+                                </svg>
+                            </div>
+                            <div class="pr-content" style="flex:1;">
+                                <a href="#"
+                                    style="text-decoration:none; display:block; font-size:13px; font-weight:500; color:var(--text-high); margin-bottom:2px;">Add
+                                    shape-up analytics</a>
+                                <div style="font-size:11px; color:var(--text-medium);">riagenic/analytics #55 • opened
+                                    1d ago by @bred</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Team Context -->
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <span class="stat-title">Team Context</span>
+                    </div>
+                    <div class="team-list">
+                        <!-- Member 1 -->
+                        <div class="team-member-row">
+                            <div class="avatar-circle"
+                                style="background:#eab308; width:32px; height:32px; font-size:12px;">K</div>
+                            <div class="member-info">
+                                <span class="member-name">Karen Smith</span>
+                                <span class="member-status" style="color:var(--brand-primary);"><span class="status-dot"
+                                        style="background:var(--brand-primary);"></span> Bet: Q3 Migration</span>
+                            </div>
+                            <button class="member-expand"><svg width="14" height="14" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path d="M6 9l6 6 6-6" />
+                                </svg></button>
+                        </div>
+                        <!-- Member 2 -->
+                        <div class="team-member-row">
+                            <div class="avatar-circle"
+                                style="background:#4b5563; width:32px; height:32px; font-size:12px;">S</div>
+                            <div class="member-info">
+                                <span class="member-name">Steve McConell</span>
+                                <span class="member-status" style="color:#a855f7;"><span class="status-dot"
+                                        style="background:#a855f7;"></span> Shaping</span>
+                            </div>
+                            <button class="member-expand"><svg width="14" height="14" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path d="M6 9l6 6 6-6" />
+                                </svg></button>
+                        </div>
+                        <!-- Member 3 -->
+                        <div class="team-member-row">
+                            <div class="avatar-circle"
+                                style="background:#a855f7; width:32px; height:32px; font-size:12px;">S</div>
+                            <div class="member-info">
+                                <span class="member-name">Sarah Green</span>
+                                <span class="member-status" style="color:var(--text-medium);"><span class="status-dot"
+                                        style="background:var(--text-medium);"></span> Cooldown</span>
+                            </div>
+                            <button class="member-expand"><svg width="14" height="14" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path d="M6 9l6 6 6-6" />
+                                </svg></button>
+                        </div>
+                        <!-- Member 4 -->
+                        <div class="team-member-row">
+                            <div class="avatar-circle"
+                                style="background:#2563eb; width:32px; height:32px; font-size:12px;">B</div>
+                            <div class="member-info">
+                                <span class="member-name">Bred Smith</span>
+                                <span class="member-status" style="color:var(--brand-primary);"><span class="status-dot"
+                                        style="background:var(--brand-primary);"></span> Bet: Online Learning</span>
+                            </div>
+                            <button class="member-expand"><svg width="14" height="14" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path d="M6 9l6 6 6-6" />
+                                </svg></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Shape Up Dashboard Header -->
+            <div class='board-header' style='margin-top: 32px; margin-bottom:24px;'>
+                <div class='board-title'>
+                    <h2 style='display:flex; align-items:center; gap:12px;'>
+                        Cycle 24.2
+                        <span
+                            style='font-size:12px; background:rgba(62, 207, 142, 0.1); color:#3ecf8e; padding:4px 8px; border-radius:12px; font-weight:600; text-transform:uppercase;'>Active</span>
+                    </h2>
+                    <span style='color:var(--text-medium); font-size:14px; margin-left:4px;'>Day 8 of 42</span>
+                </div>
+                <div class='board-actions' style='display:flex; align-items:center; gap:12px;'>
+                    <!-- Search -->
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <input type="text" placeholder="Search pitches..."
+                            style="background:var(--bg-surface); border:1px solid var(--border-subtle); padding:8px 12px; border-radius:6px; color:var(--text-high); font-size:13px; width:240px; outline:none; transition:border 0.2s;">
+                        <button class="btn-icon"
+                            style="padding:8px; border:1px solid var(--border-subtle); background:var(--bg-surface); border-radius:6px; color:var(--text-medium); cursor:pointer;">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+                                viewBox="0 0 24 24">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- View Toggle (Board/List) -->
+                    <div class='view-toggle'
+                        style='display:flex; background:var(--bg-surface); padding:2px; border-radius:6px; border:1px solid var(--border-subtle);'>
+                        <button id='viewDetailBtn' class='btn-icon active'
+                            style='padding:6px 10px; border:none; background:var(--bg-surface-hover); border-radius:4px; color:var(--text-high); cursor:pointer;'>
+                            <svg width='16' height='16' fill='none' stroke='currentColor' stroke-width='2'
+                                viewBox='0 0 24 24'>
+                                <rect x='3' y='3' width='7' height='7'></rect>
+                                <rect x='14' y='3' width='7' height='7'></rect>
+                                <rect x='14' y='14' width='7' height='7'></rect>
+                                <rect x='3' y='14' width='7' height='7'></rect>
+                            </svg>
+                        </button>
+                        <button id='viewListBtn' class='btn-icon'
+                            style='padding:6px 10px; border:none; background:transparent; border-radius:4px; color:var(--text-medium); cursor:pointer;'>
+                            <svg width='16' height='16' fill='none' stroke='currentColor' stroke-width='2'
+                                viewBox='0 0 24 24'>
+                                <path d="M3 12h18M3 6h18M3 18h18"></path>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <button class='btn btn-secondary'
+                        style='display:flex; align-items:center; gap:6px; height:36px; padding:0 12px; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:6px; color:var(--text-medium); cursor:pointer;'><svg
+                            width='16' height='16' fill='none' stroke='currentColor' stroke-width='2'
+                            viewBox='0 0 24 24'>
+                            <path d='M3 6h18M3 12h18M3 18h18' />
+                        </svg> Filter</button>
+
+                    <button class='btn btn-secondary'
+                        style='display:flex; align-items:center; gap:6px; height:36px; padding:0 12px; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:6px; color:var(--text-medium); cursor:pointer;'><svg
+                            width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+                            viewBox="0 0 24 24">
+                            <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
+                            <path d="M21 3v5h-5" />
+                        </svg> Sync</button>
+
+                    <button class='btn'
+                        style='display:flex; align-items:center; gap:6px; height:36px; padding:0 16px; background:var(--brand-primary); color:#000; border:none; border-radius:6px; font-weight:500; cursor:pointer;'><svg
+                            width='16' height='16' fill='none' stroke='currentColor' stroke-width='2'
+                            viewBox='0 0 24 24'>
+                            <path d='M12 5v14M5 12h14' />
+                        </svg> New Pitch</button>
+                </div>
+            </div>
+            <!-- Epics Board (Horizontal) -->
+            <div id="epicBoardView" class="kanban-container epic-mode">
+
+                <!-- Column: Draft -->
+                <div class="kanban-column epic-column">
+                    <div class="column-header">
+                        <div class="column-title"><span class="dot" style="background:var(--text-medium);"></span>
+                            Shaping
+                            <span class="column-count">2</span>
+                        </div>
+                    </div>
+                    <div class="task-list">
+                        <button class="btn-dashed-add"
+                            style="width:100%; border:1px dashed var(--border-subtle); background:transparent; color:var(--text-medium); padding:8px; border-radius:6px; font-size:13px; cursor:pointer; margin-bottom:12px; transition:all 0.2s;">
+                            + Add Pitch
+                        </button>
+
+                        <!-- Epic Card -->
+                        <div class="task-card epic-card">
+                            <div class="epic-header-row">
+                                <h3 class="epic-title">E-commerce Platform Redesign</h3>
+                                <button class="epic-icon-btn"
+                                    style="background:none; border:none; padding:0; cursor:pointer;">
+                                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+                                        viewBox="0 0 24 24">
+                                        <path
+                                            d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z">
+                                        </path>
+                                        <polyline points="22,6 12,13 2,6"></polyline>
+                                    </svg>
+                                </button>
+                            </div>
+                            <p class="epic-desc">Development of a responsive online shopping experience with modern
+                                checkout flows.</p>
+                            <div class="epic-footer-row">
+                                <div class="epic-user">
+                                    <div class="epic-user-avatar" style="background:#a855f7;">S</div>
+                                    <span class="epic-user-name">Sara T.</span>
+                                </div>
+                                <div class="epic-meta-right">
+                                    <span class="badge-priority p-high" style="font-family:monospace; font-size:11px;">6
+                                        WEEKS</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="task-card epic-card">
+                            <div class="epic-header-row">
+                                <h3 class="epic-title">Social Media Dashboard</h3>
+                                <button class="epic-icon-btn"
+                                    style="background:none; border:none; padding:0; cursor:pointer;">
+                                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+                                        viewBox="0 0 24 24">
+                                        <path
+                                            d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z">
+                                        </path>
+                                        <polyline points="22,6 12,13 2,6"></polyline>
+                                    </svg>
+                                </button>
+                            </div>
+                            <p class="epic-desc">Creating an analytics dashboard for social engagement tracking and
+                                reporting.</p>
+                            <div class="epic-footer-row">
+                                <div class="epic-user">
+                                    <div class="epic-user-avatar" style="background:#2563eb;">M</div>
+                                    <span class="epic-user-name">Mark C.</span>
+                                </div>
+                                <div class="epic-meta-right">
+                                    <span class="badge-priority p-med" style="font-family:monospace; font-size:11px;">4
+                                        WEEKS</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Column: Pending -->
+                <div class="kanban-column epic-column">
+                    <div class="column-header">
+                        <div class="column-title"><span class="dot" style="background:#eab308;"></span> Betting <span
+                                class="column-count">1</span></div>
+                    </div>
+                    <div class="task-list">
+                        <button class="btn-dashed-add"
+                            style="width:100%; border:1px dashed var(--border-subtle); background:transparent; color:var(--text-medium); padding:8px; border-radius:6px; font-size:13px; cursor:pointer; margin-bottom:12px; transition:all 0.2s;">
+                            + Add Pitch
+                        </button>
+                        <div class="task-card epic-card">
+                            <div class="epic-header-row">
+                                <h3 class="epic-title">Landing Page Optimization</h3>
+                                <button class="epic-icon-btn"
+                                    style="background:none; border:none; padding:0; cursor:pointer;">
+                                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+                                        viewBox="0 0 24 24">
+                                        <path
+                                            d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z">
+                                        </path>
+                                        <polyline points="22,6 12,13 2,6"></polyline>
+                                    </svg>
+                                </button>
+                            </div>
+                            <p class="epic-desc">Designing a high-conversion landing page for Q4 marketing campaigns.
+                            </p>
+                            <div class="epic-footer-row">
+                                <div class="epic-user">
+                                    <div class="epic-user-avatar" style="background:#d97706;">E</div>
+                                    <span class="epic-user-name">Elena G.</span>
+                                </div>
+                                <div class="epic-meta-right">
+                                    <span class="badge-priority p-low" style="font-family:monospace; font-size:11px;">2
+                                        WEEKS</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Column: Approved -->
+                <div class="kanban-column epic-column">
+                    <div class="column-header">
+                        <div class="column-title"><span class="dot" style="background:var(--brand-primary);"></span>
+                            Active <span class="column-count">3</span></div>
+                    </div>
+                    <div class="task-list">
+                        <button class="btn-dashed-add"
+                            style="width:100%; border:1px dashed var(--border-subtle); background:transparent; color:var(--text-medium); padding:8px; border-radius:6px; font-size:13px; cursor:pointer; margin-bottom:12px; transition:all 0.2s;">
+                            + Add Bet
+                        </button>
+                        <!-- Q3 Migration (Our current focus) -->
+                        <a href="flux.html" style="text-decoration:none; display:block;">
+                            <div class="task-card epic-card active-epic">
+                                <div class="epic-header-row">
+                                    <h3 class="epic-title">Q3 Migration</h3>
+                                    <button class="epic-icon-btn"
+                                        style="background:none; border:none; padding:0; cursor:pointer;">
+                                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+                                            viewBox="0 0 24 24">
+                                            <path
+                                                d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z">
+                                            </path>
+                                            <polyline points="22,6 12,13 2,6"></polyline>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <p class="epic-desc">Migration of legacy systems to the new Flux architecture.</p>
+                                <div class="epic-footer-row">
+                                    <div class="epic-user">
+                                        <div class="epic-user-avatar" style="background:#059669;">O</div>
+                                        <span class="epic-user-name">Oliver S.</span>
+                                    </div>
+                                    <div class="epic-meta-right">
+                                        <span
+                                            style="font-size:12px; color:var(--text-medium); display:flex; align-items:center; gap:4px;">
+                                            <svg width="12" height="12" fill="none" stroke="currentColor"
+                                                stroke-width="2" viewBox="0 0 24 24">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <polyline points="12 6 12 12 16 14"></polyline>
+                                            </svg>
+                                            Day 8 of 42
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+
+                        <div class="task-card epic-card">
+                            <div class="epic-header-row">
+                                <h3 class="epic-title">Online Learning Portal</h3>
+                                <button class="epic-icon-btn"
+                                    style="background:none; border:none; padding:0; cursor:pointer;">
+                                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+                                        viewBox="0 0 24 24">
+                                        <path
+                                            d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z">
+                                        </path>
+                                        <polyline points="22,6 12,13 2,6"></polyline>
+                                    </svg>
+                                </button>
+                            </div>
+                            <p class="epic-desc">Creating an interactive platform for online courses and student
+                                management.</p>
+                            <div class="epic-footer-row">
+                                <div class="epic-user">
+                                    <div class="epic-user-avatar" style="background:#db2777;">Z</div>
+                                    <span class="epic-user-name">Zoe M.</span>
+                                </div>
+                                <div class="epic-meta-right">
+                                    <span
+                                        style="font-size:12px; color:var(--text-medium); display:flex; align-items:center; gap:4px;">
+                                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"
+                                            viewBox="0 0 24 24">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <polyline points="12 6 12 12 16 14"></polyline>
+                                        </svg>
+                                        Day 20 of 42
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Column: Closed -->
+                <div class="kanban-column epic-column">
+                    <div class="column-header">
+                        <div class="column-title"><span class="dot" style="background:var(--text-low);"></span> Shipped
+                            <span class="column-count">2</span>
+                        </div>
+                    </div>
+                    <div class="task-list">
+                        <button class="btn-dashed-add"
+                            style="width:100%; border:1px dashed var(--border-subtle); background:transparent; color:var(--text-medium); padding:8px; border-radius:6px; font-size:13px; cursor:pointer; margin-bottom:12px; transition:all 0.2s;">
+                            + Add Item
+                        </button>
+                        <div class="task-card epic-card" style="opacity:0.75;">
+                            <div class="epic-header-row">
+                                <h3 class="epic-title">Virtual Reality Experience</h3>
+                                <button class="epic-icon-btn"
+                                    style="background:none; border:none; padding:0; cursor:pointer;">
+                                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+                                        viewBox="0 0 24 24">
+                                        <path
+                                            d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z">
+                                        </path>
+                                        <polyline points="22,6 12,13 2,6"></polyline>
+                                    </svg>
+                                </button>
+                            </div>
+                            <p class="epic-desc">Designing an immersive virtual reality application for training
+                                purposes.</p>
+                            <div class="epic-footer-row">
+                                <div class="epic-user">
+                                    <div class="epic-user-avatar" style="background:#5c6b7f;">L</div>
+                                    <span class="epic-user-name">Liam D.</span>
+                                </div>
+                                <div class="epic-meta-right">
+                                    <span class="badge-priority p-none"
+                                        style="font-family:monospace; font-size:11px;">SHIPPED</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Epic List View Container (Initially Hidden) -->
+            <div id='epicListView' class='epic-list-container'>
+                <!-- Shaping Group -->
+                <div class='epic-list-group'>
+                    <div class='epic-group-header-row'>
+                        <div class='epic-group-title'><span class='dot'
+                                style='background:var(--text-medium); width:8px; height:8px;'></span> Shaping <span
+                                class='epic-count-badge'>2</span></div>
+                    </div>
+                    <div class='epic-list-columns-header'>
+                        <div class='epic-col-header'>Pitch</div>
+                        <div class='epic-col-header'>Appetite</div>
+                        <div class='epic-col-header'>Shaper</div>
+                    </div>
+                    <!-- Row 1 -->
+                    <div class='epic-list-row'>
+                        <div class='epic-list-name-cell'>
+                            <span class='epic-id'>EP-204</span>
+                            <span class='epic-name-text'>E-commerce Platform Redesign</span>
+                        </div>
+                        <div class='epic-list-meta'><span class='badge-priority p-high' style='font-family:monospace;'>6
+                                Weeks</span></div>
+                        <div class='epic-list-meta'>
+                            <div class='list-avatars'>
+                                <div class='avatar-circle' style='background:#a855f7;'>S</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Row 2 -->
+                    <div class='epic-list-row'>
+                        <div class='epic-list-name-cell'>
+                            <span class='epic-id'>SM-105</span>
+                            <span class='epic-name-text'>Social Media Dashboard</span>
+                        </div>
+                        <div class='epic-list-meta'><span class='badge-priority p-med' style='font-family:monospace;'>4
+                                Weeks</span></div>
+                        <div class='epic-list-meta'>
+                            <div class='list-avatars'>
+                                <div class='avatar-circle' style='background:#2563eb;'>M</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Betting Group -->
+                <div class='epic-list-group'>
+                    <div class='epic-group-header-row'>
+                        <div class='epic-group-title'><span class='dot'
+                                style='background:#eab308; width:8px; height:8px;'></span> Betting <span
+                                class='epic-count-badge'>1</span></div>
+                    </div>
+                    <div class='epic-list-columns-header'>
+                        <div class='epic-col-header'>Pitch</div>
+                        <div class='epic-col-header'>Appetite</div>
+                        <div class='epic-col-header'>Shaper</div>
+                    </div>
+                    <div class='epic-list-row'>
+                        <div class='epic-list-name-cell'>
+                            <span class='epic-id'>LP-301</span>
+                            <span class='epic-name-text'>Landing Page Optimization</span>
+                        </div>
+                        <div class='epic-list-meta'><span class='badge-priority p-low' style='font-family:monospace;'>2
+                                Weeks</span></div>
+                        <div class='epic-list-meta'>
+                            <div class='list-avatars'>
+                                <div class='avatar-circle' style='background:#d97706;'>E</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Group -->
+                <div class='epic-list-group'>
+                    <div class='epic-group-header-row'>
+                        <div class='epic-group-title'><span class='dot'
+                                style='background:var(--brand-primary); width:8px; height:8px;'></span> Active <span
+                                class='epic-count-badge'>2</span></div>
+                    </div>
+                    <div class='epic-list-columns-header'>
+                        <div class='epic-col-header'>Bet</div>
+                        <div class='epic-col-header'>Progress</div>
+                        <div class='epic-col-header'>Team</div>
+                    </div>
+                    <!-- Row 1 -->
+                    <div class='epic-list-row'
+                        style='background:rgba(62, 207, 142, 0.05); border-left: 2px solid var(--brand-primary);'>
+                        <div class='epic-list-name-cell'>
+                            <span class='epic-id'>Q3-MIG</span>
+                            <a href='flux.html' class='epic-name-text' style='text-decoration:none;'>Q3 Migration</a>
+                        </div>
+                        <div class='epic-list-meta'>
+                            <span
+                                style='font-size:12px; color:var(--text-medium); display:flex; align-items:center; gap:4px;'>
+                                <svg width='12' height='12' fill='none' stroke='currentColor' stroke-width='2'
+                                    viewBox='0 0 24 24'>
+                                    <circle cx='12' cy='12' r='10'></circle>
+                                    <polyline points='12 6 12 12 16 14'></polyline>
+                                </svg>
+                                Day 8 of 42
+                            </span>
+                        </div>
+                        <div class='epic-list-meta'>
+                            <div class='list-avatars'>
+                                <div class='avatar-circle' style='background:#059669;'>O</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Row 2 -->
+                    <div class='epic-list-row'>
+                        <div class='epic-list-name-cell'>
+                            <span class='epic-id'>OL-004</span>
+                            <span class='epic-name-text'>Online Learning Portal</span>
+                        </div>
+                        <div class='epic-list-meta'>
+                            <span
+                                style='font-size:12px; color:var(--text-medium); display:flex; align-items:center; gap:4px;'>
+                                <svg width='12' height='12' fill='none' stroke='currentColor' stroke-width='2'
+                                    viewBox='0 0 24 24'>
+                                    <circle cx='12' cy='12' r='10'></circle>
+                                    <polyline points='12 6 12 12 16 14'></polyline>
+                                </svg>
+                                Day 20 of 42
+                            </span>
+                        </div>
+                        <div class='epic-list-meta'>
+                            <div class='list-avatars'>
+                                <div class='avatar-circle' style='background:#db2777;'>Z</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Shipped Group -->
+                <div class='epic-list-group'>
+                    <div class='epic-group-header-row'>
+                        <div class='epic-group-title'><span class='dot'
+                                style='background:var(--text-low); width:8px; height:8px;'></span> Shipped <span
+                                class='epic-count-badge'>1</span></div>
+                    </div>
+                    <div class='epic-list-columns-header'>
+                        <div class='epic-col-header'>Bet</div>
+                        <div class='epic-col-header'>Status</div>
+                        <div class='epic-col-header'>Team</div>
+                    </div>
+                    <div class='epic-list-row' style='opacity:0.6;'>
+                        <div class='epic-list-name-cell'>
+                            <span class='epic-id'>VR-990</span>
+                            <span class='epic-name-text'>Virtual Reality Experience</span>
+                        </div>
+                        <div class='epic-list-meta'><span class='badge-priority p-none'
+                                style='font-family:monospace; font-size:11px;'>SHIPPED</span></div>
+                        <div class='epic-list-meta'>
+                            <div class='list-avatars'>
+                                <div class='avatar-circle' style='background:#5c6b7f;'>L</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Toggle Script -->
+            <script>
+                document.addEventListener('DOMContentLoaded', () => {
+                    // Select buttons by their SVG content or order since they lack IDs in current HTML state
+                    const toggleBtns = document.querySelectorAll('.view-toggle button');
+                    const boardViewBtn = toggleBtns[0];
+                    const listViewBtn = toggleBtns[1];
+
+                    const boardView = document.getElementById('epicBoardView');
+                    const listView = document.getElementById('epicListView');
+
+                    if (boardViewBtn && listViewBtn && boardView && listView) {
+
+                        // Board View Click
+                        boardViewBtn.addEventListener('click', () => {
+                            boardViewBtn.classList.add('active');
+                            // Style the button manually if active class isn't enough in default CSS
+                            boardViewBtn.style.background = 'var(--bg-surface-hover)';
+                            boardViewBtn.style.color = 'var(--text-high)';
+
+                            listViewBtn.classList.remove('active');
+                            listViewBtn.style.background = 'transparent';
+                            listViewBtn.style.color = 'var(--text-medium)';
+
+                            boardView.style.display = 'flex';
+                            listView.style.display = 'none';
+                        });
+
+                        // List View Click
+                        listViewBtn.addEventListener('click', () => {
+                            listViewBtn.classList.add('active');
+                            listViewBtn.style.background = 'var(--bg-surface-hover)';
+                            listViewBtn.style.color = 'var(--text-high)';
+
+                            boardViewBtn.classList.remove('active');
+                            boardViewBtn.style.background = 'transparent';
+                            boardViewBtn.style.color = 'var(--text-medium)';
+
+                            boardView.style.display = 'none';
+                            listView.style.display = 'flex';
+                        });
+                    }
+                });
+            </script>
+
+        </main>
+    </div>
+
+</body>
+
+</html>

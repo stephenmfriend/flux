@@ -2,7 +2,7 @@ import { ArrowDownIcon, CheckCircleIcon, ShieldCheckIcon, ExclamationTriangleIco
 import { useDraggable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 import type { TaskWithBlocked } from '../stores'
-import { PRIORITY_CONFIG, TASK_TYPE_CONFIG, type Priority, type TaskType } from '@flux/shared'
+import { PRIORITY_CONFIG, TASK_TYPE_CONFIG, type TaskType } from '@flux/shared'
 
 interface DraggableTaskCardProps {
   task: TaskWithBlocked
@@ -109,12 +109,12 @@ export function DraggableTaskCard({
           <span class="font-medium text-sm truncate flex-1">{task.title}</span>
           {(() => {
             const taskType = task.type || 'task'
-            const typeConfig = TASK_TYPE_CONFIG?.[taskType as TaskType]
+            const typeConfig = TASK_TYPE_CONFIG?.[taskType]
             if (!typeConfig) {
               console.error('TASK_TYPE_CONFIG is undefined or missing type:', taskType, 'Available config:', TASK_TYPE_CONFIG)
               return null
             }
-            const TypeIcon = getTypeIcon(taskType as TaskType)
+            const TypeIcon = getTypeIcon(taskType)
             return (
               <span class={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium flex-shrink-0 ${getTypeColor(typeConfig.color)}`} title={typeConfig.label}>
                 <TypeIcon className="h-3 w-3" />
@@ -125,11 +125,11 @@ export function DraggableTaskCard({
             <span
               class="text-xs px-1.5 py-0.5 rounded font-medium flex-shrink-0"
               style={{
-                backgroundColor: `${PRIORITY_CONFIG[task.priority as Priority].color}20`,
-                color: PRIORITY_CONFIG[task.priority as Priority].color
+                backgroundColor: `${PRIORITY_CONFIG[task.priority].color}20`,
+                color: PRIORITY_CONFIG[task.priority].color
               }}
             >
-              {PRIORITY_CONFIG[task.priority as Priority].label}
+              {PRIORITY_CONFIG[task.priority].label}
             </span>
           )}
           {task.blocked && (
@@ -180,12 +180,12 @@ export function DraggableTaskCard({
         <span class="text-xs text-base-content/50 font-medium">{epicTitle}</span>
         {(() => {
           const taskType = task.type || 'task'
-          const typeConfig = TASK_TYPE_CONFIG?.[taskType as TaskType]
+          const typeConfig = TASK_TYPE_CONFIG?.[taskType]
           if (!typeConfig) {
             console.error('TASK_TYPE_CONFIG is undefined or missing type:', taskType, 'Available config:', TASK_TYPE_CONFIG)
             return null
           }
-          const TypeIcon = getTypeIcon(taskType as TaskType)
+          const TypeIcon = getTypeIcon(taskType)
           return (
             <span class={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium ${getTypeColor(typeConfig.color)}`} title={typeConfig.label}>
               <TypeIcon className="h-3 w-3" />
@@ -197,11 +197,11 @@ export function DraggableTaskCard({
           <span
             class="text-xs px-1.5 py-0.5 rounded font-medium"
             style={{
-              backgroundColor: `${PRIORITY_CONFIG[task.priority as Priority].color}20`,
-              color: PRIORITY_CONFIG[task.priority as Priority].color
+              backgroundColor: `${PRIORITY_CONFIG[task.priority].color}20`,
+              color: PRIORITY_CONFIG[task.priority].color
             }}
           >
-            {PRIORITY_CONFIG[task.priority as Priority].label}
+            {PRIORITY_CONFIG[task.priority].label}
           </span>
         )}
         {task.blocked && (

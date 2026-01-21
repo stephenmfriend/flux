@@ -1,0 +1,1976 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flux | Board</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="flux_supabase.css">
+</head>
+
+<body>
+
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <div class="brand">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+            </svg>
+            <span>Flux</span>
+        </div>
+
+        <div class="nav-group">
+            <div class="nav-label">Platform</div>
+            <div class="nav-item active">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+                Projects
+            </div>
+            <div class="nav-item">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <line x1="8" y1="6" x2="21" y2="6"></line>
+                    <line x1="8" y1="12" x2="21" y2="12"></line>
+                    <line x1="8" y1="18" x2="21" y2="18"></line>
+                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                </svg>
+                My Tasks
+            </div>
+            <div class="nav-item">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+                Inbox
+            </div>
+        </div>
+
+        <div class="nav-group">
+            <div class="nav-label">Configuration</div>
+            <div class="nav-item">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M17 21v-2a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a2 2 0 0 0-2-2-3-3 0 0 0-3-3"></path>
+                    <circle cx="16" cy="3.13" r="4"></circle>
+                </svg>
+                Team Members
+            </div>
+            <div class="nav-item">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path
+                        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                    </path>
+                </svg>
+                Settings
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-wrapper">
+        <!-- Top Header -->
+        <header class="top-header">
+            <div class="breadcrumbs">
+                <span>Projects</span>
+                <span class="slash">/</span>
+                <span>Flux</span>
+                <span class="slash">/</span>
+                <div style="display:flex; align-items:center;">
+                    <span class="badge badge-green"
+                        style="font-size:10px; padding:1px 6px; height:18px; margin-right:8px; border-radius:10px; border:1px solid rgba(62, 207, 142, 0.3);">EPIC-2023</span>
+                    <span class="current-page">Q3 Migration</span>
+                </div>
+            </div>
+            <div class="header-actions">
+                <div class="btn-secondary" style="padding: 6px 12px; font-size: 12px; border-radius: 99px;">
+                    Feedback
+                </div>
+                <div class="avatar">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="content-area">
+
+            <div class="board-header">
+                <div class="board-title">
+                    <!-- Badge moved to breadcrumbs -->
+                    <h1>Q3 Migration</h1>
+                </div>
+                <div class="board-actions">
+                    <div class="search-group">
+                        <input type="text" class="search-input" placeholder="Search tasks...">
+                        <button class="btn btn-secondary" style="padding: 8px;">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+                                viewBox="0 0 24 24">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="view-toggle"
+                        style="display:flex; background:var(--bg-surface); padding:2px; border-radius:6px; border:1px solid var(--border-subtle);">
+                        <button id="viewDetailBtn" class="btn-icon active"
+                            style="padding:4px 8px; border:none; background:var(--bg-surface-hover); border-radius:4px; color:var(--text-high); cursor:pointer;">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
+                                viewBox="0 0 24 24">
+                                <rect x="3" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="14" width="7" height="7"></rect>
+                                <rect x="3" y="14" width="7" height="7"></rect>
+                            </svg>
+                        </button>
+                        <button id="viewCompactBtn" class="btn-icon"
+                            style="padding:4px 8px; border:none; background:transparent; border-radius:4px; color:var(--text-medium); cursor:pointer;">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
+                                viewBox="0 0 24 24">
+                                <line x1="3" y1="6" x2="21" y2="6"></line>
+                                <line x1="3" y1="12" x2="21" y2="12"></line>
+                                <line x1="3" y1="18" x2="21" y2="18"></line>
+                            </svg>
+                        </button>
+                    </div>
+                    <button class="btn btn-secondary">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+                            viewBox="0 0 24 24">
+                            <path d="M3 6h18M3 12h18M3 18h18"></path>
+                        </svg>
+                        Filter
+                    </button>
+                    <button class="btn btn-secondary" id="syncBtn">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+                            viewBox="0 0 24 24">
+                            <path d="M23 4v6h-6"></path>
+                            <path d="M1 20v-6h6"></path>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                        </svg>
+                        Sync
+                        <span style="opacity:0.5; font-size:11px; margin-left:4px;">2m ago</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Bet Control Strip -->
+            <div class="bet-control-strip"
+                style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:12px; padding:16px 20px; display:flex; align-items:center; gap:24px; margin-bottom:24px; box-shadow:0 1px 2px rgba(0,0,0,0.2);">
+
+                <!-- 1. Bet Scope -->
+                <div class="bet-info-group" style="display:flex; flex-direction:column; gap:6px; flex:1;">
+                    <div class="bet-label"
+                        style="font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-low); font-weight:600;">
+                        Bet Scope</div>
+                    <div class="bet-scope-text" style="font-size:13px; color:var(--text-high); line-height:1.4;">
+                        Migrate auth to Supabase. <span
+                            style="color:#ef4444; background:rgba(239, 68, 68, 0.1); padding:2px 6px; border-radius:4px; margin-left:4px;">No
+                            UI redesign.</span> <span
+                            style="color:#ef4444; background:rgba(239, 68, 68, 0.1); padding:2px 6px; border-radius:4px; margin-left:2px;">No
+                            role model changes.</span>
+                    </div>
+                </div>
+
+                <div class="bet-separator" style="width:1px; height:32px; background:var(--border-subtle);"></div>
+
+                <!-- 2. Appetite -->
+                <div class="bet-info-group" style="display:flex; flex-direction:column; gap:6px; min-width:140px;">
+                    <div class="bet-label"
+                        style="font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-low); font-weight:600;">
+                        Appetite</div>
+                    <div class="bet-value" style="font-size:13px; color:var(--text-high); font-weight:500;">
+                        4 weeks <span
+                            style="color:var(--text-medium); margin-left:4px; font-weight:400; font-size:12px;">| Day 8
+                            of 20</span>
+                    </div>
+                </div>
+
+                <div class="bet-separator" style="width:1px; height:32px; background:var(--border-subtle);"></div>
+
+                <!-- 3. Hill State (Slider) -->
+                <div class="bet-info-group" style="display:flex; flex-direction:column; gap:6px; min-width:200px;">
+                    <div class="bet-label"
+                        style="font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-low); font-weight:600;">
+                        Hill State</div>
+                    <div class="hill-slider-container" style="display:flex; align-items:center; gap:8px;">
+                        <span style="font-size:10px; color:var(--text-medium);">Figuring out</span>
+                        <div
+                            style="flex:1; height:4px; background:var(--border-default); border-radius:2px; position:relative;">
+                            <div
+                                style="position:absolute; left:0; top:0; height:100%; width:35%; background:var(--brand-primary); border-radius:2px;">
+                            </div>
+                            <div
+                                style="position:absolute; left:35%; top:50%; transform:translate(-50%, -50%); width:12px; height:12px; background:var(--text-high); border:2px solid var(--brand-primary); border-radius:50%; cursor:grab; box-shadow:0 2px 4px rgba(0,0,0,0.3);">
+                            </div>
+                        </div>
+                        <span style="font-size:10px; color:var(--text-medium);">Executing</span>
+                    </div>
+                </div>
+
+                <div class="bet-separator" style="width:1px; height:32px; background:var(--border-subtle);"></div>
+
+                <!-- 4. Scope cuts -->
+                <div class="bet-info-group" style="display:flex; flex-direction:column; gap:6px;">
+                    <div class="bet-label"
+                        style="font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-low); font-weight:600;">
+                        Scope cuts</div>
+                    <div class="bet-value" style="font-size:13px; color:var(--text-high); font-weight:500;">3</div>
+                </div>
+
+                <!-- History Button -->
+                <button id="historyBtn"
+                    style="background:transparent; border:1px solid var(--border-subtle); color:var(--text-medium); font-size:12px; font-weight:500; padding:6px 12px; border-radius:6px; cursor:pointer; transition:all 0.2s; white-space:nowrap; display:flex; align-items:center; gap:6px; margin-left:8px;">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    History
+                </button>
+
+                <div style="flex:1;"></div>
+
+                <!-- 5. Cut Scope -->
+                <button class="btn-cut-scope"
+                    style="background:transparent; border:1px solid var(--border-subtle); color:var(--text-medium); font-size:12px; font-weight:500; padding:6px 12px; border-radius:6px; cursor:pointer; transition:all 0.2s; white-space:nowrap; display:flex; align-items:center; gap:6px;">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M6 3v12" />
+                        <circle cx="18" cy="6" r="3" />
+                        <circle cx="6" cy="18" r="3" />
+                        <path d="M18 9a9 9 0 0 1-9 9" />
+                    </svg>
+                    Cut Scope
+                </button>
+
+                <!-- Edit Bet -->
+                <button class="btn-edit-bet"
+                    style="background:transparent; border:1px solid var(--border-subtle); color:var(--text-medium); font-size:12px; font-weight:500; padding:6px 12px; border-radius:6px; cursor:pointer; transition:all 0.2s; white-space:nowrap; display:flex; align-items:center; gap:6px;">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                    Edit Bet
+                </button>
+            </div>
+
+            <!-- Kanban Board -->
+            <div class="kanban-container">
+
+                <!-- Planning Column -->
+                <div class="kanban-column">
+                    <div class="column-header">
+                        <div class="column-title">
+                            <span class="dot dot-planning"></span>
+                            Planning
+                            <span class="column-count">1</span>
+                        </div>
+                    </div>
+                    <button class="add-task-ghost">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+                            viewBox="0 0 24 24">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Add new task
+                    </button>
+                    <div class="task-list">
+                        <!-- Card P1 -->
+                        <div class="task-card">
+                            <div class="task-header">
+                                <button class="task-menu-btn">•••</button>
+                            </div>
+                            <h3 class="task-title">Evaluate tech stack for Q3 migration</h3>
+                            <p class="task-description">Assess performance metrics and developer experience for the new
+                                framework options.</p>
+                            <div class="task-progress">
+                                <div class="progress-header">
+                                    <span>Progress</span>
+                                    <span>0/4</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-segment"></div>
+                                    <div class="progress-segment"></div>
+                                    <div class="progress-segment"></div>
+                                    <div class="progress-segment"></div>
+                                </div>
+                            </div>
+                            <div class="task-footer">
+                                <div class="footer-avatars">
+                                    <div class="avatar-stack" style="background:#5c6b7f;">A</div>
+                                    <div class="avatar-stack" style="background:#d97706;">M</div>
+                                </div>
+                                <div class="footer-right">
+                                    <div class="task-tags">
+                                        <span class="tag tag-purple">UX</span>
+                                        <span class="tag tag-orange">Research</span>
+                                    </div>
+                                    <div class="footer-meta">
+                                        <div class="meta-item"><svg viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor">
+                                                <path
+                                                    d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48">
+                                                </path>
+                                            </svg> 2</div>
+                                        <div class="meta-item"><svg viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor">
+                                                <path
+                                                    d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z">
+                                                </path>
+                                            </svg> 3</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Todo Column -->
+                <div class="kanban-column">
+                    <div class="column-header">
+                        <div class="column-title">
+                            <span class="dot dot-todo"></span>
+                            To Do
+                            <span class="column-count">2</span>
+                        </div>
+                    </div>
+                    <button class="add-task-ghost">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+                            viewBox="0 0 24 24">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Add new task
+                    </button>
+                    <div class="task-list">
+                        <!-- Card 1 -->
+                        <div class="task-card">
+                            <div class="task-header">
+                                <button class="task-menu-btn">•••</button>
+                            </div>
+                            <h3 class="task-title">Implement authentication flow using Supabase Auth</h3>
+                            <p class="task-description">Building user account creation system with secure authentication
+                                providers.</p>
+                            <div class="task-progress">
+                                <div class="progress-header">
+                                    <span>Progress</span>
+                                    <span>2/4</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-segment filled"></div>
+                                    <div class="progress-segment filled"></div>
+                                    <div class="progress-segment"></div>
+                                    <div class="progress-segment"></div>
+                                </div>
+                            </div>
+                            <div class="task-footer">
+                                <div class="footer-avatars">
+                                    <div class="avatar-stack" style="background:#5c6b7f;">S</div>
+                                </div>
+                                <div class="footer-right">
+                                    <div class="task-tags">
+                                        <span class="tag tag-green">Frontend</span>
+                                        <span class="tag tag-blue">Auth</span>
+                                    </div>
+                                    <div class="footer-meta">
+                                        <div class="meta-item"><svg viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor">
+                                                <path
+                                                    d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48">
+                                                </path>
+                                            </svg> 3</div>
+                                        <div class="meta-item"><svg viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor">
+                                                <path
+                                                    d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z">
+                                                </path>
+                                            </svg> 11</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card 2 -->
+                        <div class="task-card">
+                            <div class="task-header">
+                                <button class="task-menu-btn">•••</button>
+                            </div>
+                            <h3 class="task-title">Design system tokens for dark mode</h3>
+                            <p class="task-description">Define semantic colors for surface, overlay, and text hierarchy.
+                            </p>
+                            <div class="task-progress">
+                                <div class="progress-header">
+                                    <span>Progress</span>
+                                    <span>1/3</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-segment filled orange"></div>
+                                    <div class="progress-segment"></div>
+                                    <div class="progress-segment"></div>
+                                </div>
+                            </div>
+                            <div class="task-footer">
+                                <div class="footer-avatars">
+                                    <div class="avatar-stack" style="background:#d97706;">M</div>
+                                    <div class="avatar-stack" style="background:#5c6b7f;">S</div>
+                                </div>
+                                <div class="footer-right">
+                                    <div class="task-tags">
+                                        <span class="tag tag-purple">Design</span>
+                                    </div>
+                                    <div class="footer-meta">
+                                        <div class="meta-item"><svg viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor">
+                                                <path
+                                                    d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z">
+                                                </path>
+                                            </svg> 5</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- In Progress Column -->
+                <div class="kanban-column">
+                    <div class="column-header">
+                        <div class="column-title">
+                            <span class="dot dot-progress"></span>
+                            In Progress
+                            <span class="column-count">2</span>
+                        </div>
+                    </div>
+                    <button class="add-task-ghost">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+                            viewBox="0 0 24 24">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Add new task
+                    </button>
+                    <div class="task-list">
+                        <!-- Card 3 -->
+                        <div class="task-card">
+                            <div class="task-header">
+                                <button class="task-menu-btn">•••</button>
+                            </div>
+                            <h3 class="task-title">Fix responsive layout issues on mobile sidebar</h3>
+                            <p class="task-description">Sidebar text is clipping on iPhone SE screens.</p>
+                            <div class="task-progress">
+                                <div class="progress-header">
+                                    <span>Progress</span>
+                                    <span>0/2</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-segment"></div>
+                                    <div class="progress-segment"></div>
+                                </div>
+                            </div>
+                            <div class="task-footer">
+                                <div class="footer-avatars">
+                                    <div class="avatar-stack" style="background:#5c6b7f;">S</div>
+                                </div>
+                                <div class="footer-right">
+                                    <div class="task-tags">
+                                        <span class="tag tag-red">Bug</span>
+                                        <span class="tag tag-green">Mobile</span>
+                                    </div>
+                                    <div class="footer-meta">
+                                        <div class="meta-item"><svg viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor">
+                                                <path
+                                                    d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48">
+                                                </path>
+                                            </svg> 1</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card 4 -->
+                        <div class="task-card">
+                            <div class="task-header">
+                                <button class="task-menu-btn">•••</button>
+                            </div>
+                            <h3 class="task-title">Database schema migration for Projects table</h3>
+                            <p class="task-description">Migration script ready for review. Need to backup production
+                                first.</p>
+                            <div class="task-progress">
+                                <div class="progress-header">
+                                    <span>Progress</span>
+                                    <span>3/4</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-segment filled"></div>
+                                    <div class="progress-segment filled"></div>
+                                    <div class="progress-segment filled"></div>
+                                    <div class="progress-segment"></div>
+                                </div>
+                            </div>
+                            <div class="task-footer">
+                                <div class="footer-avatars">
+                                    <div class="avatar-stack" style="background:#059669;">J</div>
+                                </div>
+                                <div class="footer-right">
+                                    <div class="task-tags">
+                                        <span class="tag tag-green">Backend</span>
+                                        <span class="tag tag-blue">DB</span>
+                                    </div>
+                                    <div class="footer-meta">
+                                        <div class="meta-item"><svg viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor">
+                                                <path
+                                                    d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48">
+                                                </path>
+                                            </svg> 5</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Done Column -->
+                <div class="kanban-column">
+                    <div class="column-header">
+                        <div class="column-title">
+                            <span class="dot dot-done"></span>
+                            Done
+                            <span class="column-count">5</span>
+                        </div>
+                    </div>
+                    <button class="add-task-ghost">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+                            viewBox="0 0 24 24">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Add new task
+                    </button>
+                    <div class="task-list">
+                        <!-- Card 5 -->
+                        <div class="task-card" style="opacity: 0.7;">
+                            <div class="task-header">
+                                <button class="task-menu-btn">•••</button>
+                            </div>
+                            <h3 class="task-title" style="text-decoration: line-through; color: var(--text-medium);">
+                                Initialize repository and basic tooling</h3>
+                            <p class="task-description">Git init, husky, lint-staged configured.</p>
+                            <div class="task-progress">
+                                <div class="progress-header">
+                                    <span>Progress</span>
+                                    <span>4/4</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-segment filled green"></div>
+                                    <div class="progress-segment filled green"></div>
+                                    <div class="progress-segment filled green"></div>
+                                    <div class="progress-segment filled green"></div>
+                                </div>
+                            </div>
+                            <div class="task-footer">
+                                <div class="footer-avatars">
+                                    <div class="avatar-stack" style="background:#5c6b7f;">S</div>
+                                </div>
+                                <div class="footer-right">
+                                    <div class="task-tags">
+                                        <span class="tag tag-orange">Setup</span>
+                                    </div>
+                                    <div class="footer-meta">
+                                        <div class="meta-item"><svg viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor">
+                                                <path
+                                                    d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z">
+                                                </path>
+                                            </svg> 0</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Incomplete Column -->
+                <div class="kanban-column">
+                    <div class="column-header">
+                        <div class="column-title">
+                            <span class="dot" style="background:#8b5cf6;"></span>
+                            Incomplete
+                            <span class="column-count">2</span>
+                        </div>
+                    </div>
+                    <button class="add-task-ghost">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+                            viewBox="0 0 24 24">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Add new task
+                    </button>
+                    <div class="task-list">
+                        <!-- Card Blocked -->
+                        <div class="task-card"
+                            style="background:rgba(249, 115, 22, 0.1); border-left:3px solid #f97316;">
+                            <div class="task-header">
+                                <button class="task-menu-btn">•••</button>
+                            </div>
+                            <h3 class="task-title">Third-party API integration</h3>
+                            <p class="task-description">Waiting for vendor to provide production keys.</p>
+                            <div class="task-footer">
+                                <div class="footer-avatars">
+                                    <div class="avatar-stack" style="background:#5c6b7f;">L</div>
+                                </div>
+                                <div class="footer-right">
+                                    <div class="task-tags">
+                                        <span class="tag tag-red">External</span>
+                                    </div>
+                                    <div class="footer-meta">
+                                        <div class="meta-item"><svg viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor">
+                                                <path
+                                                    d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48">
+                                                </path>
+                                            </svg> 2</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card Failed -->
+                        <div class="task-card"
+                            style="background:rgba(239, 68, 68, 0.1); border-left:3px solid #ef4444;">
+                            <div class="task-header">
+                                <button class="task-menu-btn">•••</button>
+                            </div>
+                            <h3 class="task-title">Legacy data import script</h3>
+                            <p class="task-description">Import failed due to schema mismatch in version 2.0 dumps.</p>
+                            <div class="task-footer">
+                                <div class="footer-avatars">
+                                    <div class="avatar-stack" style="background:#d97706;">K</div>
+                                </div>
+                                <div class="footer-right">
+                                    <div class="task-tags">
+                                        <span class="tag tag-red">Critical</span>
+                                    </div>
+                                    <div class="footer-meta">
+                                        <div class="meta-item"><svg viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor">
+                                                <path
+                                                    d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z">
+                                                </path>
+                                            </svg> 8</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Side Panel Overlay -->
+    <div class="panel-overlay" id="panelOverlay"></div>
+
+    <!-- Side Panel -->
+    <div class="side-panel" id="sidePanel">
+        <div class="panel-header">
+            <div class="panel-title-group">
+                <span class="card-type-decal type-feat" id="panelType">FEAT</span>
+                <span class="panel-id" id="panelId">#FLX-102</span>
+            </div>
+            <button class="close-btn" id="closePanelBtn">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+
+        <div class="panel-content" style="padding: 24px; flex: 1; overflow-y: auto;">
+            <div class="form-group">
+                <h2 class="panel-title-text" id="panelTitle">Initialize repository and basic tooling</h2>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Status</label>
+                    <div class="readonly-value">To Do</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Priority</label>
+                    <div class="readonly-value">High</div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">External Blocker</label>
+                <div class="readonly-value" style="color:var(--text-low); font-style:italic;">None</div>
+            </div>
+
+            <div>
+                <div class="panel-section-header">
+                    <span class="panel-section-title">Acceptance Criteria</span>
+                </div>
+                <div class="checklist-item">
+                    <div class="checklist-checkbox checked" style="pointer-events:none;"></div>
+                    <span>Users can sign up with Email/Password</span>
+                </div>
+                <div class="checklist-item">
+                    <div class="checklist-checkbox" style="pointer-events:none;"></div>
+                    <span>OAuth providers (GitHub, Google) configured</span>
+                </div>
+                <div class="checklist-item">
+                    <div class="checklist-checkbox" style="pointer-events:none;"></div>
+                    <span>Session persists on refresh</span>
+                </div>
+            </div>
+
+            <!-- Restored Rich Tabs & Content -->
+            <!-- Tabs -->
+            <div class="panel-tabs">
+                <button class="tab-btn active" onclick="switchTab('logs', this)">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path
+                            d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z">
+                        </path>
+                    </svg>
+                    Logs
+                </button>
+                <button class="tab-btn" onclick="switchTab('diffs', this)">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    Diffs <span class="tab-badge">4</span>
+                </button>
+                <button class="tab-btn" onclick="switchTab('comments', this)">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    Comments
+                </button>
+            </div>
+
+            <!-- Logs Content -->
+            <div id="logs-content" class="panel-tab-content active">
+                <!-- Log Item 1: Robot analysis -->
+                <div class="log-item">
+                    <div class="log-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <rect x="3" y="11" width="18" height="10" rx="2"></rect>
+                            <circle cx="12" cy="5" r="2"></circle>
+                            <path d="M12 7v4"></path>
+                            <line x1="8" y1="16" x2="8" y2="16"></line>
+                            <line x1="16" y1="16" x2="16" y2="16"></line>
+                        </svg>
+                    </div>
+                    <div class="log-content">
+                        <div class="log-title">Analyzing codebase structure</div>
+                        <div class="log-details">
+                            I see a <span style="font-family:monospace;">docs/</span> structure. Let me examine the
+                            relevant documentation files.
+                        </div>
+                        <div class="log-list">
+                            <div class="log-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" style="color:#eab308;">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                                <span class="log-file">src/pages/docs/getting-started/index.mdx</span>
+                            </div>
+                            <div class="log-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" style="color:#eab308;">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                                <span class="log-file">src/pages/docs/supported-coding-agents/claude-code.mdx</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Log Item 2: TODO List -->
+                <div class="log-item">
+                    <div class="log-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" style="color:#a855f7;">
+                            <path d="M9 11l3 3L22 4"></path>
+                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                        </svg>
+                    </div>
+                    <div class="log-content">
+                        <div class="log-title" style="color:#a855f7;">TODO List:</div>
+                        <div class="log-list">
+                            <div class="log-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" style="color:#22c55e;">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                                <span>Find and review current documentation files (high)</span>
+                            </div>
+                            <div class="log-check-item">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                </svg>
+                                <span>Update installation instructions to reflect npx usage (high)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Diffs Content -->
+            <div id="diffs-content" class="panel-tab-content">
+                <div class="diff-header">
+                    <span class="diff-title">4 files changed</span>
+                    <div class="diff-actions">
+                        <button class="diff-action-btn">Expand All</button>
+                        <button class="diff-action-btn">Collapse All</button>
+                    </div>
+                </div>
+
+                <!-- File 1 Diff -->
+                <div class="diff-file-block">
+                    <div class="diff-file-header">
+                        <span>src/pages/docs/getting-started/index.mdx</span>
+                        <button class="diff-delete-btn">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
+                                viewBox="0 0 24 24">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path
+                                    d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                                </path>
+                            </svg>
+                            Delete
+                        </button>
+                    </div>
+                    <div class="diff-content-block">
+                        <div class="diff-line">
+                            <div class="diff-lineno">8</div>
+                            <div class="diff-code"> ## Pre-requisites</div>
+                        </div>
+                        <div class="diff-line">
+                            <div class="diff-lineno">9</div>
+                            <div class="diff-code"> </div>
+                        </div>
+                        <div class="diff-line removed">
+                            <div class="diff-lineno">11</div>
+                            <div class="diff-code">- - Coding agent installed and authenticated</div>
+                        </div>
+                        <div class="diff-line removed">
+                            <div class="diff-lineno">12</div>
+                            <div class="diff-code">- - Vibe Kanban doesn't install these for you (yet!)</div>
+                        </div>
+                        <div class="diff-line added">
+                            <div class="diff-lineno">11</div>
+                            <div class="diff-code">+ - Coding agent authenticated</div>
+                        </div>
+                        <div class="diff-line added">
+                            <div class="diff-lineno">12</div>
+                            <div class="diff-code">+ - All supported coding agents can now be used via npx</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- File 2 Diff -->
+                <div class="diff-file-block">
+                    <div class="diff-file-header">
+                        <span>src/pages/docs/supported-coding-agents/gemini-cli.mdx</span>
+                        <button class="diff-delete-btn">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
+                                viewBox="0 0 24 24">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path
+                                    d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                                </path>
+                            </svg>
+                            Delete
+                        </button>
+                    </div>
+                    <div class="diff-content-block">
+                        <div class="diff-line">
+                            <div class="diff-lineno">24</div>
+                            <div class="diff-code"> npm install -g gemini-chat-cli</div>
+                        </div>
+                        <div class="diff-line removed">
+                            <div class="diff-lineno">25</div>
+                            <div class="diff-code">- gemini auth login</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Comments Content -->
+            <div id="comments-content" class="panel-tab-content" style="height:100%;">
+                <div class="comments-container" style="flex:1; overflow-y:auto; padding-right:4px;">
+
+                    <!-- Thread Example -->
+                    <div class="comment-thread">
+                        <!-- Parent -->
+                        <div class="timeline-comment parent">
+                            <div class="comment-avatar" style="background:#5c6b7f;">J</div>
+                            <div class="comment-body">
+                                <div class="comment-meta">
+                                    <span class="comment-author">Jurrien</span>
+                                    <span class="comment-time">6h ago</span>
+                                </div>
+                                <div class="comment-bubble">
+                                    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
+                                    incididunt ut labore et dolore magna aliqua.
+                                </div>
+                                <div class="comment-actions">
+                                    <button class="action-btn">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
+                                            viewBox="0 0 24 24">
+                                            <path d="M14 9l6 6-6 6"></path>
+                                            <path d="M4 4v7a4 4 0 0 0 4 4h11"></path>
+                                        </svg>
+                                        Reply
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Nested/Cascading Replies -->
+                        <div class="nested-replies">
+                            <!-- Reply (Me) -->
+                            <div class="timeline-comment reply">
+                                <div class="comment-avatar" style="background:#d97706; color:white;">M</div>
+                                <div class="comment-body">
+                                    <div class="reply-input-wrapper">
+                                        <div class="comment-bubble"
+                                            style="background:transparent; border:none; padding:0; margin-bottom:8px;">
+                                            Duis aute irure dolor in reprehenderit in voluptate
+                                        </div>
+                                        <!-- Mocking the input look from screenshot -->
+                                        <div class="rich-input">
+                                            <textarea
+                                                style="min-height:40px;">Duis aute irure dolor in reprehenderit in voluptate</textarea>
+                                            <div class="input-actions">
+                                                <div class="input-tools">
+                                                    <span class="tool-btn"><svg width="16" height="16" fill="none"
+                                                            stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2">
+                                                            </rect>
+                                                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                                            <polyline points="21 15 16 10 5 21"></polyline>
+                                                        </svg></span>
+                                                    <span class="tool-btn"><svg width="16" height="16" fill="none"
+                                                            stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                            <path
+                                                                d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z">
+                                                            </path>
+                                                            <circle cx="12" cy="13" r="4"></circle>
+                                                        </svg></span>
+                                                </div>
+                                                <div style="display:flex; gap:8px;">
+                                                    <button class="btn"
+                                                        style="background:transparent; color:var(--text-medium); padding:4px 8px;">Cancel</button>
+                                                    <button class="send-btn">Send</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Comment 3 (Other) -->
+                    <div class="timeline-comment">
+                        <div class="comment-avatar" style="background:#5c6b7f;">J</div>
+                        <div class="comment-body">
+                            <div class="comment-meta">
+                                <span class="comment-author">Jurrien</span>
+                                <span class="comment-time">2h ago</span>
+                            </div>
+                            <div class="comment-bubble">
+                                In the realm of customer service, timely responses are essential. Each
+                                interaction should reflect attentiveness.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input Area -->
+                <div class="comment-input-area">
+                    <div class="rich-input">
+                        <textarea placeholder="Write a comment..."></textarea>
+                        <div class="input-actions">
+                            <div class="input-tools">
+                                <span class="tool-btn"><svg width="16" height="16" fill="none" stroke="currentColor"
+                                        stroke-width="2" viewBox="0 0 24 24">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                        <polyline points="21 15 16 10 5 21"></polyline>
+                                    </svg></span>
+                                <span class="tool-btn"><svg width="16" height="16" fill="none" stroke="currentColor"
+                                        stroke-width="2" viewBox="0 0 24 24">
+                                        <path
+                                            d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z">
+                                        </path>
+                                        <circle cx="12" cy="13" r="4"></circle>
+                                    </svg></span>
+                                <span class="tool-btn"><svg width="16" height="16" fill="none" stroke="currentColor"
+                                        stroke-width="2" viewBox="0 0 24 24">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+                                        <line x1="9" y1="9" x2="9.01" y2="9"></line>
+                                        <line x1="15" y1="9" x2="15.01" y2="9"></line>
+                                    </svg></span>
+                            </div>
+                            <button class="send-btn">
+                                Send
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
+                                    viewBox="0 0 24 24">
+                                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="panel-footer">
+            <button class="btn btn-primary" id="openEditTaskModalBtn" style="width:100%; justify-content:center;">
+                Edit Task
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:8px;"
+                    viewBox="0 0 24 24">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                    <polyline points="15 3 21 3 21 9"></polyline>
+                    <line x1="10" y1="14" x2="21" y2="3"></line>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Edit Task Modal -->
+    <div class="modal-overlay" id="editTaskModal">
+        <div class="modal-window" style="width:700px;">
+            <div class="modal-header">
+                <div class="modal-title-group">
+                    <div class="modal-title">Edit Task</div>
+                    <span style="color:#666; font-family:monospace;">#FLX-102</span>
+                </div>
+                <button class="close-btn" id="closeTaskModalBtn">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Tabs -->
+            <div class="task-panel-tabs" style="border-bottom:1px solid #333; margin-top:0;">
+                <button class="task-tab-btn active" onclick="switchTaskTab('modal-general', this)">General</button>
+                <button class="task-tab-btn" onclick="switchTaskTab('modal-acceptance', this)">Acceptance</button>
+                <button class="task-tab-btn" onclick="switchTaskTab('modal-audit', this)">Audit</button>
+            </div>
+
+            <div class="modal-body" style="padding:0; display:block; height:600px; overflow-y:auto;">
+
+                <!-- General Tab -->
+                <div id="tab-modal-general-content" class="task-panel-content active" style="padding:24px;">
+                    <div>
+                        <label class="modal-label">Title <span style="color:#ef4444">*</span></label>
+                        <input type="text" class="modal-input"
+                            value="Implement authentication flow using Supabase Auth">
+                    </div>
+
+                    <div style="display:flex; gap:16px; margin-top:16px;">
+                        <div style="flex:1;">
+                            <label class="modal-label">Status</label>
+                            <select class="modal-input" style="appearance:auto;">
+                                <option>Todo</option>
+                                <option>In Progress</option>
+                                <option>Done</option>
+                            </select>
+                        </div>
+                        <div style="flex:1;">
+                            <label class="modal-label">Priority</label>
+                            <select class="modal-input" style="appearance:auto;">
+                                <option>High</option>
+                                <option>Medium</option>
+                                <option>Low</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="margin-top:16px;">
+                        <label class="modal-label">External Blocker</label>
+                        <input type="text" class="modal-input" placeholder="e.g. Waiting for vendor quote">
+                    </div>
+
+                    <div style="margin-top:16px;">
+                        <label class="modal-label">Epic</label>
+                        <select class="modal-input" style="appearance:auto;">
+                            <option>Q3 Migration</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-top:16px;">
+                        <label class="modal-label">Dependencies</label>
+                        <input type="text" class="modal-input" placeholder="Search tasks...">
+                    </div>
+                </div>
+
+                <!-- Acceptance Tab -->
+                <div id="tab-modal-acceptance-content" class="task-panel-content" style="padding:24px;">
+                    <div>
+                        <label class="modal-label">Acceptance Criteria</label>
+                        <div class="criteria-list">
+                            <div class="criteria-item">
+                                <span class="criteria-text">Test POST /api/projects/:id/tasks with priority</span>
+                                <span class="criteria-remove">×</span>
+                            </div>
+                            <div class="criteria-item">
+                                <span class="criteria-text">Test PATCH /api/tasks/:id priority update</span>
+                                <span class="criteria-remove">×</span>
+                            </div>
+                            <div class="criteria-item">
+                                <span class="criteria-text">Test runs in CI/CD pipeline</span>
+                                <span class="criteria-remove">×</span>
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <input type="text" class="modal-input" placeholder="Add criterion...">
+                            <button class="btn"
+                                style="background:#333; color:white; border:1px solid #444; padding:0 12px; border-radius:6px;">Add</button>
+                        </div>
+                    </div>
+
+                    <div style="margin-top:24px;">
+                        <label class="modal-label">Guardrails</label>
+                        <div class="guardrail-item">
+                            <span class="guardrail-id">999</span>
+                            <input type="text" class="modal-input" placeholder="Guardrail instruction...">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Audit Tab -->
+                <div id="tab-modal-audit-content" class="task-panel-content" style="padding:24px;">
+                    <div class="audit-tabs">
+                        <div class="audit-tab active" onclick="switchAuditTab('modal-logs', this)">Logs</div>
+                        <div class="audit-tab" onclick="switchAuditTab('modal-diffs', this)">Diffs <span
+                                class="audit-badge">4</span></div>
+                        <div class="audit-tab" onclick="switchAuditTab('modal-comments', this)">Comments <span
+                                class="audit-badge">1</span></div>
+                    </div>
+
+                    <!-- Audit Sub-Content Wrapper -->
+                    <div id="audit-modal-logs" class="audit-subpanel" style="display:block;">
+                        <div class="timeline-group">
+                            <div class="timeline-date">Today</div>
+                            <div class="timeline-item">
+                                <div class="timeline-icon icon-commit"><svg width="14" height="14" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="4"></circle>
+                                    </svg></div>
+                                <div class="timeline-content">
+                                    <div class="timeline-header"><span class="user-name">Scott</span> pushed a commit
+                                        <span class="time">2m ago</span>
+                                    </div>
+                                    <div class="commit-message"><span class="hash">8a2b9f</span> feat: update auth
+                                        middleware</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="audit-modal-diffs" class="audit-subpanel" style="display:none;">
+                        <div style="color:#666; font-style:italic; padding:20px; text-align:center;">No diffs selected
+                        </div>
+                    </div>
+
+                    <div id="audit-modal-comments" class="audit-subpanel" style="display:none;">
+                        <div class="comment-thread">
+                            <div class="comment-item">
+                                <div class="comment-avatar">J</div>
+                                <div class="comment-box">
+                                    <div class="comment-header"><span class="comment-author">Jurrien</span><span
+                                            class="comment-time">6h ago</span></div>
+                                    <div class="comment-body">Lorem ipsum dolor sit amet.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn" id="cancelTaskModalBtn"
+                    style="background:transparent; color:#888; border:1px solid transparent;">Cancel</button>
+                <button class="btn btn-primary" id="saveTaskModalBtn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Bet Modal -->
+    <div class="modal-overlay" id="editBetModal">
+        <div class="modal-window">
+            <div class="modal-header">
+                <div class="modal-title-group">
+                    <div class="modal-title" id="modalTitle">Edit Bet</div>
+                    <div class="state-switcher">
+                        <button class="state-btn active">Shaping</button>
+                        <button class="state-btn">Betting</button>
+                        <button class="state-btn">Active</button>
+                        <button class="state-btn">Shipped</button>
+                    </div>
+                </div>
+                <button class="close-btn" id="closeModalBtn">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Title -->
+                <div>
+                    <label class="modal-label">Title</label>
+                    <input type="text" class="modal-input" value="Q3 Migration">
+                </div>
+
+                <!-- Appetite -->
+                <div>
+                    <label class="modal-label">Appetite (timebox, not a deadline)</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="appetite" value="2w">
+                            <div class="radio-custom"></div> 2 weeks
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="appetite" value="4w" checked>
+                            <div class="radio-custom"></div> 4 weeks
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="appetite" value="6w">
+                            <div class="radio-custom"></div> 6 weeks
+                        </label>
+                    </div>
+                    <div class="lock-note" style="display:none;"><svg width="10" height="10" fill="currentColor"
+                            viewBox="0 0 24 24">
+                            <path d="M16 11V7a4 4 0 0 0-8 0v4H5v10h14V11h-3zm-2 0H10V7a2 2 0 0 1 4 0v4z" />
+                        </svg> Locked when State = ACTIVE or SHIPPED</div>
+                </div>
+
+                <!-- Scope -->
+                <div>
+                    <label class="modal-label">Scope (1 line contract)</label>
+                    <input type="text" class="modal-input" value="Migrate auth to Supabase for email password login.">
+                </div>
+
+                <!-- No Gos -->
+                <div>
+                    <label class="modal-label">No gos</label>
+                    <div class="chips-container">
+                        <div class="chip">No UI redesign <button
+                                style="background:none;border:none;color:inherit;cursor:pointer;padding:0; margin-left:4px;">×</button>
+                        </div>
+                        <div class="chip">No role changes <button
+                                style="background:none;border:none;color:inherit;cursor:pointer;padding:0; margin-left:4px;">×</button>
+                        </div>
+                        <div class="chip add-btn">+ Add</div>
+                    </div>
+                </div>
+
+                <!-- Success Definition -->
+                <div>
+                    <label class="modal-label">Success definition</label>
+                    <input type="text" class="modal-input" value="Users can sign up and sessions persist on refresh.">
+                </div>
+
+                <!-- Repos -->
+                <div>
+                    <label class="modal-label">Repos in scope</label>
+                    <div class="chips-container">
+                        <div class="chip selected">
+                            <div class="chip-check" style="background:#3ECF8E; border-color:#3ECF8E;"></div> web
+                        </div>
+                        <div class="chip selected">
+                            <div class="chip-check" style="background:#3ECF8E; border-color:#3ECF8E;"></div> api
+                        </div>
+                        <div class="chip selected">
+                            <div class="chip-check" style="background:#3ECF8E; border-color:#3ECF8E;"></div> auth
+                        </div>
+                        <div class="chip">
+                            <div class="chip-check"></div> docs
+                        </div>
+                        <div class="chip">
+                            <div class="chip-check"></div> infra
+                        </div>
+                        <div class="chip add-btn">+ Add</div>
+                    </div>
+                </div>
+
+                <!-- Risk Flags -->
+                <div>
+                    <label class="modal-label">Risk flags</label>
+                    <div class="checkbox-list">
+                        <label class="checkbox-item"><input type="checkbox">
+                            <div class="checkbox-box"><svg width="10" height="10" stroke="currentColor" stroke-width="3"
+                                    fill="none" viewBox="0 0 24 24">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg></div> Auth changes
+                        </label>
+                        <label class="checkbox-item"><input type="checkbox">
+                            <div class="checkbox-box"><svg width="10" height="10" stroke="currentColor" stroke-width="3"
+                                    fill="none" viewBox="0 0 24 24">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg></div> Schema changes
+                        </label>
+                        <label class="checkbox-item"><input type="checkbox">
+                            <div class="checkbox-box"><svg width="10" height="10" stroke="currentColor" stroke-width="3"
+                                    fill="none" viewBox="0 0 24 24">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg></div> Touches production data
+                        </label>
+                        <label class="checkbox-item"><input type="checkbox">
+                            <div class="checkbox-box"><svg width="10" height="10" stroke="currentColor" stroke-width="3"
+                                    fill="none" viewBox="0 0 24 24">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg></div> Security review required
+                        </label>
+                        <label class="checkbox-item"><input type="checkbox">
+                            <div class="checkbox-box"><svg width="10" height="10" stroke="currentColor" stroke-width="3"
+                                    fill="none" viewBox="0 0 24 24">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg></div> External vendor dependency
+                        </label>
+                        <label class="checkbox-item"><input type="checkbox">
+                            <div class="checkbox-box"><svg width="10" height="10" stroke="currentColor" stroke-width="3"
+                                    fill="none" viewBox="0 0 24 24">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg></div> Tooling or CI changes
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Locking Controls -->
+                <details class="lock-section">
+                    <summary class="modal-label"
+                        style="color:#ef4444; list-style:none; cursor:pointer; display:flex; align-items:center; justify-content:space-between;"
+                        title="These fields become read only when the bet becomes Active.">
+                        Locking controls (only in SHAPING or BETTING)
+                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"
+                            viewBox="0 0 24 24">
+                            <path d="M6 9l6 6 6-6" />
+                        </svg>
+                    </summary>
+                    <div style="font-size:12px; color:#aaa; margin:8px 0 8px 0;">Lock on move to Active:</div>
+                    <div class="checkbox-list">
+                        <label class="checkbox-item"><input type="checkbox" checked>
+                            <div class="checkbox-box"><svg width="10" height="10" stroke="currentColor" stroke-width="3"
+                                    fill="none" viewBox="0 0 24 24">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg></div> Lock appetite
+                        </label>
+                        <label class="checkbox-item"><input type="checkbox" checked>
+                            <div class="checkbox-box"><svg width="10" height="10" stroke="currentColor" stroke-width="3"
+                                    fill="none" viewBox="0 0 24 24">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg></div> Lock scope line
+                        </label>
+                        <label class="checkbox-item"><input type="checkbox" checked>
+                            <div class="checkbox-box"><svg width="10" height="10" stroke="currentColor" stroke-width="3"
+                                    fill="none" viewBox="0 0 24 24">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg></div> Lock repos in scope
+                        </label>
+                        <label class="checkbox-item"><input type="checkbox" checked>
+                            <div class="checkbox-box"><svg width="10" height="10" stroke="currentColor" stroke-width="3"
+                                    fill="none" viewBox="0 0 24 24">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg></div> Lock constraints
+                        </label>
+                        <label class="checkbox-item"><input type="checkbox" checked>
+                            <div class="checkbox-box"><svg width="10" height="10" stroke="currentColor" stroke-width="3"
+                                    fill="none" viewBox="0 0 24 24">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg></div> Lock success definition
+                        </label>
+                    </div>
+                </details>
+
+                <!-- Change Note -->
+                <div>
+                    <label class="modal-label">Change note (required when State = ACTIVE)</label>
+                    <input type="text" class="modal-input" placeholder="Why are you changing the contract?" disabled
+                        style="opacity:0.5;">
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelModalBtn">Cancel</button>
+                <div style="display:flex; gap:12px;">
+                    <button class="btn btn-secondary">Save Draft</button>
+                    <button class="btn btn-primary">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cut Scope Modal -->
+    <div class="modal-overlay" id="cutScopeModal">
+        <div class="modal-window">
+            <div class="modal-header">
+                <div class="modal-title-group">
+                    <div class="modal-title">Cut Scope</div>
+                    <span style="font-size:12px; color:var(--text-medium); font-weight:500;">Bet: Q3 Migration</span>
+                </div>
+                <button class="close-btn" id="closeCutModalBtn">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div
+                    style="font-size:13px; color:var(--text-medium); background:rgba(255,255,255,0.03); padding:10px; border-radius:6px; border:1px solid #333;">
+                    This removes scope to protect the appetite. <strong>It does not change appetite.</strong>
+                </div>
+
+                <!-- What -->
+                <div>
+                    <label class="modal-label">What are you cutting (required)</label>
+                    <input type="text" class="modal-input" placeholder="e.g. Remove OAuth providers">
+                </div>
+
+                <!-- Why -->
+                <div>
+                    <label class="modal-label">Why (required)</label>
+                    <select class="modal-input" style="cursor:pointer;">
+                        <option value="" disabled selected>Select a reason...</option>
+                        <option value="TOO_COMPLEX">Too complex</option>
+                        <option value="DEPENDENCY_MISSING">Dependency missing</option>
+                        <option value="UNEXPECTED_EDGE_CASES">Unexpected edge cases</option>
+                        <option value="NOT_CORE_TO_GOAL">Not core to goal</option>
+                        <option value="TIME_RISK">Time risk</option>
+                        <option value="TOOLING_LIMITATION">Tooling limitation</option>
+                        <option value="EXTERNAL_BLOCKER">External blocker</option>
+                    </select>
+                </div>
+
+                <!-- Where Next -->
+                <div>
+                    <label class="modal-label">Where does it go next (required)</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="next_step" value="back_to_shaping">
+                            <div class="radio-custom"></div> Back to shaping
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="next_step" value="new_pitch" checked>
+                            <div class="radio-custom"></div> New pitch
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="next_step" value="discard">
+                            <div class="radio-custom"></div> Discard
+                        </label>
+                    </div>
+                </div>
+
+                <!-- New Pitch Details (Dynamic) -->
+                <div
+                    style="margin-left:8px; padding-left:12px; border-left:2px solid #333; display:flex; flex-direction:column; gap:12px;">
+                    <div>
+                        <label class="modal-label">Pitch title</label>
+                        <input type="text" class="modal-input" value="OAuth providers support">
+                    </div>
+                    <div>
+                        <label class="modal-label">Target appetite</label>
+                        <div class="radio-group">
+                            <label class="radio-label"><input type="radio" name="new_appetite" value="2w" checked>
+                                <div class="radio-custom"></div> 2 weeks
+                            </label>
+                            <label class="radio-label"><input type="radio" name="new_appetite" value="4w">
+                                <div class="radio-custom"></div> 4 weeks
+                            </label>
+                            <label class="radio-label"><input type="radio" name="new_appetite" value="6w">
+                                <div class="radio-custom"></div> 6 weeks
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Success def change -->
+                <div>
+                    <label class="modal-label">Does this change success definition (required)</label>
+                    <div class="radio-group" style="margin-bottom:8px;">
+                        <label class="radio-label"><input type="radio" name="succ_change" value="no">
+                            <div class="radio-custom"></div> No
+                        </label>
+                        <label class="radio-label"><input type="radio" name="succ_change" value="yes" checked>
+                            <div class="radio-custom"></div> Yes
+                        </label>
+                    </div>
+                    <input type="text" class="modal-input"
+                        value="Users can sign up with email password and session persists">
+                </div>
+
+                <!-- AI Options -->
+                <div>
+                    <label class="modal-label">Optional: inform AI immediately</label>
+                    <div class="checkbox-list" style="grid-template-columns:1fr;">
+                        <label class="checkbox-item"><input type="checkbox" checked>
+                            <div class="checkbox-box"><svg width="10" height="10" stroke="currentColor" stroke-width="3"
+                                    fill="none" viewBox="0 0 24 24">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg></div> Notify AI to stop related attempts
+                        </label>
+                        <label class="checkbox-item"><input type="checkbox" checked>
+                            <div class="checkbox-box"><svg width="10" height="10" stroke="currentColor" stroke-width="3"
+                                    fill="none" viewBox="0 0 24 24">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg></div> Auto move related cards to Incomplete
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Tags -->
+                <div>
+                    <label class="modal-label">Related tags or keywords</label>
+                    <input type="text" class="modal-input" value="oauth, google, github">
+                </div>
+
+                <!-- Log Preview -->
+                <div>
+                    <label class="modal-label">Log entry (auto generated preview)</label>
+                    <div
+                        style="font-family:monospace; font-size:11px; color:#aaa; background:#111; border:1px solid #333; padding:12px; border-radius:6px; line-height:1.6;">
+                        Cut: Remove OAuth providers from this cycle<br>
+                        Reason: Too complex<br>
+                        Next: New pitch (2 weeks)<br>
+                        Success: Updated
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelCutModalBtn">Cancel</button>
+                <div style="display:flex; gap:12px;">
+                    <button class="btn"
+                        style="background:#ef4444; color:white; border:none; padding:8px 16px; border-radius:6px; font-size:13px; font-weight:500; cursor:pointer;">Cut
+                        scope</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Side Panel -->
+    <div class="side-panel" id="historyPanel">
+        <div class="panel-header">
+            <div class="panel-title-group">
+                <span class="panel-title-text" style="font-size:14px;">Bet History</span>
+            </div>
+            <button class="close-btn" id="closeHistoryBtn">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+        <div class="panel-content">
+            <div class="timeline-container">
+                <div class="timeline-line"></div>
+
+                <!-- Event 1: Cut Scope -->
+                <div class="timeline-item highlight">
+                    <div class="timeline-node"></div>
+                    <div class="timeline-date">[21 01 2026]</div>
+                    <div class="timeline-title">Scope cut</div>
+                    <div class="timeline-content">
+                        Removed OAuth providers from this cycle.<br>
+                        Reason: Too complex
+                    </div>
+                    <div class="timeline-meta">By: Scott</div>
+                </div>
+
+                <!-- Event 2: Success Def Update -->
+                <div class="timeline-item">
+                    <div class="timeline-node"></div>
+                    <div class="timeline-date">[20 01 2026]</div>
+                    <div class="timeline-title">Success definition updated</div>
+                    <div class="timeline-content">
+                        Users can sign up with email only
+                    </div>
+                </div>
+
+                <!-- Event 3: Bet Created -->
+                <div class="timeline-item start">
+                    <div class="timeline-node"></div>
+                    <div class="timeline-date">[19 01 2026]</div>
+                    <div class="timeline-title">Bet created</div>
+                    <div class="timeline-content">
+                        Appetite: 4 weeks<br>
+                        From pitch: Q3 Migration
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const cards = document.querySelectorAll('.task-card');
+        const sidePanel = document.getElementById('sidePanel');
+        const overlay = document.getElementById('panelOverlay');
+        const closeBtn = document.getElementById('closePanelBtn');
+
+        // History Panel Logic
+        const historyBtn = document.getElementById('historyBtn');
+        const historyPanel = document.getElementById('historyPanel');
+        const closeHistoryBtn = document.getElementById('closeHistoryBtn');
+
+        function openHistory() {
+            historyPanel.classList.add('open');
+            overlay.classList.add('active');
+        }
+        function closeHistory() {
+            historyPanel.classList.remove('open');
+            // Only remove overlay if sidePanel is also closed
+            if (!sidePanel.classList.contains('open')) {
+                overlay.classList.remove('active');
+            }
+        }
+
+        if (historyBtn) historyBtn.addEventListener('click', openHistory);
+        if (closeHistoryBtn) closeHistoryBtn.addEventListener('click', closeHistory);
+
+        // Update overlay click to close history as well
+        overlay.addEventListener('click', () => {
+            closePanel();
+            closeHistory();
+        });
+
+
+
+        // Elements to update dynamically
+        const panelTitle = document.getElementById('panelTitle');
+        const panelId = document.getElementById('panelId');
+        const panelType = document.getElementById('panelType');
+
+        // New Dynamic Elements
+        const panelStatusText = document.getElementById('panelStatusText');
+        const panelStatusDot = document.getElementById('panelStatusDot');
+        const panelPriorityText = document.getElementById('panelPriorityText');
+        const panelPriorityDot = document.getElementById('panelPriorityDot');
+        const panelCriteriaList = document.getElementById('panelCriteriaList');
+
+        function openPanel(card) {
+            // 1. Title
+            const title = card.querySelector('.task-title').innerText;
+            panelTitle.innerText = title;
+            // Mock ID as it's not on all cards
+            panelId.innerText = "#FLX-" + Math.floor(Math.random() * 900 + 100);
+
+            // 2. Identify Status from Column
+            const column = card.closest('.kanban-column');
+            let status = 'To Do';
+            let statusColor = 'var(--text-medium)';
+
+            if (column) {
+                const colTitle = column.querySelector('.column-title').innerText.toLowerCase();
+                if (colTitle.includes('planning')) {
+                    status = 'Planning';
+                    statusColor = '#A855F7';
+                } else if (colTitle.includes('todo') || colTitle.includes('to do')) {
+                    status = 'To Do';
+                    statusColor = 'var(--text-medium)';
+                } else if (colTitle.includes('progress')) {
+                    status = 'In Progress';
+                    statusColor = '#E0C872';
+                } else if (colTitle.includes('done')) {
+                    status = 'Done';
+                    statusColor = '#3ECF8E';
+                }
+            }
+
+            if (panelStatusText) panelStatusText.innerText = status;
+            if (panelStatusDot) panelStatusDot.style.background = statusColor;
+
+            // 3. Mock Priority (Random for now as it's not on card)
+            const priorities = [
+                { text: 'High', color: '#ef4444' },
+                { text: 'Medium', color: '#f59e0b' },
+                { text: 'Low', color: '#3b82f6' }
+            ];
+            const randPrio = priorities[Math.floor(Math.random() * priorities.length)];
+            if (panelPriorityText) panelPriorityText.innerText = randPrio.text;
+            if (panelPriorityDot) panelPriorityDot.style.background = randPrio.color;
+
+            // 4. Mock Acceptance Criteria based on task
+            let criteriaHTML = '';
+            // Basic random variations
+            if (title.includes('Auth') || title.includes('auth')) {
+                criteriaHTML = `
+                    <div class="criteria-item checked">
+                        <div class="criteria-checkbox"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+                        <span class="criteria-text">Users can sign up with Email/Password</span>
+                    </div>
+                    <div class="criteria-item">
+                        <div class="criteria-checkbox"></div>
+                        <span class="criteria-text">OAuth providers configured</span>
+                    </div>`;
+            } else if (title.includes('Design') || title.includes('UI')) {
+                criteriaHTML = `
+                    <div class="criteria-item checked">
+                        <div class="criteria-checkbox"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+                        <span class="criteria-text">Colors defined in CSS variables</span>
+                    </div>
+                    <div class="criteria-item">
+                        <div class="criteria-checkbox"></div>
+                        <span class="criteria-text">Typography system updated</span>
+                    </div>`;
+            } else {
+                criteriaHTML = `
+                    <div class="criteria-item">
+                        <div class="criteria-checkbox"></div>
+                        <span class="criteria-text">Unit tests passed</span>
+                    </div>
+                    <div class="criteria-item">
+                        <div class="criteria-checkbox"></div>
+                        <span class="criteria-text">Documentation updated</span>
+                    </div>`;
+            }
+            if (panelCriteriaList) panelCriteriaList.innerHTML = criteriaHTML;
+
+            sidePanel.classList.add('open');
+            overlay.classList.add('active');
+        }
+
+        function closePanel() {
+            sidePanel.classList.remove('open');
+            overlay.classList.remove('active');
+        }
+
+        function switchTaskTab(tabId, btn) {
+            const container = btn.closest('.side-panel, .modal-window');
+            if (!container) return;
+
+            // Hide contents in this container
+            container.querySelectorAll('.task-panel-content').forEach(el => el.classList.remove('active'));
+            // Deactivate buttons
+            container.querySelectorAll('.task-tab-btn').forEach(el => el.classList.remove('active'));
+
+            // Activate target
+            const target = container.querySelector('#tab-' + tabId + '-content');
+            if (target) target.classList.add('active');
+            btn.classList.add('active');
+        }
+
+        function switchTab(tabId, btn) {
+            const container = btn.closest('.side-panel, .modal-window');
+            if (!container) return;
+
+            // Hide contents in this container
+            container.querySelectorAll('.panel-tab-content').forEach(el => el.classList.remove('active'));
+            // Deactivate buttons
+            container.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+
+            // Activate target
+            const target = container.querySelector('#' + tabId + '-content');
+            if (target) target.classList.add('active');
+            btn.classList.add('active');
+        }
+
+        function switchAuditTab(subTabId, btn) {
+            // ... kept for compatibility if needed elsewhere, though newly replaced HTML uses switchTab ...
+            const container = btn.closest('.side-panel, .modal-window');
+            if (!container) return;
+            // ...
+            container.querySelectorAll('.audit-subpanel').forEach(el => el.style.display = 'none');
+            container.querySelectorAll('.audit-tab').forEach(el => el.classList.remove('active'));
+            const target = container.querySelector('#audit-' + subTabId);
+            if (target) target.style.display = 'block';
+            btn.classList.add('active');
+        }
+
+        const viewDetailBtn = document.getElementById('viewDetailBtn');
+        const viewCompactBtn = document.getElementById('viewCompactBtn');
+        const kanbanContainer = document.querySelector('.kanban-container');
+
+        viewDetailBtn.addEventListener('click', () => {
+            kanbanContainer.classList.remove('compact-mode');
+            viewDetailBtn.classList.add('active');
+            viewDetailBtn.style.background = 'var(--bg-surface-hover)';
+            viewDetailBtn.style.color = 'var(--text-high)';
+
+            viewCompactBtn.classList.remove('active');
+            viewCompactBtn.style.background = 'transparent';
+            viewCompactBtn.style.color = 'var(--text-medium)';
+        });
+
+        viewCompactBtn.addEventListener('click', () => {
+            kanbanContainer.classList.add('compact-mode');
+            viewCompactBtn.classList.add('active');
+            viewCompactBtn.style.background = 'var(--bg-surface-hover)';
+            viewCompactBtn.style.color = 'var(--text-high)';
+
+            viewDetailBtn.classList.remove('active');
+            viewDetailBtn.style.background = 'transparent';
+            viewDetailBtn.style.color = 'var(--text-medium)';
+        });
+
+        cards.forEach(card => {
+            card.addEventListener('click', () => openPanel(card));
+        });
+
+        closeBtn.addEventListener('click', closePanel);
+        overlay.addEventListener('click', closePanel);
+
+        const syncBtn = document.getElementById('syncBtn');
+        syncBtn.addEventListener('click', () => {
+            const svg = syncBtn.querySelector('svg');
+            const timeSpan = syncBtn.querySelector('span');
+
+            // Start spinning
+            svg.style.transition = 'transform 1s linear';
+            svg.style.transform = 'rotate(360deg)';
+
+            // Loop spin for visual effect
+            let rotation = 360;
+            const spinInterval = setInterval(() => {
+                rotation += 360;
+                svg.style.transform = `rotate(${rotation}deg)`;
+            }, 1000);
+
+            // Change text
+            const originalText = syncBtn.childNodes[2].textContent; // "Sync" text node
+            syncBtn.childNodes[2].textContent = " Syncing... ";
+
+            // Simulate API delay
+            setTimeout(() => {
+                clearInterval(spinInterval);
+                svg.style.transition = 'none';
+                svg.style.transform = 'rotate(0deg)';
+
+                syncBtn.childNodes[2].textContent = " Sync ";
+                timeSpan.textContent = "Just now";
+
+            }, 2000);
+        });
+
+        // Modal Logic
+        const editBetBtn = document.querySelector('.btn-edit-bet');
+        const editBetModal = document.getElementById('editBetModal');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const cancelModalBtn = document.getElementById('cancelModalBtn');
+
+        function openModal() {
+            editBetModal.classList.add('open');
+        }
+
+        function closeModal() {
+            editBetModal.classList.remove('open');
+        }
+
+        if (editBetBtn) {
+            editBetBtn.addEventListener('click', openModal);
+        }
+        if (closeModalBtn) {
+            closeModalBtn.addEventListener('click', closeModal);
+        }
+        if (cancelModalBtn) {
+            cancelModalBtn.addEventListener('click', closeModal);
+        }
+        // Close on outside click
+        editBetModal.addEventListener('click', (e) => {
+            if (e.target === editBetModal) closeModal();
+        });
+
+        // Cut Scope Modal Logic
+        const cutScopeBtn = document.querySelector('.btn-cut-scope');
+        const cutScopeModal = document.getElementById('cutScopeModal');
+        const closeCutModalBtn = document.getElementById('closeCutModalBtn');
+        const cancelCutModalBtn = document.getElementById('cancelCutModalBtn');
+
+        function openCutModal() {
+            cutScopeModal.classList.add('open');
+        }
+        function closeCutModal() {
+            cutScopeModal.classList.remove('open');
+        }
+
+        if (cutScopeBtn) cutScopeBtn.addEventListener('click', openCutModal);
+        if (closeCutModalBtn) closeCutModalBtn.addEventListener('click', closeCutModal);
+        if (cancelCutModalBtn) cancelCutModalBtn.addEventListener('click', closeCutModal);
+
+        cutScopeModal.addEventListener('click', (e) => {
+            if (e.target === cutScopeModal) closeCutModal();
+        });
+
+        // State Switcher Logic (Mock)
+        const stateBtns = document.querySelectorAll('.state-switcher .state-btn');
+        const modalTitle = document.getElementById('modalTitle');
+        if (stateBtns.length > 0 && modalTitle) {
+            stateBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // Toggle active class
+                    stateBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+
+                    // Update Title Semantics
+                    if (btn.innerText.toUpperCase() === 'ACTIVE') {
+                        modalTitle.innerText = "Edit Contract";
+                    } else {
+                        modalTitle.innerText = "Edit Bet";
+                    }
+                });
+            });
+        }
+
+        // Edit Task Modal Logic
+        const openEditTaskModalBtn = document.getElementById('openEditTaskModalBtn');
+        const editTaskModal = document.getElementById('editTaskModal');
+        const closeTaskModalBtn = document.getElementById('closeTaskModalBtn');
+        const cancelTaskModalBtn = document.getElementById('cancelTaskModalBtn');
+
+        function openEditTaskModal() {
+            if (editTaskModal) editTaskModal.classList.add('open');
+        }
+        function closeEditTaskModal() {
+            if (editTaskModal) editTaskModal.classList.remove('open');
+        }
+
+        if (openEditTaskModalBtn) openEditTaskModalBtn.addEventListener('click', openEditTaskModal);
+        if (closeTaskModalBtn) closeTaskModalBtn.addEventListener('click', closeEditTaskModal);
+        if (cancelTaskModalBtn) cancelTaskModalBtn.addEventListener('click', closeEditTaskModal);
+
+        if (editTaskModal) {
+            editTaskModal.addEventListener('click', (e) => {
+                if (e.target === editTaskModal) closeEditTaskModal();
+            });
+        }
+
+    </script>
+
+</body>
+
+</html>

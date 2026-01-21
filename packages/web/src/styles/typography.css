@@ -1,0 +1,128 @@
+/* Typography Utilities */
+
+/* Text Sizes */
+.text-xs {
+  font-size: 11px;
+}
+
+.text-sm {
+  font-size: 13px;
+}
+
+.text-base {
+  font-size: 14px;
+}
+
+.text-md {
+  font-size: 15px;
+}
+
+.text-lg {
+  font-size: 16px;
+}
+
+.text-xl {
+  font-size: 18px;
+}
+
+.text-2xl {
+  font-size: 20px;
+}
+
+.text-3xl {
+  font-size: 24px;
+}
+
+/* Text Colors */
+.text-high {
+  color: var(--text-high);
+}
+
+.text-medium {
+  color: var(--text-medium);
+}
+
+.text-low {
+  color: var(--text-low);
+}
+
+.text-primary {
+  color: var(--brand-primary);
+}
+
+/* Font Weights */
+.font-normal {
+  font-weight: 400;
+}
+
+.font-medium {
+  font-weight: 500;
+}
+
+.font-semibold {
+  font-weight: 600;
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+/* Letter Spacing */
+.tracking-tight {
+  letter-spacing: -0.02em;
+}
+
+.tracking-normal {
+  letter-spacing: 0;
+}
+
+.tracking-wide {
+  letter-spacing: 0.025em;
+}
+
+/* Line Heights */
+.leading-tight {
+  line-height: 1.3;
+}
+
+.leading-snug {
+  line-height: 1.4;
+}
+
+.leading-normal {
+  line-height: 1.5;
+}
+
+.leading-relaxed {
+  line-height: 1.6;
+}
+
+/* Task Typography Classes */
+.task-title {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text-high);
+}
+
+.task-description {
+  font-size: 13px;
+  color: var(--text-medium);
+  line-height: 1.5;
+}
+
+.nav-item-text {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.board-title {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+}
+
+.brand-text {
+  letter-spacing: -0.02em;
+}

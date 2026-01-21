@@ -1,0 +1,106 @@
+/* Log Viewer */
+.log-viewer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.log-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.log-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.log-icon-analysis {
+  color: var(--brand-primary);
+}
+
+.log-icon-todo {
+  color: #a855f7;
+}
+
+.log-icon-info {
+  color: #3b82f6;
+}
+
+.log-icon-warning {
+  color: #f59e0b;
+}
+
+.log-icon-error {
+  color: #ef4444;
+}
+
+.log-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.log-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-high);
+  margin-bottom: 4px;
+}
+
+.log-details {
+  font-size: 13px;
+  color: var(--text-medium);
+  line-height: 1.5;
+}
+
+.log-filepath {
+  font-family: ui-monospace, 'SF Mono', 'Cascadia Code', 'Source Code Pro', monospace;
+  font-size: 12px;
+  color: var(--brand-primary);
+  margin-top: 4px;
+  display: inline-block;
+}
+
+.log-check-icon {
+  width: 14px;
+  height: 14px;
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
+.log-check-viewing {
+  color: #f59e0b;
+}
+
+.log-check-completed {
+  color: #22c55e;
+}
+
+.log-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 12px;
+}
+
+.log-timestamp {
+  color: var(--text-low);
+  font-family: ui-monospace, 'SF Mono', 'Cascadia Code', 'Source Code Pro', monospace;
+}
+
+.log-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-medium);
+}

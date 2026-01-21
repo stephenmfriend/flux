@@ -59,7 +59,6 @@ export function createSqliteAdapter(filePath: string, isTest = false): StorageAd
   const updateStmt = db.prepare('UPDATE store SET data = ? WHERE id = 1');
 
   let _data: Store = { ...defaultData };
-  let _dirty = false;  // Track if we have pending modifications
 
   // Helper to read fresh data from DB
   const readFromDb = (): Store => {
@@ -76,32 +75,44 @@ export function createSqliteAdapter(filePath: string, isTest = false): StorageAd
 
   return {
     get data() {
-      // Only read fresh if we don't have pending modifications
-      // This prevents losing in-flight changes while allowing fresh reads
-      if (!_dirty) {
-        _data = readFromDb();
-      }
-      _dirty = true;  // Mark as dirty once accessed (may be modified)
+      // Always return current in-memory state
+      // Callers should call read() before accessing data
       return _data;
     },
     read() {
-      // Explicit read - always refresh from DB (call at start of request)
+      // Always refresh from DB to get latest state
       _data = readFromDb();
-      _dirty = false;
       if (!selectStmt.get()) {
         // Initialize DB if empty
         insertStmt.run(JSON.stringify(_data));
       }
     },
     write() {
-      const serialized = JSON.stringify(_data);
-      const row = selectStmt.get();
-      if (row) {
-        updateStmt.run(serialized);
-      } else {
-        insertStmt.run(serialized);
+      try {
+        // Begin immediate transaction for write lock
+        // This prevents concurrent writes from interleaving
+        db.exec('BEGIN IMMEDIATE');
+
+        // Serialize current in-memory state
+        const serialized = JSON.stringify(_data);
+        const row = selectStmt.get();
+        if (row) {
+          updateStmt.run(serialized);
+        } else {
+          insertStmt.run(serialized);
+        }
+
+        // Commit transaction
+        db.exec('COMMIT');
+      } catch (error) {
+        // Rollback on error
+        try {
+          db.exec('ROLLBACK');
+        } catch {
+          // Ignore rollback errors
+        }
+        throw error;
       }
-      _dirty = false;  // Clear dirty flag after write
     },
     isTest, // Mark test adapters for safety checks
   };

@@ -1,0 +1,104 @@
+/* Epic Card Component */
+.epic-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.epic-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+  border-color: var(--border-focus);
+}
+
+/* Active Epic Gradient Background */
+.epic-card-active {
+  background: linear-gradient(135deg, rgba(62, 207, 142, 0.05) 0%, var(--bg-surface) 100%);
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 1px var(--brand-primary);
+}
+
+/* Shipped/Closed Epic Reduced Opacity */
+.epic-card-shipped {
+  opacity: 0.75;
+}
+
+/* Epic List View */
+.epic-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.epic-list-group {
+  margin-bottom: 24px;
+}
+
+.epic-list-group-header {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-medium);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.epic-list-row {
+  display: grid;
+  grid-template-columns: 3fr 1fr 1fr;
+  gap: 16px;
+  padding: 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.epic-list-row:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Active Epic List Row Highlight */
+.epic-list-row-active {
+  background: rgba(62, 207, 142, 0.05);
+  border-left: 2px solid var(--brand-primary);
+}
+
+.epic-list-row-active:hover {
+  background: rgba(62, 207, 142, 0.08);
+}
+
+/* Shipped Epic List Row */
+.epic-list-row-shipped {
+  opacity: 0.6;
+}
+
+.epic-list-column-header {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-low);
+  padding: 8px 16px;
+}
+
+/* Epic ID Badge */
+.epic-id-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(62, 207, 142, 0.1);
+  color: var(--brand-primary);
+  border: 1px solid rgba(62, 207, 142, 0.2);
+  border-radius: 999px;
+}

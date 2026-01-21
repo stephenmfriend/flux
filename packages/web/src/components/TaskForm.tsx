@@ -1,6 +1,11 @@
 import { useState, useEffect } from "preact/hooks";
 import { ConfirmModal } from "./ConfirmModal";
 import { Modal } from "./Modal";
+import { Input, Textarea } from "./Input";
+import { Select } from "./FormControls";
+import { Checkbox } from "./FormControls";
+import { Button } from "./Button";
+import { Badge } from "./Badge";
 import {
   createTask,
   updateTask,
@@ -13,6 +18,7 @@ import {
 } from "../stores";
 import type { Task, Epic, Status, TaskComment, Guardrail, TaskType } from "@flux/shared";
 import { STATUSES, STATUS_CONFIG, PRIORITIES, PRIORITY_CONFIG, TASK_TYPES, TASK_TYPE_CONFIG, type Priority } from "@flux/shared";
+import "./TaskForm.css";
 
 interface TaskFormProps {
   isOpen: boolean;
@@ -238,152 +244,112 @@ export function TaskForm({
         title={isEdit ? "Edit Task" : "New Task"}
         boxClassName="!w-[70vw] !max-w-none"
       >
-        <form onSubmit={handleSubmit}>
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div>
-            <div class="form-control mb-4">
-              <label class="label">
-                <span class="label-text">Title *</span>
+        <form onSubmit={handleSubmit} className="task-form">
+        <div className="task-form-grid">
+          <div className="task-form-section">
+            <div className="task-form-group">
+              <label className="task-form-label">
+                <span>Title *</span>
               </label>
-              <input
+              <Input
                 type="text"
                 placeholder="Task title"
-                class="input input-bordered w-full"
                 value={title}
-                onInput={(e) => setTitle((e.target as HTMLInputElement).value)}
+                onChange={(value) => setTitle(value)}
                 required
               />
             </div>
 
             {isEdit && (
-              <div class="form-control mb-4">
-                <label class="label">
-                  <span class="label-text">Status</span>
-                </label>
-                <select
-                  class="select select-bordered w-full"
+              <div className="task-form-group">
+                <label className="task-form-label">Status</label>
+                <Select
+                  options={STATUSES.map((s) => ({ value: s, label: STATUS_CONFIG[s].label }))}
                   value={status}
-                  onChange={(e) =>
-                    setStatus((e.target as HTMLSelectElement).value)
-                  }
-                >
-                  {STATUSES.map((s) => (
-                    <option key={s} value={s}>
-                      {STATUS_CONFIG[s].label}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(value) => setStatus(value)}
+                />
               </div>
             )}
 
             {isEdit && (
-              <div class="form-control mb-4">
-                <label class="label">
-                  <span class="label-text">External Blocker</span>
-                  {blockedReason && (
-                    <span class="badge badge-warning badge-sm">Blocked</span>
-                  )}
+              <div className="task-form-group">
+                <label className="task-form-label">
+                  <span>External Blocker</span>
+                  {blockedReason && <span className="task-form-badge-blocked">Blocked</span>}
                 </label>
-                <input
+                <Input
                   type="text"
                   placeholder="e.g., Waiting for vendor quote"
-                  class="input input-bordered w-full"
                   value={blockedReason}
-                  onInput={(e) => setBlockedReason((e.target as HTMLInputElement).value)}
+                  onChange={(value) => setBlockedReason(value)}
                 />
-                <label class="label">
-                  <span class="label-text-alt text-base-content/50">
-                    Set to block task on external process. Clear to unblock.
-                  </span>
-                </label>
+                <span className="task-form-helper">
+                  Set to block task on external process. Clear to unblock.
+                </span>
               </div>
             )}
 
-            <div class="form-control mb-4">
-              <label class="label">
-                <span class="label-text">Epic</span>
-              </label>
-              <select
-                class="select select-bordered w-full"
+            <div className="task-form-group">
+              <label className="task-form-label">Epic</label>
+              <Select
+                options={[
+                  { value: "", label: "Unassigned" },
+                  ...epics.map((epic) => ({ value: epic.id, label: epic.title }))
+                ]}
                 value={epicId}
-                onChange={(e) => setEpicId((e.target as HTMLSelectElement).value)}
-              >
-                <option value="">Unassigned</option>
-                {epics.map((epic) => (
-                  <option key={epic.id} value={epic.id}>
-                    {epic.title}
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => setEpicId(value)}
+              />
             </div>
 
-            <div class="form-control mb-4">
-              <label class="label">
-                <span class="label-text">Priority</span>
-              </label>
-              <select
-                class="select select-bordered w-full"
+            <div className="task-form-group">
+              <label className="task-form-label">Priority</label>
+              <Select
+                options={[
+                  { value: "", label: "Default (P1)" },
+                  ...PRIORITIES.map((p) => ({
+                    value: String(p),
+                    label: `${PRIORITY_CONFIG[p].label} - ${p === 0 ? 'Urgent' : p === 1 ? 'Normal' : 'Low'}`
+                  }))
+                ]}
                 value={priority !== undefined ? String(priority) : ""}
-                onChange={(e) => {
-                  const val = (e.target as HTMLSelectElement).value;
-                  setPriority(val === "" ? undefined : parseInt(val) as Priority);
-                }}
-              >
-                <option value="">Default (P1)</option>
-                {PRIORITIES.map((p) => (
-                  <option key={p} value={p}>
-                    {PRIORITY_CONFIG[p].label} - {p === 0 ? 'Urgent' : p === 1 ? 'Normal' : 'Low'}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => setPriority(val === "" ? undefined : parseInt(val) as Priority)}
+              />
             </div>
 
-            <div class="form-control mb-4">
-              <label class="label">
-                <span class="label-text">Type</span>
-              </label>
-              <select
-                class="select select-bordered w-full"
+            <div className="task-form-group">
+              <label className="task-form-label">Type</label>
+              <Select
+                options={TASK_TYPES.map((t) => ({
+                  value: t,
+                  label: `${TASK_TYPE_CONFIG[t].symbol} ${TASK_TYPE_CONFIG[t].label}`
+                }))}
                 value={type}
-                onChange={(e) => setType((e.target as HTMLSelectElement).value as TaskType)}
-              >
-                {TASK_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {TASK_TYPE_CONFIG[t].symbol} {TASK_TYPE_CONFIG[t].label}
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => setType(value as TaskType)}
+              />
             </div>
 
-            <div class="form-control mb-6">
-              <label class="label">
-                <span class="label-text">Dependencies</span>
+            <div className="task-form-group">
+              <label className="task-form-label">
+                <span>Dependencies</span>
                 {dependsOn.length > 0 && (
-                  <span class="label-text-alt">{dependsOn.length} selected</span>
+                  <Badge variant="gray" size="small">{dependsOn.length} selected</Badge>
                 )}
               </label>
               {availableTasks.length === 0 ? (
-                <p class="text-sm text-base-content/50">
-                  No other tasks available
-                </p>
+                <div className="task-form-no-data">No other tasks available</div>
               ) : (
-                <div class="border border-base-300 rounded-lg">
+                <div className="task-form-dependencies">
                   {availableTasks.length > 3 && (
-                    <div class="px-3 py-2 border-b border-base-300">
-                      <input
+                    <div className="task-form-dependencies-filter">
+                      <Input
                         type="text"
                         placeholder="Filter tasks..."
-                        class="input input-bordered input-sm w-full"
                         value={dependencyFilter}
-                        onInput={(e) =>
-                          setDependencyFilter(
-                            (e.target as HTMLInputElement).value
-                          )
-                        }
+                        onChange={(value) => setDependencyFilter(value)}
                       />
                     </div>
                   )}
-                  <div class="max-h-32 overflow-y-auto">
+                  <div className="task-form-dependencies-list">
                     {availableTasks
                       .filter(
                         (t) =>
@@ -393,20 +359,15 @@ export function TaskForm({
                             .includes(dependencyFilter.toLowerCase())
                       )
                       .map((t) => (
-                        <label
-                          key={t.id}
-                          class="flex items-center gap-2 px-3 py-2 hover:bg-base-200 cursor-pointer"
-                        >
-                          <input
-                            type="checkbox"
-                            class="checkbox checkbox-sm"
+                        <label key={t.id} className="task-form-dependency-item">
+                          <Checkbox
+                            label=""
                             checked={dependsOn.includes(t.id)}
                             onChange={() => toggleDependency(t.id)}
                           />
-                          <span class="text-sm truncate flex-1">{t.title}</span>
-                          <span class="badge badge-ghost badge-xs">
-                            {STATUS_CONFIG[t.status as Status]?.label ||
-                              t.status}
+                          <span className="task-form-dependency-title">{t.title}</span>
+                          <span className="task-form-dependency-status">
+                            {STATUS_CONFIG[t.status as Status]?.label || t.status}
                           </span>
                         </label>
                       ))}
@@ -416,191 +377,166 @@ export function TaskForm({
             </div>
           </div>
 
-          <div class="max-h-[60vh] overflow-y-auto pr-1">
+          <div className="task-form-section task-form-section-scrollable">
             {/* Acceptance Criteria */}
-            <div class="form-control mb-4">
-              <label class="label">
-                <span class="label-text">Acceptance Criteria</span>
+            <div className="task-form-group">
+              <label className="task-form-label">
+                <span>Acceptance Criteria</span>
                 {acceptanceCriteria.length > 0 && (
-                  <span class="label-text-alt">{acceptanceCriteria.length}</span>
+                  <Badge variant="gray" size="small">{acceptanceCriteria.length}</Badge>
                 )}
               </label>
-              <p class="text-xs text-base-content/50 mb-2">
+              <span className="task-form-helper">
                 Observable outcomes to verify task completion
-              </p>
-              <div class="space-y-2">
+              </span>
+              <div className="task-form-list">
                 {acceptanceCriteria.map((criterion, index) => (
-                  <div
-                    key={index}
-                    class="flex items-start gap-2 border border-base-300 rounded-lg p-2"
-                  >
-                    <span class="text-sm flex-1">{criterion}</span>
+                  <div key={index} className="task-form-list-item">
+                    <span className="task-form-list-item-content">{criterion}</span>
                     <button
                       type="button"
-                      class="btn btn-ghost btn-xs"
+                      className="task-form-list-item-remove"
                       onClick={() => removeCriterion(index)}
                     >
                       ×
                     </button>
                   </div>
                 ))}
-                <div class="flex gap-2">
-                  <input
+                <div className="task-form-add-row">
+                  <Input
                     type="text"
                     placeholder="Add criterion..."
-                    class="input input-bordered input-sm flex-1"
                     value={newCriterion}
-                    onInput={(e) => setNewCriterion((e.target as HTMLInputElement).value)}
+                    onChange={(value) => setNewCriterion(value)}
                     onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addCriterion())}
                   />
-                  <button
-                    type="button"
-                    class="btn btn-sm btn-outline"
+                  <Button
+                    variant="secondary"
+                    size="small"
                     onClick={addCriterion}
                     disabled={!newCriterion.trim()}
                   >
                     Add
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
 
             {/* Guardrails */}
-            <div class="form-control mb-4">
-              <label class="label">
-                <span class="label-text">Guardrails</span>
+            <div className="task-form-group">
+              <label className="task-form-label">
+                <span>Guardrails</span>
                 {guardrails.length > 0 && (
-                  <span class="label-text-alt">{guardrails.length}</span>
+                  <Badge variant="gray" size="small">{guardrails.length}</Badge>
                 )}
               </label>
-              <p class="text-xs text-base-content/50 mb-2">
+              <span className="task-form-helper">
                 Numbered constraints (higher number = more critical)
-              </p>
-              <div class="space-y-2">
+              </span>
+              <div className="task-form-list">
                 {[...guardrails]
                   .sort((a, b) => b.number - a.number)
                   .map((guardrail) => (
-                    <div
-                      key={guardrail.id}
-                      class="flex items-start gap-2 border border-base-300 rounded-lg p-2"
-                    >
-                      <span class="badge badge-outline badge-sm font-mono">
-                        {guardrail.number}
-                      </span>
-                      <span class="text-sm flex-1">{guardrail.text}</span>
+                    <div key={guardrail.id} className="task-form-list-item">
+                      <span className="task-form-badge-number">{guardrail.number}</span>
+                      <span className="task-form-list-item-content">{guardrail.text}</span>
                       <button
                         type="button"
-                        class="btn btn-ghost btn-xs"
+                        className="task-form-list-item-remove"
                         onClick={() => removeGuardrail(guardrail.id)}
                       >
                         ×
                       </button>
                     </div>
                   ))}
-                <div class="flex gap-2">
-                  <input
+                <div className="task-form-add-row">
+                  <Input
                     type="number"
                     placeholder="999"
-                    class="input input-bordered input-sm w-20"
                     value={newGuardrailNumber}
-                    onInput={(e) => setNewGuardrailNumber((e.target as HTMLInputElement).value)}
+                    onChange={(value) => setNewGuardrailNumber(value)}
                   />
-                  <input
+                  <Input
                     type="text"
                     placeholder="Guardrail instruction..."
-                    class="input input-bordered input-sm flex-1"
                     value={newGuardrailText}
-                    onInput={(e) => setNewGuardrailText((e.target as HTMLInputElement).value)}
+                    onChange={(value) => setNewGuardrailText(value)}
                     onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addGuardrail())}
                   />
-                  <button
-                    type="button"
-                    class="btn btn-sm btn-outline"
+                  <Button
+                    variant="secondary"
+                    size="small"
                     onClick={addGuardrail}
                     disabled={!newGuardrailNumber || parseInt(newGuardrailNumber) <= 0 || !newGuardrailText.trim()}
                   >
                     Add
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
 
             {isEdit && (
-              <div class="form-control mb-4">
-                <label class="label">
-                  <span class="label-text">Comments</span>
+              <div className="task-form-group">
+                <label className="task-form-label">
+                  <span>Comments</span>
                   {comments.length > 0 && (
-                    <span class="label-text-alt">{comments.length}</span>
+                    <Badge variant="gray" size="small">{comments.length}</Badge>
                   )}
                 </label>
-                <div class="space-y-3">
+                <div className="task-form-comments">
                   {comments.length > 0 ? (
-                    <div class="space-y-2">
+                    <>
                       {comments.map((comment) => (
-                        <div
-                          key={comment.id}
-                          class="border border-base-300 rounded-lg p-3 text-sm"
-                        >
-                          <div class="flex items-center justify-between gap-2 mb-2">
-                            <div class="flex items-center gap-2">
+                        <div key={comment.id} className="task-form-comment">
+                          <div className="task-form-comment-header">
+                            <div className="task-form-comment-meta">
                               <span
-                                class={`badge badge-sm ${
+                                className={`task-form-comment-author ${
                                   comment.author === "mcp"
-                                    ? "badge-secondary"
-                                    : "badge-ghost"
+                                    ? "task-form-comment-author-mcp"
+                                    : "task-form-comment-author-user"
                                 }`}
                               >
                                 {comment.author === "mcp" ? "MCP" : "User"}
                               </span>
                               {comment.created_at && (
-                                <span class="text-xs text-base-content/50">
-                                  {new Date(
-                                    comment.created_at
-                                  ).toLocaleString()}
+                                <span className="task-form-comment-date">
+                                  {new Date(comment.created_at).toLocaleString()}
                                 </span>
                               )}
                             </div>
-                            <button
-                              type="button"
-                              class="btn btn-ghost btn-xs"
+                            <Button
+                              variant="ghost"
+                              size="small"
                               onClick={() => handleDeleteComment(comment.id)}
                               disabled={commentSubmitting}
                             >
                               Delete
-                            </button>
+                            </Button>
                           </div>
-                          <p class="text-sm whitespace-pre-wrap">
-                            {comment.body}
-                          </p>
+                          <p className="task-form-comment-body">{comment.body}</p>
                         </div>
                       ))}
-                    </div>
+                    </>
                   ) : (
-                    <p class="text-sm text-base-content/50">No comments yet</p>
+                    <div className="task-form-no-data">No comments yet</div>
                   )}
-                  <div class="flex flex-col gap-2">
-                    <textarea
+                  <div className="task-form-add-row" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                    <Textarea
                       placeholder="Add a comment..."
-                      class="textarea textarea-bordered w-full"
                       value={commentBody}
-                      onInput={(e) =>
-                        setCommentBody((e.target as HTMLTextAreaElement).value)
-                      }
+                      onChange={(value) => setCommentBody(value)}
                       rows={2}
                     />
-                    <div class="flex justify-end">
-                      <button
-                        type="button"
-                        class="btn btn-sm btn-outline"
+                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                      <Button
+                        variant="secondary"
+                        size="small"
                         onClick={handleAddComment}
                         disabled={!commentBody.trim() || commentSubmitting}
                       >
-                        {commentSubmitting ? (
-                          <span class="loading loading-spinner loading-xs"></span>
-                        ) : (
-                          "Add Comment"
-                        )}
-                      </button>
+                        {commentSubmitting ? "..." : "Add Comment"}
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -609,33 +545,28 @@ export function TaskForm({
           </div>
         </div>
 
-        <div class="modal-action">
+        <div className="task-form-footer">
           {isEdit && (
-            <button
-              type="button"
-              class="btn btn-ghost text-error"
+            <Button
+              variant="ghost"
               onClick={handleDelete}
               disabled={submitting}
+              className="task-form-footer-delete"
+              style={{ color: '#ef4444' }}
             >
               Delete
-            </button>
+            </Button>
           )}
-          <button type="button" class="btn btn-ghost" onClick={onClose}>
+          <Button variant="secondary" onClick={onClose}>
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="primary"
             type="submit"
-            class="btn btn-primary"
             disabled={!title.trim() || submitting}
           >
-            {submitting ? (
-              <span class="loading loading-spinner loading-sm"></span>
-            ) : isEdit ? (
-              "Save"
-            ) : (
-              "Create"
-            )}
-          </button>
+            {submitting ? "..." : isEdit ? "Save" : "Create"}
+          </Button>
         </div>
         </form>
       </Modal>

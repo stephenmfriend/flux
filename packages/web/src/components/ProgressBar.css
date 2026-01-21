@@ -1,0 +1,35 @@
+/* Progress Bar Component */
+.progress-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 4px;
+}
+
+.progress-bar-segment {
+  height: 100%;
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+/* Empty segments */
+.progress-bar-segment-empty {
+  background: var(--border-default);
+}
+
+/* Filled segments - color variants */
+.progress-bar-segment-primary {
+  background: var(--brand-primary);
+}
+
+.progress-bar-segment-orange {
+  background: #f97316;
+}
+
+.progress-bar-segment-blue {
+  background: #3b82f6;
+}
+
+.progress-bar-segment-green {
+  background: #10b981;
+}

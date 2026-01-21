@@ -1,0 +1,63 @@
+/* Acceptance Criteria Checklist */
+.checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.checklist-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.checklist-item:hover {
+  background: var(--bg-surface-hover);
+}
+
+.checklist-checkbox {
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  flex-shrink: 0;
+  position: relative;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.checklist-checkbox-checked {
+  background: var(--brand-primary);
+  border-color: var(--brand-primary);
+}
+
+/* Checkmark */
+.checklist-checkbox-checked::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(45deg);
+  width: 4px;
+  height: 8px;
+  border: solid #000;
+  border-width: 0 2px 2px 0;
+}
+
+.checklist-text {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text-high);
+  line-height: 1.5;
+}
+
+.checklist-text-checked {
+  color: var(--text-low);
+  text-decoration: line-through;
+}

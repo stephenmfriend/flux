@@ -1,0 +1,228 @@
+/* Comment Thread */
+.comment-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.comment-item {
+  display: flex;
+  gap: 12px;
+  position: relative;
+}
+
+.comment-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--brand-primary);
+  color: #000;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 4px var(--bg-base);
+  z-index: 1;
+}
+
+.comment-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.comment-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.comment-author {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-high);
+}
+
+.comment-timestamp {
+  font-size: 12px;
+  color: var(--text-low);
+}
+
+.comment-bubble {
+  background: var(--bg-surface-hover);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0 12px 12px 12px;
+  padding: 12px 16px;
+  font-size: 13px;
+  color: var(--text-medium);
+  line-height: 1.5;
+}
+
+.comment-bubble-user {
+  background: rgba(62, 207, 142, 0.15);
+  border-color: rgba(62, 207, 142, 0.3);
+  color: #e6ffec;
+  border-radius: 12px 0 12px 12px;
+}
+
+.comment-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.comment-reply-button {
+  background: transparent;
+  border: none;
+  color: var(--text-medium);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.2s ease;
+}
+
+.comment-reply-button:hover {
+  color: var(--text-high);
+}
+
+.comment-reply-button svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Nested Replies */
+.comment-replies {
+  margin-left: 44px;
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.comment-item.comment-nested {
+  position: relative;
+}
+
+.comment-item.comment-nested::before {
+  content: '';
+  position: absolute;
+  top: -24px;
+  left: 16px;
+  width: 28px;
+  height: 38px;
+  border-left: 2px solid var(--border-subtle);
+  border-bottom: 2px solid var(--border-subtle);
+  border-bottom-left-radius: 12px;
+}
+
+.comment-item.comment-nested:last-child::before {
+  display: none;
+}
+
+/* Reply Input */
+.comment-reply-input {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.comment-input-wrapper {
+  flex: 1;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 12px;
+  transition: border-color 0.2s ease;
+}
+
+.comment-input-wrapper:focus-within {
+  border-color: var(--border-focus);
+}
+
+.comment-textarea {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--text-high);
+  font-size: 13px;
+  font-family: inherit;
+  resize: none;
+  outline: none;
+  min-height: 60px;
+}
+
+.comment-textarea::placeholder {
+  color: var(--text-low);
+}
+
+.comment-input-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+.comment-input-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.comment-tool-button {
+  background: transparent;
+  border: none;
+  color: var(--text-medium);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.comment-tool-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-high);
+}
+
+.comment-tool-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.comment-input-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.comment-send-button {
+  background: var(--brand-primary);
+  color: #000;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.comment-send-button:hover {
+  background: var(--brand-primary-dark);
+}
+
+.comment-send-button svg {
+  width: 14px;
+  height: 14px;
+}

@@ -1,0 +1,59 @@
+/* Hill Slider Component */
+.hill-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hill-slider-track-container {
+  position: relative;
+  flex: 1;
+  height: 4px;
+}
+
+.hill-slider-track {
+  width: 100%;
+  height: 100%;
+  background: var(--border-default);
+  border-radius: 2px;
+}
+
+.hill-slider-progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: var(--brand-primary);
+  border-radius: 2px;
+  transition: width 0.2s ease;
+}
+
+.hill-slider-handle {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 12px;
+  height: 12px;
+  background: var(--text-high);
+  border: 2px solid var(--brand-primary);
+  border-radius: 50%;
+  cursor: grab;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  transition: box-shadow 0.2s ease;
+}
+
+.hill-slider-handle:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+}
+
+.hill-slider-handle:active {
+  cursor: grabbing;
+}
+
+.hill-slider-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--text-medium);
+  font-weight: 500;
+}

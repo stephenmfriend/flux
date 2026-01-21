@@ -25,4 +25,17 @@ export default defineConfig({
     'import.meta.env.VITE_BUILD_SHA': JSON.stringify(buildSha),
     'import.meta.env.VITE_BUILD_TIME': JSON.stringify(buildTime),
   },
+  server: {
+    watch: {
+      usePolling: true,
+      interval: 100,
+    },
+    hmr: {
+      overlay: true,
+    },
+  },
+  cacheDir: '.vite',
+  optimizeDeps: {
+    force: true,
+  },
 })

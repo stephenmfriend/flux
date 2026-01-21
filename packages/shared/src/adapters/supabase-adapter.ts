@@ -244,38 +244,35 @@ export function createSupabaseAdapter(
       }
     },
 
-    write() {
-      // Fire-and-forget async write (saves in background)
-      // BUT wait for initial read to complete to prevent data loss
-      const doWrite = async (retryCount = 0) => {
-        try {
-          // Wait for initial read to complete
-          if (!_initialReadComplete && _initialReadPromise) {
-            await _initialReadPromise;
-          }
+    async write(): Promise<void> {
+      // Set writing flag BEFORE write to prevent realtime loop
+      _isWriting = true;
 
-          await writeToDb(_data);
-        } catch (err: any) {
-          console.error('[SupabaseAdapter] Background write failed:', {
-            attempt: retryCount + 1,
-            error: err.message,
-          });
-
-          // Retry up to 3 times with exponential backoff
-          if (retryCount < 3) {
-            const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
-            console.log(`[SupabaseAdapter] Retrying write in ${delay}ms...`);
-            setTimeout(() => {
-              doWrite(retryCount + 1);
-            }, delay);
-          } else {
-            console.error('[SupabaseAdapter] Write failed after 3 retries. Data may be lost.');
-            // TODO: Could implement a write queue here to persist failed writes
-          }
+      try {
+        // Wait for initial read to complete
+        if (!_initialReadComplete && _initialReadPromise) {
+          await _initialReadPromise;
         }
-      };
 
-      doWrite();
+        // Re-read current state before writing to detect conflicts
+        const currentState = await readFromDb();
+
+        // TODO: Implement conflict detection
+        // For now, we proceed with the write (last-write-wins)
+        // Future: Compare currentState with _data to detect conflicts
+
+        await writeToDb(_data);
+      } catch (err: any) {
+        console.error('[SupabaseAdapter] Write failed:', {
+          error: err.message,
+        });
+        throw err; // Propagate error to caller
+      } finally {
+        // Clear writing flag after short delay to prevent immediate realtime callbacks
+        setTimeout(() => {
+          _isWriting = false;
+        }, 100); // Reduced from 1000ms to 100ms
+      }
     },
 
     get data() {

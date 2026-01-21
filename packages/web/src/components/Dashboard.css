@@ -1,0 +1,273 @@
+/* Dashboard Stats Grid */
+.dashboard-stats-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+/* Dashboard Stat Card */
+.dashboard-stat-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: var(--shadow-card);
+}
+
+/* Stat Card Header with Dropdown */
+.stat-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.stat-card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-high);
+}
+
+.stat-card-dropdown {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-medium);
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.stat-card-dropdown:hover {
+  color: var(--text-high);
+}
+
+.stat-card-dropdown-icon {
+  width: 12px;
+  height: 12px;
+  stroke-width: 2px;
+}
+
+/* Large Stat Display */
+.stat-large {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.stat-large-number {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-high);
+}
+
+/* Heatmap Grid */
+.heatmap-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.heatmap-cell {
+  height: 24px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.heatmap-cell-empty {
+  background: var(--bg-surface-hover);
+}
+
+.heatmap-cell-level-1 {
+  background: rgba(62, 207, 142, 0.2);
+}
+
+.heatmap-cell-level-2 {
+  background: rgba(62, 207, 142, 0.5);
+}
+
+.heatmap-cell-level-3 {
+  background: rgba(62, 207, 142, 1);
+}
+
+.heatmap-legend {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  font-size: 11px;
+  color: var(--text-medium);
+}
+
+.heatmap-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.heatmap-legend-box {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
+
+/* Bar Chart */
+.bar-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 140px;
+}
+
+.bar-chart-bar {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.bar-chart-bar-fill {
+  width: 100%;
+  max-width: 24px;
+  background: var(--bg-surface-hover);
+  border-radius: 6px 6px 0 0;
+  transition: all 0.3s ease;
+}
+
+.bar-chart-bar-fill-active {
+  background: var(--brand-primary);
+}
+
+.bar-chart-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-low);
+}
+
+.bar-chart-label-active {
+  color: var(--brand-primary);
+}
+
+/* PR List Widget */
+.pr-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pr-list-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.pr-list-icon {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.pr-list-icon-purple {
+  color: #a855f7;
+}
+
+.pr-list-icon-blue {
+  color: #2ba6ff;
+}
+
+.pr-list-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.pr-list-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-high);
+  text-decoration: none;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.pr-list-title:hover {
+  color: var(--brand-primary);
+}
+
+.pr-list-metadata {
+  font-size: 11px;
+  color: var(--text-medium);
+}
+
+/* Team Context Widget */
+.team-context-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.team-member-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.team-member-row:hover {
+  background: var(--bg-surface-hover);
+}
+
+.team-member-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.team-member-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.team-member-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-high);
+  margin-bottom: 2px;
+}
+
+.team-member-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-medium);
+}
+
+.team-member-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.team-member-expand {
+  width: 14px;
+  height: 14px;
+  color: var(--text-medium);
+  flex-shrink: 0;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .dashboard-stats-grid {
+    grid-template-columns: 1fr;
+  }
+}

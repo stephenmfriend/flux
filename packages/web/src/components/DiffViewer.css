@@ -1,0 +1,160 @@
+/* Diff Viewer */
+.diff-viewer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.diff-viewer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+}
+
+.diff-viewer-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.diff-file {
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.diff-file-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.diff-file-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-high);
+  font-family: ui-monospace, 'SF Mono', 'Cascadia Code', 'Source Code Pro', monospace;
+}
+
+.diff-file-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.diff-delete-button {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-medium);
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.diff-delete-button:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.diff-content {
+  background: #0d1117;
+  overflow-x: auto;
+}
+
+.diff-line {
+  display: flex;
+  font-family: ui-monospace, 'SF Mono', 'Cascadia Code', 'Source Code Pro', monospace;
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.diff-line-number {
+  width: 32px;
+  text-align: right;
+  padding: 0 8px;
+  color: var(--text-low);
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.diff-line-content {
+  flex: 1;
+  padding: 0 12px;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+/* Added Lines */
+.diff-line-added {
+  background: rgba(46, 160, 67, 0.15);
+}
+
+.diff-line-added .diff-line-content {
+  color: #e6ffec;
+}
+
+.diff-line-added .diff-line-number {
+  background: rgba(46, 160, 67, 0.2);
+}
+
+/* Removed Lines */
+.diff-line-removed {
+  background: rgba(248, 81, 73, 0.15);
+}
+
+.diff-line-removed .diff-line-content {
+  color: #ffdadb;
+}
+
+.diff-line-removed .diff-line-number {
+  background: rgba(248, 81, 73, 0.2);
+}
+
+/* Unchanged Lines */
+.diff-line-unchanged {
+  background: transparent;
+}
+
+.diff-line-unchanged .diff-line-content {
+  color: var(--text-medium);
+}
+
+/* Collapse State */
+.diff-file.collapsed .diff-content {
+  display: none;
+}
+
+.diff-toggle-button {
+  background: transparent;
+  border: none;
+  color: var(--text-medium);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.diff-toggle-button:hover {
+  color: var(--text-high);
+}
+
+.diff-toggle-button svg {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.2s ease;
+}
+
+.diff-file.collapsed .diff-toggle-button svg {
+  transform: rotate(-90deg);
+}

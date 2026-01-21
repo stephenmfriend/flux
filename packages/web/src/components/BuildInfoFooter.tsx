@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'preact/hooks'
 
-type VersionInfo = {
+interface VersionInfo {
   sha: string
   time: string
 }

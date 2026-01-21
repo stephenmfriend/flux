@@ -1,9 +1,11 @@
-import { useEffect, useState } from "preact/hooks";
+import { h } from "preact";
+import { useEffect, useState, useMemo } from "preact/hooks";
 import { route, RoutableProps } from "preact-router";
 import {
-  Cog6ToothIcon,
   ExclamationTriangleIcon,
-  PencilSquareIcon,
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  ArrowsUpDownIcon
 } from "@heroicons/react/24/outline";
 import {
   getProjects,
@@ -11,28 +13,76 @@ import {
   updateProject,
   type ProjectWithStats,
 } from "../stores";
-import { ConfirmModal, Modal, ThemeToggle } from "../components";
-import { WebhooksPanel } from "../components/WebhooksPanel";
+import {
+  ConfirmModal,
+  Modal,
+  AppLayout,
+  WebhooksPanel,
+  PageHeader,
+  StandardPageHeader,
+  StandardSearchBar,
+  StandardViewToggle,
+  StandardButton,
+  Spinner,
+  type ProjectWithMeta,
+  type ProjectMeta
+} from "../components";
+
+// Helper to generate consistent mock meta data based on project ID
+function generateMockMeta(project: ProjectWithStats): ProjectMeta {
+  // Simple hash function for consistency
+  const hash = project.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+
+  const aiStatuses: ProjectMeta['aiStatus'][] = ['Idle', 'Running', 'Blocked', 'Failing'];
+  const risks: ProjectMeta['risk'][] = ['Green', 'Amber', 'Red'];
+  const phases: ('Shaping' | 'Betting' | 'Active' | 'Shipped')[] = ['Shaping', 'Betting', 'Active', 'Shipped'];
+
+  const aiStatus = aiStatuses[hash % 4];
+  const risk = risks[hash % 3];
+  const primaryPhase = phases[hash % 4];
+
+  return {
+    aiStatus,
+    risk,
+    primaryPhase,
+    lanes: {
+      shaping: (hash * 3) % 5,
+      betting: (hash * 2) % 3,
+      active: (hash * 7) % 4,
+      shipped: (hash * 5) % 10,
+    },
+    activeBets: (hash * 2) % 3,
+    lastEvent: ['Scope cut 2h ago', 'Shipped 19 01 2026', '6 failures in 30m', 'Blocked 10m ago', 'Merged 3 PRs today'][hash % 5],
+    thrash: {
+      cuts: (hash * 4) % 4,
+      retries: (hash * 6) % 25,
+    },
+    blockers: {
+      count: aiStatus === 'Blocked' || aiStatus === 'Failing' ? 1 : 0,
+      reason: aiStatus === 'Blocked' ? 'missing fixture' : aiStatus === 'Failing' ? 'dependency' : undefined
+    }
+  };
+}
 
 export function ProjectList(_props: RoutableProps) {
-  const [projects, setProjects] = useState<ProjectWithStats[]>([]);
+  // Add h usage to ensure import is used (though jsx uses it implicitly)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _jsx = h;
+
+  const [projects, setProjects] = useState<ProjectWithMeta[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingProject, setEditingProject] = useState<ProjectWithStats | null>(
-    null
-  );
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Existing state
+  const [editingProject, setEditingProject] = useState<ProjectWithStats | null>(null);
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [saving, setSaving] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [settingsSection, setSettingsSection] = useState<
-    "configuration" | "webhooks" | "reset"
-  >("configuration");
-  const [apiStatus, setApiStatus] = useState<"online" | "offline" | "unknown">(
-    "unknown"
-  );
-  const [sseStatus, setSseStatus] = useState<"online" | "offline" | "unknown">(
-    "unknown"
-  );
+  const [settingsSection, setSettingsSection] = useState<"configuration" | "webhooks" | "reset">("configuration");
+  const [apiStatus, setApiStatus] = useState<"online" | "offline" | "unknown">("unknown");
+  const [sseStatus, setSseStatus] = useState<"online" | "offline" | "unknown">("unknown");
   const [resetting, setResetting] = useState(false);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
 
@@ -40,43 +90,17 @@ export function ProjectList(_props: RoutableProps) {
     refreshProjects();
   }, []);
 
-  useEffect(() => {
-    if (!settingsOpen) {
-      setSseStatus("unknown");
-      setResetConfirmOpen(false);
-      return;
-    }
-    setSseStatus("unknown");
-    const eventsBase = import.meta.env.DEV ? "http://localhost:3000" : "";
-    const source = new EventSource(`${eventsBase}/api/events`);
-    let connected = false;
-    const timeoutId = window.setTimeout(() => {
-      if (!connected) setSseStatus("offline");
-    }, 3000);
-
-    const handleConnected = () => {
-      connected = true;
-      setSseStatus("online");
-    };
-
-    source.addEventListener("connected", handleConnected);
-    source.onerror = () => {
-      if (!connected) setSseStatus("offline");
-    };
-
-    return () => {
-      source.removeEventListener("connected", handleConnected);
-      source.close();
-      window.clearTimeout(timeoutId);
-    };
-  }, [settingsOpen]);
-
   const refreshProjects = async () => {
     setLoading(true);
     setApiStatus("unknown");
     try {
       const allProjects = await getProjects();
-      setProjects(allProjects);
+      // Enrich with mock meta
+      const enrichedProjects = allProjects.map(p => ({
+        ...p,
+        meta: generateMockMeta(p)
+      }));
+      setProjects(enrichedProjects);
       setApiStatus("online");
     } catch {
       setProjects([]);
@@ -137,155 +161,368 @@ export function ProjectList(_props: RoutableProps) {
     }
   };
 
-  const apiOrigin =
-    typeof window === "undefined" ? "" : window.location.origin;
-  const apiLocation = import.meta.env.DEV
-    ? "http://localhost:3000/api"
-    : `${apiOrigin}/api`;
-  const sseLocation = import.meta.env.DEV
-    ? "http://localhost:3000/api/events"
-    : `${apiOrigin}/api/events`;
+  // Filter projects
+  const filteredProjects = useMemo(() => {
+    if (!searchQuery) return projects;
+    const lowerQuery = searchQuery.toLowerCase();
+    return projects.filter(p =>
+      p.name.toLowerCase().includes(lowerQuery) ||
+      p.description?.toLowerCase().includes(lowerQuery)
+    );
+  }, [projects, searchQuery]);
 
+  // Group projects by phase
+  const groupedProjects = useMemo(() => {
+    const groups: Record<string, ProjectWithMeta[]> = {
+      'Shaping': [],
+      'Betting': [],
+      'Active': [],
+      'Shipped': []
+    };
+
+    filteredProjects.forEach(p => {
+      const phase = (p.meta as any)?.primaryPhase || 'Shaping';
+      if (groups[phase]) {
+        groups[phase].push(p);
+      }
+    });
+
+    return groups;
+  }, [filteredProjects]);
+
+  const phases = ['Shaping', 'Betting', 'Active', 'Shipped'];
+
+  // Status helpers from existing code
+  const apiOrigin = typeof window === "undefined" ? "" : window.location.origin;
+  const apiLocation = import.meta.env.DEV ? "http://localhost:3000/api" : `${apiOrigin}/api`;
+  const sseLocation = import.meta.env.DEV ? "http://localhost:3000/api/events" : `${apiOrigin}/api/events`;
   const statusLabel = (status: "online" | "offline" | "unknown") => {
     if (status === "online") return "Online";
     if (status === "offline") return "Offline";
     return "Checking";
   };
-
   const statusDotClass = (status: "online" | "offline" | "unknown") => {
     if (status === "online") return "bg-success";
     if (status === "offline") return "bg-error";
     return "bg-base-content/30";
   };
 
+  // Settings Menu Config
   const settingsSections = [
-    {
-      id: "configuration",
-      title: "Configuration",
-      subtitle: "API endpoints and realtime status",
-    },
-    {
-      id: "webhooks",
-      title: "Webhooks",
-      subtitle: "Outbound events and delivery history",
-    },
-    {
-      id: "reset",
-      title: "Reset",
-      subtitle: "Wipe data and start fresh",
-    },
+    { id: "configuration", title: "Configuration", subtitle: "API endpoints and realtime status" },
+    { id: "webhooks", title: "Webhooks", subtitle: "Outbound events and delivery history" },
+    { id: "reset", title: "Reset", subtitle: "Wipe data and start fresh" },
   ] as const;
 
   if (loading) {
     return (
-      <div class="min-h-screen bg-base-200 flex items-center justify-center">
-        <span class="loading loading-spinner loading-lg"></span>
-      </div>
+      <AppLayout currentPath="/" breadcrumbs={[{ label: 'Projects', active: true }]}>
+        <div className="flex items-center justify-center h-[calc(100vh-64px)]">
+          <span className="loading loading-spinner loading-lg"></span>
+        </div>
+      </AppLayout>
     );
   }
 
   return (
-    <div class="min-h-screen bg-base-200">
-      <div class="navbar bg-base-100 shadow-lg">
-        <div class="flex-1">
-          <span class="text-xl font-bold px-4">Flux</span>
-        </div>
-        <div class="flex-none flex items-center gap-2">
-          <button
-            class="btn btn-ghost btn-sm btn-circle"
-            onClick={openSettings}
-            title="Settings"
-          >
-            <Cog6ToothIcon className="h-5 w-5" />
-          </button>
-          <ThemeToggle />
-        </div>
-      </div>
+    <>
+      <AppLayout
+        currentPath="/"
+        breadcrumbs={[{ label: 'Projects', active: true }]}
+        userInitials="U"
+        onFeedbackClick={openSettings}
+      >
+        <div className="p-6">
 
-      <div class="p-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <button
-            type="button"
-            class="card bg-base-100 shadow-md hover:shadow-lg transition-shadow border-2 border-dashed border-base-300 text-left"
-            onClick={() => route("/new")}
-          >
-            <div class="card-body items-center justify-center text-center">
-              <div class="text-4xl font-semibold">+</div>
-              <div class="text-lg font-semibold">New Project</div>
-            </div>
-          </button>
+          {/* Page Header with Description */}
+          <StandardPageHeader
+            title="Projects"
+            subtitle="Organize work into self-contained projects."
+            toolbar={
+              <>
+                <StandardSearchBar
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  placeholder="Search projects..."
+                />
+                <StandardViewToggle
+                  value={viewMode}
+                  onChange={(mode) => setViewMode(mode)}
+                  options={[
+                    {
+                      value: 'grid',
+                      icon: (
+                        <svg width='16' height='16' fill='none' stroke='currentColor' strokeWidth='2' viewBox='0 0 24 24'>
+                          <rect x='3' y='3' width='7' height='7'></rect>
+                          <rect x='14' y='3' width='7' height='7'></rect>
+                          <rect x='14' y='14' width='7' height='7'></rect>
+                          <rect x='3' y='14' width='7' height='7'></rect>
+                        </svg>
+                      )
+                    },
+                    {
+                      value: 'table',
+                      icon: (
+                        <svg width='16' height='16' fill='none' stroke='currentColor' strokeWidth='2' viewBox='0 0 24 24'>
+                          <path d="M3 12h18M3 6h18M3 18h18"></path>
+                        </svg>
+                      )
+                    }
+                  ]}
+                />
+                <StandardButton icon={
+                  <svg width='16' height='16' fill='none' stroke='currentColor' strokeWidth='2' viewBox='0 0 24 24'>
+                    <path d='M3 6h18M3 12h18M3 18h18' />
+                  </svg>
+                }>
+                  Filter
+                </StandardButton>
+                <StandardButton onClick={refreshProjects} icon={
+                  <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                    <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
+                    <path d="M21 3v5h-5" />
+                  </svg>
+                }>
+                  Sync
+                </StandardButton>
+                <StandardButton variant="primary" onClick={() => route('/new')} icon={
+                  <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                }>
+                  New Project
+                </StandardButton>
+              </>
+            }
+          />
 
-          {projects.map((project) => (
-            <div
-              key={project.id}
-              class="card bg-base-100 shadow-md hover:shadow-lg transition-shadow cursor-pointer"
-              onClick={() => route(`/board/${project.id}`)}
-            >
-              <div class="card-body">
-                <div class="flex items-start justify-between gap-3">
-                  <h3 class="card-title">{project.name}</h3>
-                  <button
-                    type="button"
-                    class="btn btn-ghost btn-sm btn-circle"
-                    aria-label="Edit project"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openEditModal(project);
-                    }}
-                  >
-                    <PencilSquareIcon className="h-4 w-4" aria-hidden="true" />
-                  </button>
-                </div>
-                {project.description && (
-                  <p class="text-base-content/60 text-sm line-clamp-2">
-                    {project.description}
-                  </p>
-                )}
-                <div class="mt-2">
-                  {project.stats.total === 0 ? (
-                    <span class="badge badge-soft badge-sm">No tasks</span>
-                  ) : (
-                    <span
-                      class={`badge badge-soft badge-sm ${
-                        project.stats.done === project.stats.total
-                          ? "badge-success"
-                          : ""
-                      }`}
-                    >
-                      {project.stats.done} of {project.stats.total} complete
-                    </span>
-                  )}
-                </div>
+          {/* Legend Section - Grouped using Gestalt Proximity */}
+          <div className="info-strip mb-6 py-3">
+            <div className="info-group">
+              <span className="info-label">AI State</span>
+              <div className="flex gap-4">
+                <span className="badge badge-gray">Idle</span>
+                <span className="badge badge-green">Running</span>
+                <span className="badge badge-yellow">Blocked</span>
+                <span className="badge badge-red">Failing</span>
               </div>
             </div>
-          ))}
-        </div>
-      </div>
 
+            <div className="info-separator h-6"></div>
+
+            <div className="info-group">
+              <span className="info-label">Risk Level</span>
+              <div className="flex gap-4">
+                <span className="flex items-center gap-2">
+                  <div className="status-dot status-dot-green"></div>
+                  <span className="info-value">Green</span>
+                </span>
+                <span className="flex items-center gap-2">
+                  <div className="status-dot status-dot-yellow"></div>
+                  <span className="info-value">Amber</span>
+                </span>
+                <span className="flex items-center gap-2">
+                  <div className="status-dot status-dot-red"></div>
+                  <span className="info-value">Red</span>
+                </span>
+              </div>
+            </div>
+
+            <div className="info-separator h-6"></div>
+
+            <div className="info-group">
+              <span className="info-label">Progress</span>
+              <div className="flex items-center gap-4">
+                <div className="flex gap-[1px]">
+                  <div className="w-2 h-2 rounded-[1px] bg-[#3ecf8e]"></div>
+                  <div className="w-2 h-2 rounded-[1px] border border-text-low/30"></div>
+                  <div className="w-2 h-2 rounded-[1px] border border-text-low/30"></div>
+                </div>
+                <span className="info-value">Active Bets</span>
+              </div>
+            </div>
+
+            <div className="info-separator h-6"></div>
+
+            <div className="info-group">
+              <span className="info-label">Thrash</span>
+              <span className="info-value">Cuts / Retries</span>
+            </div>
+          </div>
+
+          {/* Project Content Section */}
+          <section className="mt-6">
+            {/* Section Header */}
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-text-high tracking-tight">
+                  All Projects
+                </h2>
+                <p className="text-xs text-text-medium mt-1">
+                  {filteredProjects.length} projects sorted by workflow phase
+                </p>
+              </div>
+            </div>
+
+            <div className="min-w-[800px] overflow-x-auto">
+              {/* List Header */}
+              <div className="grid grid-cols-[200px_100px_100px_80px_180px_100px_100px] gap-4 px-4 py-2 text-[10px] font-bold text-text-low uppercase tracking-widest border-b border-border-default mb-4 bg-bg-base z-10">
+                <div>Name</div>
+                <div>AI State</div>
+                <div>Risk</div>
+                <div>Active</div>
+                <div>Last Event</div>
+                <div>Blockers</div>
+                <div>Thrash</div>
+              </div>
+
+              {filteredProjects.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-state-title">No projects found</div>
+                  <div className="empty-state-description">
+                    {projects.length === 0
+                      ? 'Get started by creating your first project'
+                      : 'Try adjusting your search or filters'}
+                  </div>
+                  {projects.length === 0 && (
+                    <button className="btn mt-4" onClick={() => route('/new')}>Create First Project</button>
+                  )}
+                </div>
+              ) : (
+                <div className="flex flex-col gap-8 pb-20">
+                  {phases.map(phase => {
+                    const phaseProjects = groupedProjects[phase];
+                    if (!phaseProjects || phaseProjects.length === 0) return null;
+
+                    return (
+                      <div key={phase} className="rounded-xl border border-border-subtle bg-bg-surface/30 overflow-hidden">
+                        {/* Phase Group Header */}
+                        <div className="flex items-center px-4 py-3 bg-bg-surface border-b border-border-subtle">
+                          <div className={`status-dot mr-3 ${phase === 'Shaping' ? 'status-dot-gray' :
+                            phase === 'Betting' ? 'status-dot-yellow' :
+                              phase === 'Active' ? 'status-dot-green' :
+                                'status-dot-purple'
+                            }`}></div>
+                          <h3 className="text-sm font-semibold text-text-high">{phase}</h3>
+                          <span className="text-text-medium text-xs ml-2">
+                            {phaseProjects.length}
+                          </span>
+                        </div>
+
+                        {/* Phase Projects */}
+                        <div className="divide-y divide-border-subtle/30">
+                          {phaseProjects.map((project) => (
+                            <div key={project.id} className="group hover:bg-bg-surface-hover/30 transition-colors">
+                              {/* Main Project Row */}
+                              <div className="grid grid-cols-[200px_100px_100px_80px_180px_100px_100px] gap-4 px-4 py-3 items-center">
+                                <div className="font-bold text-text-high cursor-pointer hover:text-[#3ecf8e] transition-colors" onClick={() => route(`/board/${project.id}`)}>
+                                  {project.name}
+                                </div>
+
+                                <div className={`text-xs font-bold uppercase tracking-wider ${project.meta?.aiStatus === 'Running' ? 'text-brand-primary' :
+                                  project.meta?.aiStatus === 'Blocked' ? 'text-amber-500' :
+                                    project.meta?.aiStatus === 'Failing' ? 'text-red-500' :
+                                      'text-text-medium'
+                                  }`}>
+                                  {project.meta?.aiStatus}
+                                </div>
+
+                                <div className={`text-xs font-bold uppercase tracking-wider ${project.meta?.risk === 'Green' ? 'text-[#3ecf8e]' :
+                                  project.meta?.risk === 'Amber' ? 'text-amber-500' :
+                                    'text-red-500'
+                                  }`}>
+                                  {project.meta?.risk}
+                                </div>
+
+                                <div className="text-sm font-mono text-text-high ml-4">
+                                  {project.meta?.activeBets}
+                                </div>
+
+                                <div className="text-xs text-text-medium whitespace-nowrap overflow-hidden text-ellipsis">
+                                  {project.meta?.lastEvent}
+                                </div>
+
+                                <div className={`text-sm font-mono ml-6 ${project.meta?.blockers?.count ? 'text-red-500 font-bold' : 'text-text-medium'}`}>
+                                  {project.meta?.blockers?.count}
+                                </div>
+
+                                <div className="text-sm font-mono text-text-medium">
+                                  {project.meta?.thrash?.cuts} / {project.meta?.thrash?.retries}
+                                </div>
+                              </div>
+
+                              {/* Phases Sub-rows */}
+                              <div className="relative ml-8 pb-3 space-y-0.5">
+                                <div className="absolute left-[-12px] top-0 bottom-4 w-px bg-border-subtle/40"></div>
+                                {[
+                                  { label: 'Shaping', val: project.meta?.lanes?.shaping || 0 },
+                                  { label: 'Betting', val: project.meta?.lanes?.betting || 0 },
+                                  { label: 'Active', val: project.meta?.lanes?.active || 0 },
+                                  { label: 'Shipped', val: project.meta?.lanes?.shipped || 0 }
+                                ].map((p, i) => (
+                                  <div key={p.label} className="relative flex items-center gap-4 py-0.5 h-5">
+                                    <div className="absolute left-[-12px] w-3 h-px bg-border-subtle/40"></div>
+                                    <div className="w-[80px] text-[10px] text-text-medium/60 font-medium pl-1">
+                                      {p.label}
+                                    </div>
+                                    <div className="flex gap-[3px]">
+                                      {[1, 2, 3, 4, 5].map(k => (
+                                        <div key={k} className={`w-1.5 h-1.5 rounded-[1px] ${k <= p.val
+                                          ? (p.val >= 4 ? 'bg-[#3ecf8e]' : 'bg-text-high')
+                                          : 'bg-bg-surface-hover/50'
+                                          }`}></div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* New Project Button */}
+              <div className="mt-6 border-t border-dashed border-border-subtle pt-6 pb-20">
+                <button
+                  onClick={() => route('/new')}
+                  className="btn-dashed-add"
+                >
+                  <span className="text-lg leading-none">+</span> New Project
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
+      </AppLayout>
+
+      {/* Settings Modal (kept same as before) */}
       <Modal
         isOpen={settingsOpen}
         onClose={() => setSettingsOpen(false)}
         title="Settings"
         boxClassName="!w-[80vw] !h-[80vh] !max-w-none !max-h-none overflow-y-auto"
       >
-        <div class="grid gap-4 lg:grid-cols-[240px_1fr]">
-          <div class="bg-base-200 rounded-box p-0">
-            <ul class="menu">
+        <div className="grid gap-4 lg:grid-cols-[240px_1fr]">
+          <div className="bg-base-200 rounded-box p-0">
+            <ul className="menu">
               {settingsSections.map((section) => {
                 const isActive = settingsSection === section.id;
                 return (
                   <li key={section.id}>
                     <button
                       type="button"
-                      class={`rounded-none flex flex-col items-start gap-0.5 ${
-                        isActive
-                          ? "bg-base-300 border-l-4 border-primary"
-                          : ""
-                      }`}
+                      className={`rounded-none flex flex-col items-start gap-0.5 ${isActive
+                        ? "bg-base-300 border-l-4 border-primary"
+                        : ""
+                        }`}
                       onClick={() => setSettingsSection(section.id)}
                     >
-                      <span class="font-medium">{section.title}</span>
-                      <span class="text-xs text-base-content/60">
+                      <span className="font-medium">{section.title}</span>
+                      <span className="text-xs text-base-content/60">
                         {section.subtitle}
                       </span>
                     </button>
@@ -295,52 +532,52 @@ export function ProjectList(_props: RoutableProps) {
             </ul>
           </div>
 
-          <div class="bg-base-100 rounded-box border border-base-200 p-4 min-h-[360px]">
+          <div className="bg-base-100 rounded-box border border-base-200 p-4 min-h-[360px]">
             {settingsSection === "configuration" && (
-              <div class="space-y-4">
+              <div className="space-y-4">
                 <div>
-                  <h4 class="text-lg font-semibold">Configuration</h4>
-                  <p class="text-sm text-base-content/60">
+                  <h4 className="text-lg font-semibold">Configuration</h4>
+                  <p className="text-sm text-base-content/60">
                     Read-only diagnostics for your Flux instance.
                   </p>
                 </div>
-                <div class="space-y-3">
-                  <div class="rounded-lg border border-base-200 p-3">
-                    <div class="text-xs uppercase tracking-wide text-base-content/60">
+                <div className="space-y-3">
+                  <div className="rounded-lg border border-base-200 p-3">
+                    <div className="text-xs uppercase tracking-wide text-base-content/60">
                       API Location
                     </div>
-                    <div class="mt-1 font-mono text-xs">{apiLocation}</div>
+                    <div className="mt-1 font-mono text-xs">{apiLocation}</div>
                   </div>
-                  <div class="rounded-lg border border-base-200 p-3">
-                    <div class="text-xs uppercase tracking-wide text-base-content/60">
+                  <div className="rounded-lg border border-base-200 p-3">
+                    <div className="text-xs uppercase tracking-wide text-base-content/60">
                       Events Stream
                     </div>
-                    <div class="mt-1 font-mono text-xs">{sseLocation}</div>
+                    <div className="mt-1 font-mono text-xs">{sseLocation}</div>
                   </div>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div class="flex items-center gap-3 rounded-lg border border-base-200 p-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center gap-3 rounded-lg border border-base-200 p-3">
                     <span
-                      class={`h-2.5 w-2.5 rounded-full ${statusDotClass(
+                      className={`h-2.5 w-2.5 rounded-full ${statusDotClass(
                         apiStatus
                       )}`}
                     ></span>
                     <div>
-                      <div class="text-sm font-medium">API Status</div>
-                      <div class="text-xs text-base-content/60">
+                      <div className="text-sm font-medium">API Status</div>
+                      <div className="text-xs text-base-content/60">
                         {statusLabel(apiStatus)}
                       </div>
                     </div>
                   </div>
-                  <div class="flex items-center gap-3 rounded-lg border border-base-200 p-3">
+                  <div className="flex items-center gap-3 rounded-lg border border-base-200 p-3">
                     <span
-                      class={`h-2.5 w-2.5 rounded-full ${statusDotClass(
+                      className={`h-2.5 w-2.5 rounded-full ${statusDotClass(
                         sseStatus
                       )}`}
                     ></span>
                     <div>
-                      <div class="text-sm font-medium">SSE Updates</div>
-                      <div class="text-xs text-base-content/60">
+                      <div className="text-sm font-medium">SSE Updates</div>
+                      <div className="text-xs text-base-content/60">
                         {statusLabel(sseStatus)}
                       </div>
                     </div>
@@ -350,20 +587,20 @@ export function ProjectList(_props: RoutableProps) {
             )}
 
             {settingsSection === "webhooks" && (
-              <div class="space-y-4">
+              <div className="space-y-4">
                 <WebhooksPanel />
               </div>
             )}
 
             {settingsSection === "reset" && (
-              <div class="space-y-4">
+              <div className="space-y-4">
                 <div>
-                  <h4 class="text-lg font-semibold">Reset Database</h4>
-                  <p class="text-sm text-base-content/60">
+                  <h4 className="text-lg font-semibold">Reset Database</h4>
+                  <p className="text-sm text-base-content/60">
                     This will wipe all projects, tasks, epics, and webhooks.
                   </p>
                 </div>
-                <div class="alert alert-warning">
+                <div className="alert alert-warning">
                   <ExclamationTriangleIcon className="h-5 w-5" />
                   <span>
                     This action is permanent. You cannot undo a reset.
@@ -371,12 +608,12 @@ export function ProjectList(_props: RoutableProps) {
                 </div>
                 <button
                   type="button"
-                  class="btn btn-error"
+                  className="btn btn-error"
                   onClick={() => setResetConfirmOpen(true)}
                   disabled={resetting}
                 >
                   {resetting ? (
-                    <span class="loading loading-spinner loading-sm"></span>
+                    <span className="loading loading-spinner loading-sm"></span>
                   ) : (
                     "Reset Database"
                   )}
@@ -385,7 +622,7 @@ export function ProjectList(_props: RoutableProps) {
             )}
           </div>
         </div>
-      </Modal>
+      </Modal >
 
       <Modal
         isOpen={!!editingProject}
@@ -393,25 +630,25 @@ export function ProjectList(_props: RoutableProps) {
         title="Edit Project"
       >
         <form onSubmit={handleEditSubmit}>
-          <div class="form-control mb-4">
-            <label class="label">
-              <span class="label-text">Project Name *</span>
+          <div className="form-control mb-4">
+            <label className="label">
+              <span className="label-text">Project Name *</span>
             </label>
             <input
               type="text"
-              class="input input-bordered w-full"
+              className="input input-bordered w-full"
               value={editName}
               onInput={(e) => setEditName((e.target as HTMLInputElement).value)}
               required
             />
           </div>
 
-          <div class="form-control mb-6">
-            <label class="label">
-              <span class="label-text">Description</span>
+          <div className="form-control mb-6">
+            <label className="label">
+              <span className="label-text">Description</span>
             </label>
             <textarea
-              class="textarea textarea-bordered w-full"
+              className="textarea textarea-bordered w-full"
               rows={3}
               value={editDescription}
               onInput={(e) =>
@@ -420,21 +657,21 @@ export function ProjectList(_props: RoutableProps) {
             />
           </div>
 
-          <div class="modal-action">
+          <div className="modal-action">
             <button
               type="button"
-              class="btn btn-ghost"
+              className="btn btn-ghost"
               onClick={() => closeEditModal()}
             >
               Cancel
             </button>
             <button
               type="submit"
-              class="btn btn-primary"
+              className="btn btn-primary"
               disabled={!editName.trim() || saving}
             >
               {saving ? (
-                <span class="loading loading-spinner loading-sm"></span>
+                <span className="loading loading-spinner loading-sm"></span>
               ) : (
                 "Save"
               )}
@@ -455,6 +692,6 @@ export function ProjectList(_props: RoutableProps) {
         }}
         isLoading={resetting}
       />
-    </div>
+    </>
   );
 }

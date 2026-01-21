@@ -4,7 +4,7 @@ import { PRIORITIES, TASK_TYPES } from './types.js';
 // Storage adapter interface - can be localStorage or file-based
 export interface StorageAdapter {
   read(): void;
-  write(): void;
+  write(): void | Promise<void>; // Allow both sync and async implementations
   data: Store;
   isTest?: boolean; // Flag to mark test adapters for safety checks
 }
@@ -207,7 +207,7 @@ export function getProject(id: string): Project | undefined {
   return (db.data.projects || []).find(p => p.id === id);
 }
 
-export function createProject(name: string, description?: string): Project {
+export async function createProject(name: string, description?: string): Promise<Project> {
   const project: Project = {
     id: generateId(),
     name,
@@ -215,26 +215,26 @@ export function createProject(name: string, description?: string): Project {
   };
   if (!db.data.projects) db.data.projects = [];
   db.data.projects.push(project);
-  db.write();
+  await db.write();
   return project;
 }
 
-export function updateProject(id: string, updates: Partial<Omit<Project, 'id'>>): Project | undefined {
+export async function updateProject(id: string, updates: Partial<Omit<Project, 'id'>>): Promise<Project | undefined> {
   const index = db.data.projects.findIndex(p => p.id === id);
   if (index === -1) return undefined;
   db.data.projects[index] = { ...db.data.projects[index], ...updates };
-  db.write();
+  await db.write();
   return db.data.projects[index];
 }
 
-export function deleteProject(id: string): void {
+export async function deleteProject(id: string): Promise<void> {
   const index = db.data.projects.findIndex(p => p.id === id);
   if (index === -1) return;
   db.data.projects.splice(index, 1);
   // Remove all epics and tasks for this project
   db.data.epics = db.data.epics.filter(e => e.project_id !== id);
   db.data.tasks = db.data.tasks.filter(t => t.project_id !== id);
-  db.write();
+  await db.write();
 }
 
 export function getProjectStats(projectId: string): { total: number; done: number } {
@@ -259,12 +259,12 @@ export function getEpic(id: string): Epic | undefined {
   return db.data.epics.find(e => e.id === id);
 }
 
-export function createEpic(
+export async function createEpic(
   projectId: string,
   title: string,
   notes: string = '',
   auto: boolean = false
-): Epic {
+): Promise<Epic> {
   const epic: Epic = {
     id: generateId(),
     title,
@@ -275,19 +275,19 @@ export function createEpic(
     project_id: projectId,
   };
   db.data.epics.push(epic);
-  db.write();
+  await db.write();
   return epic;
 }
 
-export function updateEpic(id: string, updates: Partial<Omit<Epic, 'id'>>): Epic | undefined {
+export async function updateEpic(id: string, updates: Partial<Omit<Epic, 'id'>>): Promise<Epic | undefined> {
   const index = db.data.epics.findIndex(e => e.id === id);
   if (index === -1) return undefined;
   db.data.epics[index] = { ...db.data.epics[index], ...updates };
-  db.write();
+  await db.write();
   return db.data.epics[index];
 }
 
-export function deleteEpic(id: string): boolean {
+export async function deleteEpic(id: string): Promise<boolean> {
   const index = db.data.epics.findIndex(e => e.id === id);
   if (index === -1) return false;
   db.data.epics.splice(index, 1);
@@ -297,7 +297,7 @@ export function deleteEpic(id: string): boolean {
       task.epic_id = undefined;
     }
   });
-  db.write();
+  await db.write();
   return true;
 }
 
@@ -323,12 +323,12 @@ export function getTasksByStatus(projectId: string, status: string): Task[] {
   return db.data.tasks.filter(t => t.project_id === projectId && t.status === status);
 }
 
-export function createTask(
+export async function createTask(
   projectId: string,
   title: string,
   epicId?: string,
   options?: { priority?: Priority; type?: TaskType; depends_on?: string[]; acceptance_criteria?: string[]; guardrails?: Guardrail[] }
-): Task {
+): Promise<Task> {
   const now = new Date().toISOString();
   const id = generateId();
   // Validate priority
@@ -358,11 +358,11 @@ export function createTask(
     updated_at: now,
   };
   db.data.tasks.push(task);
-  db.write();
+  await db.write();
   return task;
 }
 
-export function updateTask(id: string, updates: Partial<Omit<Task, 'id'>>): Task | undefined {
+export async function updateTask(id: string, updates: Partial<Omit<Task, 'id'>>): Promise<Task | undefined> {
   const index = db.data.tasks.findIndex(t => t.id === id);
   if (index === -1) return undefined;
   // Validate priority if being updated
@@ -393,11 +393,11 @@ export function updateTask(id: string, updates: Partial<Omit<Task, 'id'>>): Task
     ...processedUpdates,
     updated_at: new Date().toISOString(),
   };
-  db.write();
+  await db.write();
   return db.data.tasks[index];
 }
 
-export function deleteTask(id: string): boolean {
+export async function deleteTask(id: string): Promise<boolean> {
   const index = db.data.tasks.findIndex(t => t.id === id);
   if (index === -1) return false;
   db.data.tasks.splice(index, 1);
@@ -408,17 +408,17 @@ export function deleteTask(id: string): boolean {
       task.depends_on.splice(depIndex, 1);
     }
   });
-  db.write();
+  await db.write();
   return true;
 }
 
 // ============ Comment Operations ============
 
-export function addTaskComment(
+export async function addTaskComment(
   taskId: string,
   body: string,
   author: CommentAuthor
-): TaskComment | undefined {
+): Promise<TaskComment | undefined> {
   const task = db.data.tasks.find(t => t.id === taskId);
   if (!task) return undefined;
   const comment: TaskComment = {
@@ -429,17 +429,17 @@ export function addTaskComment(
   };
   if (!task.comments) task.comments = [];
   task.comments.push(comment);
-  db.write();
+  await db.write();
   return comment;
 }
 
-export function deleteTaskComment(taskId: string, commentId: string): boolean {
+export async function deleteTaskComment(taskId: string, commentId: string): Promise<boolean> {
   const task = db.data.tasks.find(t => t.id === taskId);
   if (!task?.comments) return false;
   const index = task.comments.findIndex(comment => comment.id === commentId);
   if (index === -1) return false;
   task.comments.splice(index, 1);
-  db.write();
+  await db.write();
   return true;
 }
 
@@ -597,12 +597,12 @@ export function getWebhooksByProject(projectId: string): Webhook[] {
   );
 }
 
-export function createWebhook(
+export async function createWebhook(
   name: string,
   url: string,
   events: WebhookEventType[],
   options?: { secret?: string; project_id?: string; enabled?: boolean }
-): Webhook {
+): Promise<Webhook> {
   ensureWebhooksArrays();
   const now = new Date().toISOString();
   const webhook: Webhook = {
@@ -617,14 +617,14 @@ export function createWebhook(
     updated_at: now,
   };
   getWebhookData().webhooks!.push(webhook);
-  db.write();
+  await db.write();
   return webhook;
 }
 
-export function updateWebhook(
+export async function updateWebhook(
   id: string,
   updates: Partial<Omit<Webhook, 'id' | 'created_at'>>
-): Webhook | undefined {
+): Promise<Webhook | undefined> {
   ensureWebhooksArrays();
   const webhooks = getWebhookData().webhooks!;
   const index = webhooks.findIndex(w => w.id === id);
@@ -634,11 +634,11 @@ export function updateWebhook(
     ...updates,
     updated_at: new Date().toISOString(),
   };
-  db.write();
+  await db.write();
   return webhooks[index];
 }
 
-export function deleteWebhook(id: string): boolean {
+export async function deleteWebhook(id: string): Promise<boolean> {
   ensureWebhooksArrays();
   const data = getWebhookData();
   const index = data.webhooks!.findIndex(w => w.id === id);
@@ -646,7 +646,7 @@ export function deleteWebhook(id: string): boolean {
   data.webhooks!.splice(index, 1);
   // Also remove any delivery records for this webhook
   data.webhook_deliveries = data.webhook_deliveries!.filter(d => d.webhook_id !== id);
-  db.write();
+  await db.write();
   return true;
 }
 
@@ -667,11 +667,11 @@ export function getWebhookDeliveries(webhookId?: string, limit: number = 50): We
   return deliveries.slice(0, limit);
 }
 
-export function createWebhookDelivery(
+export async function createWebhookDelivery(
   webhookId: string,
   event: WebhookEventType,
   payload: WebhookPayload
-): WebhookDelivery {
+): Promise<WebhookDelivery> {
   ensureWebhooksArrays();
   const delivery: WebhookDelivery = {
     id: generateId(),
@@ -683,24 +683,24 @@ export function createWebhookDelivery(
     created_at: new Date().toISOString(),
   };
   getWebhookData().webhook_deliveries!.push(delivery);
-  db.write();
+  await db.write();
   return delivery;
 }
 
-export function updateWebhookDelivery(
+export async function updateWebhookDelivery(
   id: string,
   updates: Partial<Omit<WebhookDelivery, 'id' | 'webhook_id' | 'event' | 'payload' | 'created_at'>>
-): WebhookDelivery | undefined {
+): Promise<WebhookDelivery | undefined> {
   ensureWebhooksArrays();
   const deliveries = getWebhookData().webhook_deliveries!;
   const index = deliveries.findIndex(d => d.id === id);
   if (index === -1) return undefined;
   deliveries[index] = { ...deliveries[index], ...updates };
-  db.write();
+  await db.write();
   return deliveries[index];
 }
 
-export function cleanupOldDeliveries(maxAge: number = 7 * 24 * 60 * 60 * 1000): number {
+export async function cleanupOldDeliveries(maxAge: number = 7 * 24 * 60 * 60 * 1000): Promise<number> {
   ensureWebhooksArrays();
   const data = getWebhookData();
   const cutoff = new Date(Date.now() - maxAge).toISOString();
@@ -708,7 +708,7 @@ export function cleanupOldDeliveries(maxAge: number = 7 * 24 * 60 * 60 * 1000): 
   data.webhook_deliveries = data.webhook_deliveries!.filter(d => d.created_at > cutoff);
   const removed = originalCount - data.webhook_deliveries.length;
   if (removed > 0) {
-    db.write();
+    await db.write();
   }
   return removed;
 }

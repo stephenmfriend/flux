@@ -1,0 +1,38 @@
+/* State Switcher (Segmented Control) */
+.state-switcher {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: #111;
+  border-radius: 6px;
+  padding: 3px;
+}
+
+.state-switcher-button {
+  background: transparent;
+  border: none;
+  color: #666;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.state-switcher-button:hover:not(.active) {
+  color: #999;
+}
+
+.state-switcher-button.active {
+  background: #333;
+  color: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.state-switcher-button:focus {
+  outline: none;
+}

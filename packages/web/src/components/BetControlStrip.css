@@ -1,0 +1,110 @@
+/* Bet Control Strip Component (Shape Up Pattern) */
+.bet-control-strip {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+}
+
+.bet-control-section {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.bet-control-section:not(:last-child) {
+  border-right: 1px solid var(--border-subtle);
+}
+
+.bet-control-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-medium);
+}
+
+.bet-control-section-content {
+  font-size: 14px;
+  color: var(--text-high);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Bet Scope Section */
+.bet-scope-text {
+  font-size: 14px;
+  color: var(--text-high);
+  line-height: 1.5;
+}
+
+/* Appetite Section */
+.bet-appetite {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bet-appetite-size {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-high);
+}
+
+/* Hill State Section */
+.bet-hill-state {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Scope Cuts Section */
+.bet-scope-cuts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bet-scope-cut-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-medium);
+}
+
+/* Actions Section */
+.bet-control-actions {
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .bet-control-strip {
+    flex-direction: column;
+  }
+
+  .bet-control-section {
+    border-right: none;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .bet-control-section:last-child {
+    border-bottom: none;
+  }
+
+  .bet-control-actions {
+    border-top: 1px solid var(--border-subtle);
+    justify-content: flex-end;
+  }
+}

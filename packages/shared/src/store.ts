@@ -390,6 +390,40 @@ export function linkTaskToPhase(taskId: string, phaseId: string | undefined): Ta
   return db.data.tasks[index];
 }
 
+// Get epic context for PRD generation (brownfield: tasks → PRD)
+export type EpicForPRDGeneration = {
+  epic: { id: string; title: string; notes: string };
+  tasks: {
+    id: string;
+    title: string;
+    status: string;
+    acceptance_criteria?: string[];
+    guardrails?: Guardrail[];
+    depends_on: string[];
+  }[];
+};
+
+export function getEpicForPRDGeneration(epicId: string): EpicForPRDGeneration | undefined {
+  const epic = db.data.epics.find(e => e.id === epicId);
+  if (!epic) return undefined;
+
+  const tasks = db.data.tasks
+    .filter(t => t.epic_id === epicId && !t.archived)
+    .map(t => ({
+      id: t.id,
+      title: t.title,
+      status: t.status,
+      acceptance_criteria: t.acceptance_criteria,
+      guardrails: t.guardrails,
+      depends_on: t.depends_on,
+    }));
+
+  return {
+    epic: { id: epic.id, title: epic.title, notes: epic.notes },
+    tasks,
+  };
+}
+
 // ============ Task Operations ============
 
 export function getTasks(projectId: string): Task[] {

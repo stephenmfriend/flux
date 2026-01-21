@@ -36,6 +36,7 @@ import {
   getTaskWithContext,
   linkTaskToRequirements,
   linkTaskToPhase,
+  getEpicForPRDGeneration,
   getTasks,
   getTask,
   createTask,
@@ -451,6 +452,17 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             phase_id: { type: 'string', description: 'Phase ID (e.g., PHASE-01). Omit or set null to clear.' },
           },
           required: ['task_id'],
+        },
+      },
+      {
+        name: 'get_epic_for_prd_generation',
+        description: 'Get epic and task context for generating a PRD from existing tasks (brownfield). Use this to analyze existing tasks and create a PRD that documents what they implement. Returns epic info and all tasks with their acceptance_criteria, guardrails, and dependencies.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            epic_id: { type: 'string', description: 'Epic ID' },
+          },
+          required: ['epic_id'],
         },
       },
 
@@ -871,6 +883,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         : `Cleared phase from task "${task.title}"`;
       return {
         content: [{ type: 'text', text: msg }],
+      };
+    }
+
+    case 'get_epic_for_prd_generation': {
+      const context = await getEpicForPRDGeneration(args?.epic_id as string);
+      if (!context) {
+        return { content: [{ type: 'text', text: 'Epic not found' }], isError: true };
+      }
+      return {
+        content: [{
+          type: 'text',
+          text: `Epic: ${context.epic.title}\nNotes: ${context.epic.notes || '(none)'}\nTasks: ${context.tasks.length}\n\n${JSON.stringify(context, null, 2)}`
+        }],
       };
     }
 

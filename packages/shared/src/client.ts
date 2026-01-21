@@ -23,8 +23,10 @@ import {
   getPRDCoverage as localGetPRDCoverage,
   linkTaskToRequirements as localLinkTaskToRequirements,
   linkTaskToPhase as localLinkTaskToPhase,
+  getEpicForPRDGeneration as localGetEpicForPRDGeneration,
   type TaskWithContext,
   type RequirementCoverage,
+  type EpicForPRDGeneration,
   getTasks as localGetTasks,
   getTask as localGetTask,
   createTask as localCreateTask,
@@ -67,7 +69,7 @@ import type {
 
 // Re-export types and constants
 export { PRIORITY_CONFIG, PRIORITIES };
-export type { Project, Epic, Task, TaskComment, Priority, Store, Webhook, WebhookDelivery, WebhookEventType, Guardrail, PRD, Requirement, Phase, TaskWithContext, RequirementCoverage };
+export type { Project, Epic, Task, TaskComment, Priority, Store, Webhook, WebhookDelivery, WebhookEventType, Guardrail, PRD, Requirement, Phase, TaskWithContext, RequirementCoverage, EpicForPRDGeneration };
 
 // Server response includes computed blocked field
 type TaskWithBlocked = Task & { blocked: boolean };
@@ -320,6 +322,19 @@ export async function linkTaskToPhase(taskId: string, phaseId: string | undefine
     }
   }
   return localLinkTaskToPhase(taskId, phaseId);
+}
+
+// Get epic context for PRD generation (brownfield: tasks → PRD)
+export async function getEpicForPRDGeneration(epicId: string): Promise<EpicForPRDGeneration | undefined> {
+  if (serverUrl) {
+    try {
+      return await http('GET', `/api/epics/${epicId}/prd-context`);
+    } catch (e) {
+      if (e instanceof FluxHttpError && e.isNotFound) return undefined;
+      throw e;
+    }
+  }
+  return localGetEpicForPRDGeneration(epicId);
 }
 
 // Tasks

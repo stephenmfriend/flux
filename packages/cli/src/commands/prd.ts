@@ -6,6 +6,7 @@ import {
   linkTaskToRequirements,
   linkTaskToPhase,
   getTask,
+  getEpicForPRDGeneration,
 } from '../client.js';
 import { output } from '../index.js';
 import type { PRD, Requirement, Phase } from '@flux/shared';
@@ -382,11 +383,68 @@ export async function prdCommand(
       break;
     }
 
+    case 'generate': {
+      const epicId = args[0];
+      if (!epicId) {
+        console.error('Usage: flux prd generate <epic-id>');
+        console.error('');
+        console.error('Generate a PRD from existing tasks in an epic.');
+        console.error('Outputs task context for AI to create a PRD.');
+        process.exit(1);
+      }
+
+      const context = await getEpicForPRDGeneration(epicId);
+      if (!context) {
+        console.error(`Epic not found: ${epicId}`);
+        process.exit(1);
+      }
+
+      if (context.tasks.length === 0) {
+        console.error(`Epic has no tasks. Add tasks first, then generate PRD.`);
+        process.exit(1);
+      }
+
+      if (json) {
+        output(context, true);
+        return;
+      }
+
+      console.log(`${c.bold}Epic: ${context.epic.title}${c.reset}`);
+      if (context.epic.notes) {
+        console.log(`${c.dim}Notes: ${context.epic.notes}${c.reset}`);
+      }
+      console.log('');
+      console.log(`${c.bold}Tasks (${context.tasks.length}):${c.reset}`);
+
+      context.tasks.forEach((t, i) => {
+        console.log(`\n${c.cyan}${i + 1}. ${t.title}${c.reset} [${t.status}]`);
+        if (t.acceptance_criteria?.length) {
+          console.log(`   ${c.green}Acceptance:${c.reset}`);
+          t.acceptance_criteria.forEach(ac => console.log(`     • ${ac}`));
+        }
+        if (t.guardrails?.length) {
+          console.log(`   ${c.yellow}Guardrails:${c.reset}`);
+          t.guardrails.forEach(g => console.log(`     ${g.number}: ${g.text}`));
+        }
+        if (t.depends_on.length) {
+          console.log(`   ${c.dim}Depends on: ${t.depends_on.join(', ')}${c.reset}`);
+        }
+      });
+
+      console.log('');
+      console.log(`${c.bold}Next steps:${c.reset}`);
+      console.log(`  Use the MCP tool 'get_epic_for_prd_generation' to get this data,`);
+      console.log(`  then use 'update_prd' to create the PRD based on these tasks.`);
+      console.log(`  Finally use 'link_task_to_requirements' to link each task.`);
+      break;
+    }
+
     default:
       console.error(`Usage: flux prd <command> [options]
 
 Commands:
   init <epic-id>              Create a new PRD for an epic
+  generate <epic-id>          Generate PRD from existing tasks
   show <epic-id>              Display the PRD
   export <epic-id> [-o file]  Export PRD as markdown
   coverage <epic-id>          Show requirement coverage by tasks

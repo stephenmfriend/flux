@@ -45,6 +45,7 @@ import { readyCommand } from './commands/ready.js';
 import { showCommand } from './commands/show.js';
 import { serveCommand } from './commands/serve.js';
 import { primeCommand } from './commands/prime.js';
+import { authCommand } from './commands/auth.js';
 import { initClient, exportAll, importAll, getProjects, createProject } from './client.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -732,6 +733,9 @@ async function main() {
       // show doesn't have a subcommand, so subcommand IS the task ID
       await showCommand(parsed.subcommand ? [parsed.subcommand, ...parsed.args] : parsed.args, parsed.flags, json);
       break;
+    case 'auth':
+      await authCommand(parsed.subcommand, parsed.args, parsed.flags, json);
+      break;
     case 'export': {
       const data = await exportAll();
       const output = JSON.stringify(data, null, 2);
@@ -807,8 +811,8 @@ ${c.bold}Commands:${c.reset}
 
   ${c.cyan}flux project list${c.reset} ${c.green}[--json]${c.reset}         List all projects (* = current)
   ${c.cyan}flux project use${c.reset} ${c.yellow}<id>${c.reset}              Set default project
-  ${c.cyan}flux project create${c.reset} ${c.yellow}<name>${c.reset}         Create a project
-  ${c.cyan}flux project update${c.reset} ${c.yellow}<id>${c.reset} ${c.green}[--name] [--desc]${c.reset}
+  ${c.cyan}flux project create${c.reset} ${c.yellow}<name>${c.reset} ${c.green}[--private]${c.reset}  Create a project
+  ${c.cyan}flux project update${c.reset} ${c.yellow}<id>${c.reset} ${c.green}[--name] [--desc] [--private|--public]${c.reset}
   ${c.cyan}flux project delete${c.reset} ${c.yellow}<id>${c.reset}
 
   ${c.cyan}flux epic list${c.reset} ${c.yellow}<project>${c.reset} ${c.green}[--json]${c.reset}  List epics in project
@@ -833,6 +837,13 @@ ${c.bold}Sync:${c.reset} ${c.dim}(git-based team sync via flux-data branch)${c.r
 
 ${c.bold}Server:${c.reset}
   ${c.cyan}flux serve${c.reset} ${c.green}[-p port] [--data file]${c.reset}  Start web UI (port 3589 = FLUX on keypad)
+
+${c.bold}Auth:${c.reset} ${c.dim}(server mode only)${c.reset}
+  ${c.cyan}flux auth${c.reset}                          Authenticate via browser
+  ${c.cyan}flux auth create-key${c.reset} ${c.green}--name NAME [-p PROJECT]${c.reset}  Create API key
+  ${c.cyan}flux auth list-keys${c.reset}                List API keys
+  ${c.cyan}flux auth revoke${c.reset} ${c.yellow}<id>${c.reset}             Revoke an API key
+  ${c.cyan}flux auth status${c.reset}                   Check auth status
 
 ${c.bold}Flags:${c.reset}
   ${c.green}--json${c.reset}                             Output as JSON

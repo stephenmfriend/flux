@@ -67,11 +67,43 @@ export type Epic = {
   project_id: string;
 };
 
+// Project visibility: public = anyone can read, private = key required
+export type ProjectVisibility = 'public' | 'private';
+
 // Project represents a Kanban project.
 export type Project = {
   id: string;
   name: string;
   description?: string;
+  visibility?: ProjectVisibility;
+};
+
+// ============ API Key Types ============
+
+// Key scope: server = full access, project = specific projects only
+export type KeyScope =
+  | { type: 'server' }
+  | { type: 'project'; project_ids: string[] };
+
+// Stored API key (hash only, never the raw key)
+export type ApiKey = {
+  id: string;
+  prefix: string;          // First 12 chars for display (flx_xxxxxxxx)
+  hash: string;            // SHA-256 hash of full key
+  name: string;
+  scope: KeyScope;
+  created_at: string;
+  last_used_at?: string;
+};
+
+// Pending CLI auth request (temp token -> eventual key)
+export type CliAuthRequest = {
+  token: string;           // Temp token for polling
+  name?: string;           // Key name (set by web)
+  scope?: KeyScope;        // Key scope (set by web)
+  api_key?: string;        // Created key (set after completion)
+  expires_at: string;
+  completed_at?: string;
 };
 
 // Store is the JSON document root.
@@ -192,8 +224,10 @@ export type WebhookPayload = {
   };
 };
 
-// Store is the JSON document root - updated to include webhooks
+// Store is the JSON document root - updated to include webhooks and auth
 export type StoreWithWebhooks = Store & {
   webhooks?: Webhook[];
   webhook_deliveries?: WebhookDelivery[];
+  api_keys?: ApiKey[];
+  cli_auth_requests?: CliAuthRequest[];
 };

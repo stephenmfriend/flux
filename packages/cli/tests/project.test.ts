@@ -78,7 +78,7 @@ describe('project command', () => {
 
       await projectCommand('create', ['New Project'], {}, false);
 
-      expect(createProject).toHaveBeenCalledWith('New Project', undefined);
+      expect(createProject).toHaveBeenCalledWith('New Project', undefined, undefined);
       expect(getLogs()).toContain('Created project: proj-new');
     });
 
@@ -87,12 +87,21 @@ describe('project command', () => {
 
       await projectCommand('create', ['Test'], { desc: 'Desc' }, false);
 
-      expect(createProject).toHaveBeenCalledWith('Test', 'Desc');
+      expect(createProject).toHaveBeenCalledWith('Test', 'Desc', undefined);
+    });
+
+    it('creates private project', async () => {
+      mockCreateProject.mockResolvedValue({ id: 'proj-1', name: 'Test', visibility: 'private' });
+
+      await projectCommand('create', ['Test'], { private: true }, false);
+
+      expect(createProject).toHaveBeenCalledWith('Test', undefined, 'private');
+      expect(getLogs()).toContain('Created project: proj-1 (private)');
     });
 
     it('exits with error when no name provided', async () => {
       await expect(projectCommand('create', [], {}, false)).rejects.toThrow('process.exit(1)');
-      expect(getErrors()).toContain('Usage: flux project create <name>');
+      expect(getErrors()).toContain('Usage: flux project create <name> [--private]');
     });
   });
 
@@ -123,7 +132,7 @@ describe('project command', () => {
 
     it('exits with error when no id provided', async () => {
       await expect(projectCommand('update', [], {}, false)).rejects.toThrow('process.exit(1)');
-      expect(getErrors()).toContain('Usage: flux project update <id> [--name] [--desc]');
+      expect(getErrors()).toContain('Usage: flux project update <id> [--name] [--desc] [--private|--public]');
     });
   });
 

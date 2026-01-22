@@ -1,4 +1,4 @@
-import { useState, useEffect } from "preact/hooks";
+import { useReducer, useEffect } from "preact/hooks";
 import { ConfirmModal } from "./ConfirmModal";
 import { Modal } from "./Modal";
 import { Input, Textarea } from "./Input";
@@ -29,6 +29,173 @@ interface TaskFormProps {
   defaultEpicId?: string; // Pre-select epic when creating new task
 }
 
+interface FormState {
+  title: string;
+  status: string;
+  epicId: string;
+  priority: Priority | undefined;
+  type: TaskType;
+  epics: Epic[];
+  dependsOn: string[];
+  availableTasks: TaskWithBlocked[];
+  submitting: boolean;
+  dependencyFilter: string;
+  comments: TaskComment[];
+  commentBody: string;
+  commentSubmitting: boolean;
+  blockedReason: string;
+  deleteConfirmOpen: boolean;
+  deleteCommentId: string | null;
+  acceptanceCriteria: string[];
+  newCriterion: string;
+  guardrails: Guardrail[];
+  newGuardrailNumber: string;
+  newGuardrailText: string;
+}
+
+type FormAction =
+  | { type: "SET_FIELD"; field: keyof FormState; value: FormState[keyof FormState] }
+  | { type: "RESET_FORM"; defaultEpicId?: string }
+  | { type: "LOAD_FORM_DATA"; epics: Epic[]; tasks: TaskWithBlocked[]; task?: Task; defaultEpicId?: string }
+  | { type: "ADD_COMMENT"; comment: TaskComment }
+  | { type: "REMOVE_COMMENT"; commentId: string }
+  | { type: "TOGGLE_DEPENDENCY"; taskId: string }
+  | { type: "ADD_CRITERION" }
+  | { type: "REMOVE_CRITERION"; index: number }
+  | { type: "ADD_GUARDRAIL" }
+  | { type: "REMOVE_GUARDRAIL"; id: string };
+
+const initialState: FormState = {
+  title: "",
+  status: "todo",
+  epicId: "",
+  priority: undefined,
+  type: "task",
+  epics: [],
+  dependsOn: [],
+  availableTasks: [],
+  submitting: false,
+  dependencyFilter: "",
+  comments: [],
+  commentBody: "",
+  commentSubmitting: false,
+  blockedReason: "",
+  deleteConfirmOpen: false,
+  deleteCommentId: null,
+  acceptanceCriteria: [],
+  newCriterion: "",
+  guardrails: [],
+  newGuardrailNumber: "",
+  newGuardrailText: "",
+};
+
+function formReducer(state: FormState, action: FormAction): FormState {
+  switch (action.type) {
+    case "SET_FIELD":
+      return { ...state, [action.field]: action.value };
+
+    case "RESET_FORM":
+      return {
+        ...initialState,
+        epics: state.epics,
+        availableTasks: state.availableTasks,
+        epicId: action.defaultEpicId ?? "",
+      };
+
+    case "LOAD_FORM_DATA":
+      return {
+        ...state,
+        epics: action.epics,
+        availableTasks: action.tasks,
+        dependencyFilter: "",
+        newCriterion: "",
+        newGuardrailNumber: "",
+        newGuardrailText: "",
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+        ...(action.task !== undefined
+          ? {
+              title: action.task.title,
+              status: action.task.status,
+              epicId: action.task.epic_id ?? "",
+              priority: action.task.priority,
+              type: action.task.type ?? "task",
+              dependsOn: [...action.task.depends_on],
+              comments: action.task.comments !== undefined ? [...action.task.comments] : [],
+              blockedReason: action.task.blocked_reason ?? "",
+              acceptanceCriteria: action.task.acceptance_criteria !== undefined ? [...action.task.acceptance_criteria] : [],
+              guardrails: action.task.guardrails !== undefined ? [...action.task.guardrails] : [],
+            }
+          : {
+              title: "",
+              status: "todo",
+              epicId: action.defaultEpicId ?? "",
+              priority: undefined,
+              type: "task",
+              dependsOn: [],
+              comments: [],
+              blockedReason: "",
+              acceptanceCriteria: [],
+              guardrails: [],
+            }),
+      };
+
+    case "ADD_COMMENT":
+      return {
+        ...state,
+        comments: [...state.comments, action.comment],
+        commentBody: "",
+      };
+
+    case "REMOVE_COMMENT":
+      return {
+        ...state,
+        comments: state.comments.filter((comment) => comment.id !== action.commentId),
+      };
+
+    case "TOGGLE_DEPENDENCY":
+      return {
+        ...state,
+        dependsOn: state.dependsOn.includes(action.taskId)
+          ? state.dependsOn.filter((id) => id !== action.taskId)
+          : [...state.dependsOn, action.taskId],
+      };
+
+    case "ADD_CRITERION":
+      if (state.newCriterion.trim() === "") return state;
+      return {
+        ...state,
+        acceptanceCriteria: [...state.acceptanceCriteria, state.newCriterion.trim()],
+        newCriterion: "",
+      };
+
+    case "REMOVE_CRITERION":
+      return {
+        ...state,
+        acceptanceCriteria: state.acceptanceCriteria.filter((_, i) => i !== action.index),
+      };
+
+    case "ADD_GUARDRAIL": {
+      const num = Math.floor(parseInt(state.newGuardrailNumber));
+      if (isNaN(num) || num <= 0 || state.newGuardrailText.trim() === "") return state;
+      return {
+        ...state,
+        guardrails: [...state.guardrails, { id: crypto.randomUUID(), number: num, text: state.newGuardrailText.trim() }],
+        newGuardrailNumber: "",
+        newGuardrailText: "",
+      };
+    }
+
+    case "REMOVE_GUARDRAIL":
+      return {
+        ...state,
+        guardrails: state.guardrails.filter((g) => g.id !== action.id),
+      };
+
+    default:
+      return state;
+  }
+}
+
 export function TaskForm({
   isOpen,
   onClose,
@@ -37,38 +204,42 @@ export function TaskForm({
   projectId,
   defaultEpicId,
 }: TaskFormProps) {
-  const [title, setTitle] = useState("");
-  const [status, setStatus] = useState<string>("todo");
-  const [epicId, setEpicId] = useState<string>("");
-  const [priority, setPriority] = useState<Priority | undefined>(undefined);
-  const [type, setType] = useState<TaskType>("task");
-  const [epics, setEpics] = useState<Epic[]>([]);
-  const [dependsOn, setDependsOn] = useState<string[]>([]);
-  const [availableTasks, setAvailableTasks] = useState<TaskWithBlocked[]>([]);
-  const [submitting, setSubmitting] = useState(false);
-  const [dependencyFilter, setDependencyFilter] = useState("");
-  const [comments, setComments] = useState<TaskComment[]>([]);
-  const [commentBody, setCommentBody] = useState("");
-  const [commentSubmitting, setCommentSubmitting] = useState(false);
-  const [blockedReason, setBlockedReason] = useState("");
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [deleteCommentId, setDeleteCommentId] = useState<string | null>(null);
-  const [acceptanceCriteria, setAcceptanceCriteria] = useState<string[]>([]);
-  const [newCriterion, setNewCriterion] = useState("");
-  const [guardrails, setGuardrails] = useState<Guardrail[]>([]);
-  const [newGuardrailNumber, setNewGuardrailNumber] = useState("");
-  const [newGuardrailText, setNewGuardrailText] = useState("");
+  const [state, dispatch] = useReducer(formReducer, initialState);
+
+  const {
+    title,
+    status,
+    epicId,
+    priority,
+    type,
+    epics,
+    dependsOn,
+    availableTasks,
+    submitting,
+    dependencyFilter,
+    comments,
+    commentBody,
+    commentSubmitting,
+    blockedReason,
+    deleteConfirmOpen,
+    deleteCommentId,
+    acceptanceCriteria,
+    newCriterion,
+    guardrails,
+    newGuardrailNumber,
+    newGuardrailText,
+  } = state;
 
   const isEdit = task !== undefined;
 
   useEffect(() => {
     if (isOpen) {
-      setDeleteConfirmOpen(false);
-      setDeleteCommentId(null);
+      dispatch({ type: "SET_FIELD", field: "deleteConfirmOpen", value: false });
+      dispatch({ type: "SET_FIELD", field: "deleteCommentId", value: null });
       void loadFormData();
     } else {
-      setDeleteConfirmOpen(false);
-      setDeleteCommentId(null);
+      dispatch({ type: "SET_FIELD", field: "deleteConfirmOpen", value: false });
+      dispatch({ type: "SET_FIELD", field: "deleteCommentId", value: null });
     }
   }, [isOpen, task, projectId, defaultEpicId]);
 
@@ -77,45 +248,15 @@ export function TaskForm({
       getEpics(projectId),
       getTasks(projectId),
     ]);
-    setEpics(epicsData);
-    setAvailableTasks(
-      task !== undefined ? tasksData.filter((t) => t.id !== task.id) : tasksData
-    );
-
-    setDependencyFilter("");
-    setNewCriterion("");
-    setNewGuardrailNumber("");
-    setNewGuardrailText("");
-    if (task !== undefined) {
-      setTitle(task.title);
-      setStatus(task.status);
-      setEpicId(task.epic_id ?? "");
-      setPriority(task.priority);
-      setType(task.type ?? "task");
-      setDependsOn([...task.depends_on]);
-      setComments(task.comments !== undefined ? [...task.comments] : []);
-      setBlockedReason(task.blocked_reason ?? "");
-      setAcceptanceCriteria(task.acceptance_criteria !== undefined ? [...task.acceptance_criteria] : []);
-      setGuardrails(task.guardrails !== undefined ? [...task.guardrails] : []);
-    } else {
-      setTitle("");
-      setStatus("todo");
-      setEpicId(defaultEpicId ?? "");
-      setPriority(undefined);
-      setType("task");
-      setDependsOn([]);
-      setComments([]);
-      setBlockedReason("");
-      setAcceptanceCriteria([]);
-      setGuardrails([]);
-    }
+    const filteredTasks = task !== undefined ? tasksData.filter((t) => t.id !== task.id) : tasksData;
+    dispatch({ type: "LOAD_FORM_DATA", epics: epicsData, tasks: filteredTasks, task, defaultEpicId });
   };
 
   const handleSubmit = async (e: Event): Promise<void> => {
     e.preventDefault();
     if (title.trim() === "" || submitting) return;
 
-    setSubmitting(true);
+    dispatch({ type: "SET_FIELD", field: "submitting", value: true });
     try {
       if (task !== undefined) {
         await updateTask(task.id, {
@@ -148,92 +289,79 @@ export function TaskForm({
       await onSave();
       onClose();
     } finally {
-      setSubmitting(false);
+      dispatch({ type: "SET_FIELD", field: "submitting", value: false });
     }
   };
 
   const handleDelete = (): void => {
     if (task !== undefined && !submitting) {
-      setDeleteConfirmOpen(true);
+      dispatch({ type: "SET_FIELD", field: "deleteConfirmOpen", value: true });
     }
   };
 
   const handleDeleteConfirmed = async (): Promise<void> => {
     if (task === undefined || submitting) return;
-    setSubmitting(true);
+    dispatch({ type: "SET_FIELD", field: "submitting", value: true });
     try {
       await deleteTask(task.id);
       await onSave();
       onClose();
     } finally {
-      setSubmitting(false);
-      setDeleteConfirmOpen(false);
+      dispatch({ type: "SET_FIELD", field: "submitting", value: false });
+      dispatch({ type: "SET_FIELD", field: "deleteConfirmOpen", value: false });
     }
   };
 
   const handleAddComment = async (): Promise<void> => {
     if (task === undefined || commentBody.trim() === "" || commentSubmitting) return;
-    setCommentSubmitting(true);
+    dispatch({ type: "SET_FIELD", field: "commentSubmitting", value: true });
     try {
       const comment = await addTaskComment(task.id, commentBody.trim(), "user");
-      setComments((prev) => [...prev, comment]);
-      setCommentBody("");
+      dispatch({ type: "ADD_COMMENT", comment });
       await onSave();
     } finally {
-      setCommentSubmitting(false);
+      dispatch({ type: "SET_FIELD", field: "commentSubmitting", value: false });
     }
   };
 
   const handleDeleteComment = (commentId: string): void => {
     if (task === undefined || commentSubmitting) return;
-    setDeleteCommentId(commentId);
+    dispatch({ type: "SET_FIELD", field: "deleteCommentId", value: commentId });
   };
 
   const handleDeleteCommentConfirmed = async (): Promise<void> => {
     if (task === undefined || commentSubmitting || deleteCommentId === null) return;
-    setCommentSubmitting(true);
+    dispatch({ type: "SET_FIELD", field: "commentSubmitting", value: true });
     try {
       const success = await deleteTaskComment(task.id, deleteCommentId);
       if (success) {
-        setComments((prev) =>
-          prev.filter((comment) => comment.id !== deleteCommentId)
-        );
+        dispatch({ type: "REMOVE_COMMENT", commentId: deleteCommentId });
         await onSave();
       }
     } finally {
-      setCommentSubmitting(false);
-      setDeleteCommentId(null);
+      dispatch({ type: "SET_FIELD", field: "commentSubmitting", value: false });
+      dispatch({ type: "SET_FIELD", field: "deleteCommentId", value: null });
     }
   };
 
   const toggleDependency = (taskId: string): void => {
-    setDependsOn((prev) =>
-      prev.includes(taskId)
-        ? prev.filter((id) => id !== taskId)
-        : [...prev, taskId]
-    );
+    dispatch({ type: "TOGGLE_DEPENDENCY", taskId });
   };
 
   const addCriterion = (): void => {
-    if (newCriterion.trim() === "") return;
-    setAcceptanceCriteria((prev) => [...prev, newCriterion.trim()]);
-    setNewCriterion("");
+    dispatch({ type: "ADD_CRITERION" });
   };
 
   const removeCriterion = (index: number): void => {
-    setAcceptanceCriteria((prev) => prev.filter((_, i) => i !== index));
+    dispatch({ type: "REMOVE_CRITERION", index });
   };
 
   const addGuardrail = (): void => {
-    const num = Math.floor(parseInt(newGuardrailNumber));
-    if (isNaN(num) || num <= 0 || newGuardrailText.trim() === "") return;
-    setGuardrails((prev) => [...prev, { id: crypto.randomUUID(), number: num, text: newGuardrailText.trim() }]);
-    setNewGuardrailNumber("");
-    setNewGuardrailText("");
+    dispatch({ type: "ADD_GUARDRAIL" });
   };
 
   const removeGuardrail = (id: string): void => {
-    setGuardrails((prev) => prev.filter((g) => g.id !== id));
+    dispatch({ type: "REMOVE_GUARDRAIL", id });
   };
 
   return (
@@ -255,7 +383,7 @@ export function TaskForm({
                 type="text"
                 placeholder="Task title"
                 value={title}
-                onChange={(value) => setTitle(value)}
+                onChange={(value) => dispatch({ type: "SET_FIELD", field: "title", value })}
                 required
               />
             </div>
@@ -266,7 +394,7 @@ export function TaskForm({
                 <Select
                   options={STATUSES.map((s) => ({ value: s, label: STATUS_CONFIG[s].label }))}
                   value={status}
-                  onChange={(value) => setStatus(value)}
+                  onChange={(value) => dispatch({ type: "SET_FIELD", field: "status", value })}
                 />
               </div>
             )}
@@ -281,7 +409,7 @@ export function TaskForm({
                   type="text"
                   placeholder="e.g., Waiting for vendor quote"
                   value={blockedReason}
-                  onChange={(value) => setBlockedReason(value)}
+                  onChange={(value) => dispatch({ type: "SET_FIELD", field: "blockedReason", value })}
                 />
                 <span className="task-form-helper">
                   Set to block task on external process. Clear to unblock.
@@ -297,7 +425,7 @@ export function TaskForm({
                   ...epics.map((epic) => ({ value: epic.id, label: epic.title }))
                 ]}
                 value={epicId}
-                onChange={(value) => setEpicId(value)}
+                onChange={(value) => dispatch({ type: "SET_FIELD", field: "epicId", value })}
               />
             </div>
 
@@ -312,7 +440,7 @@ export function TaskForm({
                   }))
                 ]}
                 value={priority !== undefined ? String(priority) : ""}
-                onChange={(val) => setPriority(val === "" ? undefined : parseInt(val) as Priority)}
+                onChange={(val) => dispatch({ type: "SET_FIELD", field: "priority", value: val === "" ? undefined : parseInt(val) as Priority })}
               />
             </div>
 
@@ -324,7 +452,7 @@ export function TaskForm({
                   label: `${TASK_TYPE_CONFIG[t].symbol} ${TASK_TYPE_CONFIG[t].label}`
                 }))}
                 value={type}
-                onChange={(value) => setType(value as TaskType)}
+                onChange={(value) => dispatch({ type: "SET_FIELD", field: "type", value: value as TaskType })}
               />
             </div>
 
@@ -345,7 +473,7 @@ export function TaskForm({
                         type="text"
                         placeholder="Filter tasks..."
                         value={dependencyFilter}
-                        onChange={(value) => setDependencyFilter(value)}
+                        onChange={(value) => dispatch({ type: "SET_FIELD", field: "dependencyFilter", value })}
                       />
                     </div>
                   )}
@@ -407,7 +535,7 @@ export function TaskForm({
                     type="text"
                     placeholder="Add criterion..."
                     value={newCriterion}
-                    onChange={(value) => setNewCriterion(value)}
+                    onChange={(value) => dispatch({ type: "SET_FIELD", field: "newCriterion", value })}
                     onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addCriterion())}
                   />
                   <Button
@@ -454,13 +582,13 @@ export function TaskForm({
                     type="number"
                     placeholder="999"
                     value={newGuardrailNumber}
-                    onChange={(value) => setNewGuardrailNumber(value)}
+                    onChange={(value) => dispatch({ type: "SET_FIELD", field: "newGuardrailNumber", value })}
                   />
                   <Input
                     type="text"
                     placeholder="Guardrail instruction..."
                     value={newGuardrailText}
-                    onChange={(value) => setNewGuardrailText(value)}
+                    onChange={(value) => dispatch({ type: "SET_FIELD", field: "newGuardrailText", value })}
                     onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addGuardrail())}
                   />
                   <Button
@@ -523,7 +651,7 @@ export function TaskForm({
                     <Textarea
                       placeholder="Add a comment..."
                       value={commentBody}
-                      onChange={(value) => setCommentBody(value)}
+                      onChange={(value) => dispatch({ type: "SET_FIELD", field: "commentBody", value })}
                       rows={2}
                     />
                     <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -576,7 +704,7 @@ export function TaskForm({
         confirmClassName="btn-error"
         onConfirm={() => void handleDeleteConfirmed()}
         onClose={() => {
-          if (!submitting) setDeleteConfirmOpen(false);
+          if (!submitting) dispatch({ type: "SET_FIELD", field: "deleteConfirmOpen", value: false });
         }}
         isLoading={submitting}
       />
@@ -588,7 +716,7 @@ export function TaskForm({
         confirmClassName="btn-error"
         onConfirm={() => void handleDeleteCommentConfirmed()}
         onClose={() => {
-          if (!commentSubmitting) setDeleteCommentId(null);
+          if (!commentSubmitting) dispatch({ type: "SET_FIELD", field: "deleteCommentId", value: null });
         }}
         isLoading={commentSubmitting}
       />

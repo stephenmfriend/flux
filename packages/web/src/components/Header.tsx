@@ -1,10 +1,12 @@
 import type { JSX } from 'preact'
 import './Header.css'
+import './Breadcrumb.css'
 
 interface BreadcrumbItem {
   label: string
   active?: boolean
   badge?: string
+  path?: string
 }
 
 interface HeaderProps {
@@ -21,22 +23,24 @@ export function Header({
 }: HeaderProps): JSX.Element {
   return (
     <header className="header">
-      <div className="header-breadcrumbs">
+      <nav className="header-breadcrumbs breadcrumb" aria-label="Breadcrumb">
         {breadcrumbs.map((item, index) => (
           <div key={index} className="header-breadcrumb-item-wrapper">
-            {index > 0 && <span className="header-breadcrumb-separator">/</span>}
-            <div className={`header-breadcrumb-item ${item.active === true ? 'active' : ''}`}>
-              <span>{item.label}</span>
-              {item.badge !== undefined && item.badge !== "" && (
-                <span className="header-breadcrumb-badge">
-                  <span>📎</span>
-                  {item.badge}
-                </span>
-              )}
-            </div>
+            {index > 0 && <span className="breadcrumb-separator">/</span>}
+            {item.active === true ? (
+              <span className="breadcrumb-item-current">
+                {item.badge && <span className="breadcrumb-slug breadcrumb-slug-current">{item.badge}</span>}
+                <span>{item.label}</span>
+              </span>
+            ) : (
+              <a className="breadcrumb-item" href={item.path ?? '#'}>
+                {item.badge && <span className="breadcrumb-slug">{item.badge}</span>}
+                <span>{item.label}</span>
+              </a>
+            )}
           </div>
         ))}
-      </div>
+      </nav>
 
       <div className="header-actions">
         <button

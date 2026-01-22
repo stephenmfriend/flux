@@ -6,9 +6,10 @@ interface StandardSearchBarProps {
     value: string;
     onChange: (val: string) => void;
     placeholder?: string;
+    'aria-label'?: string;
 }
 
-export function StandardSearchBar({ value, onChange, placeholder = 'Search...' }: StandardSearchBarProps): JSX.Element {
+export function StandardSearchBar({ value, onChange, placeholder = 'Search...', 'aria-label': ariaLabel }: StandardSearchBarProps): JSX.Element {
     return (
         <div className="flex items-center gap-2">
             <input
@@ -17,8 +18,9 @@ export function StandardSearchBar({ value, onChange, placeholder = 'Search...' }
                 value={value}
                 onInput={(e) => onChange((e.target as HTMLInputElement).value)}
                 className="bg-bg-surface border border-border-subtle px-3 py-2 rounded-md text-text-high text-[13px] w-[240px] outline-none focus:border-brand-primary placeholder:text-text-medium/50 transition-colors"
+                aria-label={ariaLabel}
             />
-            <button className="p-2 border border-border-subtle bg-bg-surface rounded-md text-text-medium hover:text-text-high hover:border-text-medium/30 transition-colors pointer-events-none">
+            <button className="p-2 border border-border-subtle bg-bg-surface rounded-md text-text-medium hover:text-text-high hover:border-text-medium/30 transition-colors pointer-events-none" aria-hidden="true">
                 <MagnifyingGlassIcon className="w-4 h-4" />
             </button>
         </div>
@@ -30,11 +32,12 @@ interface StandardViewToggleProps<T extends string = string> {
     value: T;
     onChange: (val: T) => void;
     options: { value: T; icon: JSX.Element; label?: string }[];
+    'aria-label'?: string;
 }
 
-export function StandardViewToggle<T extends string = string>({ value, onChange, options }: StandardViewToggleProps<T>): JSX.Element {
+export function StandardViewToggle<T extends string = string>({ value, onChange, options, 'aria-label': ariaLabel }: StandardViewToggleProps<T>): JSX.Element {
     return (
-        <div className="flex bg-bg-surface p-0.5 rounded-md border border-border-subtle">
+        <div className="flex bg-bg-surface p-0.5 rounded-md border border-border-subtle" role="group" aria-label={ariaLabel}>
             {options.map((opt) => {
                 const isActive = value === opt.value;
                 return (
@@ -46,6 +49,8 @@ export function StandardViewToggle<T extends string = string>({ value, onChange,
                             : 'bg-transparent text-text-medium hover:text-text-high'
                             }`}
                         title={opt.label !== undefined && opt.label !== '' ? opt.label : opt.value}
+                        aria-label={opt.label !== undefined && opt.label !== '' ? opt.label : opt.value}
+                        aria-pressed={isActive}
                     >
                         {opt.icon}
                     </button>

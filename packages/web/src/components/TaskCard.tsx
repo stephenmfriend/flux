@@ -1,37 +1,7 @@
-import { CheckCircleIcon, ExclamationTriangleIcon, SparklesIcon, ArrowPathIcon, DocumentTextIcon, WrenchScrewdriverIcon } from '@heroicons/react/24/outline'
 import type { TaskWithBlocked } from '../stores'
-import { TASK_TYPE_CONFIG, type TaskType } from '@flux/shared'
+import { TASK_TYPE_CONFIG } from '@flux/shared'
+import { getTaskTypeIcon, getTaskTypeBadgeClass } from '../utils/taskHelpers'
 import './TaskCard.css'
-
-// Icon mapping for task types
-type IconComponent = typeof CheckCircleIcon
-const TASK_TYPE_ICONS: Record<string, IconComponent> = {
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
-  SparklesIcon,
-  ArrowPathIcon,
-  DocumentTextIcon,
-  WrenchScrewdriverIcon,
-}
-
-// Get icon component for task type
-const getTypeIcon = (type: TaskType): IconComponent => {
-  const config = TASK_TYPE_CONFIG[type]
-  return TASK_TYPE_ICONS[config.icon] ?? CheckCircleIcon
-}
-
-// CSS class mapping for task type colors
-const getTypeBadgeClass = (color: string): string => {
-  const classMap: Record<string, string> = {
-    gray: 'task-card-type-badge-gray',
-    red: 'task-card-type-badge-red',
-    purple: 'task-card-type-badge-purple',
-    blue: 'task-card-type-badge-blue',
-    green: 'task-card-type-badge-green',
-    amber: 'task-card-type-badge-amber',
-  }
-  return classMap[color] ?? 'task-card-type-badge-gray'
-}
 
 interface TaskCardProps {
   task: TaskWithBlocked
@@ -42,8 +12,8 @@ interface TaskCardProps {
 export function TaskCard({ task, onClick, compact = false }: TaskCardProps) {
   const taskType = task.type ?? 'task'
   const typeConfig = TASK_TYPE_CONFIG[taskType]
-  const TypeIcon = getTypeIcon(taskType)
-  const badgeClass = `task-card-type-badge ${getTypeBadgeClass(typeConfig.color)}`
+  const TypeIcon = getTaskTypeIcon(taskType)
+  const badgeClass = `task-card-type-badge ${getTaskTypeBadgeClass(typeConfig.color)}`
   const cardClass = compact ? 'task-card task-card-compact' : 'task-card'
 
   return (
@@ -66,7 +36,7 @@ export function TaskCard({ task, onClick, compact = false }: TaskCardProps) {
           ⏳ {task.blocked_reason}
         </div>
       )}
-      {task.comments !== undefined && task.comments !== null && task.comments.length > 0 && (task.blocked_reason === undefined || task.blocked_reason === "") && (
+      {task.comments !== undefined && task.comments.length > 0 && (task.blocked_reason === undefined || task.blocked_reason === '') && (
         <p className="task-card-comment">
           {task.comments[task.comments.length - 1]?.body}
         </p>

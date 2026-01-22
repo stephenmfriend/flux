@@ -19,8 +19,8 @@
 }
 
 .column-header-status-dot-planning {
-  background: #8B949E;
-  box-shadow: 0 0 8px rgba(139, 148, 158, 0.4);
+  background: #A855F7;
+  box-shadow: 0 0 8px rgba(168, 85, 247, 0.4);
 }
 
 .column-header-status-dot-todo {
@@ -33,9 +33,14 @@
   box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
 }
 
+.column-header-status-dot-in_progress {
+  background: #f59e0b;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+}
+
 .column-header-status-dot-done {
-  background: #22c55e;
-  box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
+  background: #3ECF8E;
+  box-shadow: 0 0 8px rgba(62, 207, 142, 0.4);
 }
 
 .column-header-label {

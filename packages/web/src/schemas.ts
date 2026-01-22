@@ -11,8 +11,8 @@ export const TaskTypeSchema = z.enum(['task', 'bug', 'feature', 'refactor', 'doc
 
 // Priority schema - handles null from database and converts to undefined
 export const PrioritySchema = z.union([z.literal(0), z.literal(1), z.literal(2)])
-  .nullish()  // Accepts null | undefined
-  .transform(val => val ?? undefined);  // Convert null to undefined
+  .nullish()
+  .transform(val => val ?? undefined);
 
 // Task status schema
 export const TaskStatusSchema = z.enum(['planning', 'todo', 'in_progress', 'done']);
@@ -38,18 +38,18 @@ export const TaskSchema = z.object({
   title: z.string(),
   status: TaskStatusSchema,
   depends_on: z.array(z.string()),
-  comments: z.array(TaskCommentSchema).optional(),
-  epic_id: z.string().optional(),
+  comments: z.array(TaskCommentSchema).nullish().transform(v => v ?? undefined),
+  epic_id: z.string().nullish().transform(v => v ?? undefined),
   project_id: z.string(),
-  agent: z.string().optional(),
-  archived: z.boolean().optional(),
+  agent: z.string().nullish().transform(v => v ?? undefined),
+  archived: z.boolean().nullish().transform(v => v ?? undefined),
   priority: PrioritySchema.optional(),
   type: TaskTypeSchema.optional().default('task'), // CRITICAL: Default to 'task' if missing
-  blocked_reason: z.string().optional(),
-  acceptance_criteria: z.array(z.string()).optional(),
-  guardrails: z.array(GuardrailSchema).optional(),
-  created_at: z.string().optional(),
-  updated_at: z.string().optional(),
+  blocked_reason: z.string().nullish().transform(v => v ?? undefined),
+  acceptance_criteria: z.array(z.string()).nullish().transform(v => v ?? undefined),
+  guardrails: z.array(GuardrailSchema).nullish().transform(v => v ?? undefined),
+  created_at: z.string().nullish().transform(v => v ?? undefined),
+  updated_at: z.string().nullish().transform(v => v ?? undefined),
 });
 
 // Epic schema
@@ -58,7 +58,7 @@ export const EpicSchema = z.object({
   title: z.string(),
   status: TaskStatusSchema,
   depends_on: z.array(z.string()),
-  notes: z.string(),
+  notes: z.string().nullish().transform(v => v ?? ''),
   auto: z.boolean(),
   project_id: z.string(),
 });
@@ -67,7 +67,7 @@ export const EpicSchema = z.object({
 export const ProjectSchema = z.object({
   id: z.string(),
   name: z.string(),
-  description: z.string().optional(),
+  description: z.string().nullish().transform(v => v ?? undefined),
 });
 
 // Store schema (full data structure)

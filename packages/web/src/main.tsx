@@ -8,9 +8,15 @@ import './styles/typography.css'
 import './index.css'
 import './dev-error-handlers' // Install global error handlers in dev mode
 import { App } from './app.tsx'
+import { ErrorBoundary } from './components/ErrorBoundary'
 
 const appElement = document.getElementById('app')
 if (appElement !== null) {
-  render(<App />, appElement)
+  render(
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>,
+    appElement
+  )
 }
 // Force Rebuild

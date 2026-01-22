@@ -1,4 +1,5 @@
 import type { Task, Epic, Project, Webhook, WebhookDelivery, WebhookEventType, TaskComment, CommentAuthor } from '@flux/shared';
+import { normalizeTaskWithBlocked, normalizeTasksWithBlocked, normalizeEpics } from '../utils/normalize';
 import { ProjectSchema } from '../schemas';
 import { z } from 'zod';
 
@@ -107,7 +108,8 @@ export async function deleteProject(id: string): Promise<void> {
 
 export async function getEpics(projectId: string): Promise<Epic[]> {
   const res = await fetch(`${API_BASE}/projects/${projectId}/epics`);
-  return res.json() as Promise<Epic[]>;
+  const data = await res.json();
+  return normalizeEpics(data);
 }
 
 export async function getEpic(id: string): Promise<Epic | null> {
@@ -144,13 +146,15 @@ export async function deleteEpic(id: string): Promise<boolean> {
 
 export async function getTasks(projectId: string): Promise<TaskWithBlocked[]> {
   const res = await fetch(`${API_BASE}/projects/${projectId}/tasks`);
-  return res.json() as Promise<TaskWithBlocked[]>;
+  const data = await res.json();
+  return normalizeTasksWithBlocked(data);
 }
 
 export async function getTask(id: string): Promise<TaskWithBlocked | null> {
   const res = await fetch(`${API_BASE}/tasks/${id}`);
   if (!res.ok) return null;
-  return res.json() as Promise<TaskWithBlocked>;
+  const data = await res.json();
+  return normalizeTaskWithBlocked(data);
 }
 
 export async function createTask(

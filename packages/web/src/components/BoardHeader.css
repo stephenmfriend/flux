@@ -29,6 +29,16 @@
   gap: 12px;
 }
 
+/* Aliases to match flux.html snippet */
+.board-actions { @apply ; }
+.board-actions { display: flex; align-items: center; gap: 12px; }
+.board-title h1 { font-size: 20px; font-weight: 600; color: var(--text-high); margin: 0; letter-spacing: -0.01em; }
+
+/* Simple icon-only button baseline */
+.btn-icon { display: inline-flex; align-items: center; justify-content: center; padding: 8px; background: transparent; color: var(--text-medium); border: none; border-radius: 6px; cursor: pointer; transition: all 0.2s ease; }
+.btn-icon:hover { background: var(--bg-surface-hover); color: var(--text-high); }
+.btn-icon.active { background: var(--bg-surface-hover); color: var(--text-high); }
+
 .board-header-search-group {
   display: flex;
   align-items: center;

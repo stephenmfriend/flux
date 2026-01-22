@@ -3,108 +3,95 @@
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
-  box-shadow: var(--shadow-card);
-  display: flex;
-  align-items: stretch;
-  overflow: hidden;
-}
-
-.bet-control-section {
   padding: 16px 20px;
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  flex: 1;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
-.bet-control-section:not(:last-child) {
-  border-right: 1px solid var(--border-subtle);
-}
-
-.bet-control-section-label {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-medium);
-}
-
-.bet-control-section-content {
-  font-size: 14px;
-  color: var(--text-high);
+/* Info Group - Each section in the strip */
+.bet-info-group {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
+}
+
+/* Label style (uppercase small text) */
+.bet-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-low);
+  font-weight: 600;
+}
+
+/* Value/Content style */
+.bet-value {
+  font-size: 13px;
+  color: var(--text-high);
+  font-weight: 500;
 }
 
 /* Bet Scope Section */
 .bet-scope-text {
-  font-size: 14px;
-  color: var(--text-high);
-  line-height: 1.5;
-}
-
-/* Appetite Section */
-.bet-appetite {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.bet-appetite-size {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--text-high);
-}
-
-/* Hill State Section */
-.bet-hill-state {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-/* Scope Cuts Section */
-.bet-scope-cuts {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.bet-scope-cut-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
   font-size: 13px;
-  color: var(--text-medium);
+  color: var(--text-high);
+  line-height: 1.4;
 }
 
-/* Actions Section */
-.bet-control-actions {
-  padding: 16px 20px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
+.scope-cut-badge {
+  display: inline-block;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+/* Separator between sections */
+.bet-separator {
+  width: 1px;
+  height: 32px;
+  background: var(--border-subtle);
   flex-shrink: 0;
 }
 
+/* Hill Slider Container */
+.hill-slider-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 /* Responsive */
-@media (max-width: 1024px) {
+@media (max-width: 1200px) {
+  .bet-control-strip {
+    flex-wrap: wrap;
+  }
+
+  .bet-separator {
+    display: none;
+  }
+
+  .bet-info-group {
+    min-width: 150px;
+  }
+}
+
+@media (max-width: 768px) {
   .bet-control-strip {
     flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
   }
 
-  .bet-control-section {
-    border-right: none;
-    border-bottom: 1px solid var(--border-subtle);
+  .bet-info-group {
+    min-width: auto;
   }
 
-  .bet-control-section:last-child {
-    border-bottom: none;
-  }
-
-  .bet-control-actions {
-    border-top: 1px solid var(--border-subtle);
-    justify-content: flex-end;
+  .hill-slider-container {
+    width: 100%;
   }
 }

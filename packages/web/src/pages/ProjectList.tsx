@@ -21,6 +21,7 @@ import {
   StandardButton,
   ProjectCard,
   SidePanel,
+  BetControlStrip,
 } from "../components";
 import { AIStatus, RiskLevel, ProjectPhase } from "../types";
 
@@ -253,6 +254,19 @@ export function ProjectList(_props?: RoutableProps): JSX.Element {
               </>
             }
           />
+
+          {/* Toolbar (Shape Up strip) */}
+          <div className="mt-4">
+            <BetControlStrip
+              betScope="Portfolio overview"
+              scopeCuts={[{ text: 'Company-wide view', timestamp: '' }]}
+              appetite="4 weeks"
+              currentDay={8}
+              totalDays={20}
+              hillState={35}
+              scopeCutsCount={3}
+            />
+          </div>
 
 
 

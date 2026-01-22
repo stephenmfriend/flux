@@ -129,6 +129,7 @@ export function ProjectCard({ project, onEdit }: ProjectCardProps) {
                 </div>
 
                 <div className="flex items-center gap-2">
+                    <span className="task-id">#{project.id}</span>
                     <span className="text-[11px] text-text-medium/70 truncate max-w-[120px]">
                         {meta.lastEvent !== "" ? meta.lastEvent : 'No recent activity'}
                     </span>

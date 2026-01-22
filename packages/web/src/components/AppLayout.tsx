@@ -16,6 +16,7 @@ interface AppLayoutProps {
   userInitials?: string
   onFeedbackClick?: () => void
   onAvatarClick?: () => void
+  showSidebar?: boolean
 }
 
 export function AppLayout({
@@ -25,10 +26,11 @@ export function AppLayout({
   userInitials,
   onFeedbackClick,
   onAvatarClick,
+  showSidebar = true,
 }: AppLayoutProps) {
   return (
     <div className="app-layout">
-      <Sidebar currentPath={currentPath} />
+      {showSidebar && <Sidebar currentPath={currentPath} />}
       <div className="app-layout-main-wrapper">
         <Header
           breadcrumbs={breadcrumbs}

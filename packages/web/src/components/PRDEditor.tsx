@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'preact/hooks'
 import { ConfirmModal } from './ConfirmModal'
+import { Modal } from './Modal'
 import type { PRD, Requirement, BusinessRule, Dependency } from '@flux/shared'
 
 interface PRDEditorProps {
   prd: PRD | null
   loading: boolean
   saving: boolean
+  epicTitle: string
   onSave: (prd: PRD) => Promise<void>
   onDelete: () => Promise<void>
   onClose: () => void
@@ -29,10 +31,153 @@ const emptyPRD = (): PRD => ({
   updatedAt: new Date().toISOString(),
 })
 
-export function PRDEditor({ prd, loading, saving, onSave, onDelete, onClose }: PRDEditorProps) {
+function prdToMarkdown(epicTitle: string, prd: PRD): string {
+  const lines: string[] = []
+  lines.push(`# PRD: ${epicTitle}`)
+  lines.push('')
+
+  if (prd.sourceUrl) {
+    lines.push(`**Source:** [${prd.sourceUrl}](${prd.sourceUrl})`)
+    lines.push('')
+  }
+
+  if (prd.summary) {
+    lines.push('## Executive Summary')
+    lines.push(prd.summary)
+    lines.push('')
+  }
+
+  lines.push('## Problem Statement')
+  lines.push(prd.problem)
+  lines.push('')
+
+  if (prd.goals.length) {
+    lines.push('## Goals')
+    prd.goals.forEach(g => lines.push(`- ${g}`))
+    lines.push('')
+  }
+
+  if (prd.successCriteria?.length) {
+    lines.push('## Success Criteria')
+    prd.successCriteria.forEach(s => lines.push(`- ${s}`))
+    lines.push('')
+  }
+
+  if (prd.businessRules?.length) {
+    lines.push('## Business Rules')
+    lines.push('')
+    prd.businessRules.forEach(br => {
+      const scope = br.scope ? ` _(${br.scope})_` : ''
+      lines.push(`### ${br.id}${scope}`)
+      lines.push(br.description)
+      if (br.notes) lines.push(`> ${br.notes}`)
+      lines.push('')
+    })
+  }
+
+  if (prd.requirements.length) {
+    lines.push('## Requirements')
+    lines.push('')
+
+    const mustReqs = prd.requirements.filter(r => r.priority === 'must')
+    const shouldReqs = prd.requirements.filter(r => r.priority === 'should')
+    const couldReqs = prd.requirements.filter(r => r.priority === 'could')
+
+    if (mustReqs.length) {
+      lines.push('### Must Have')
+      mustReqs.forEach(r => {
+        lines.push(`- **${r.id}** [${r.type}]: ${r.description}`)
+        if (r.acceptance) lines.push(`  - _Acceptance_: ${r.acceptance}`)
+      })
+      lines.push('')
+    }
+
+    if (shouldReqs.length) {
+      lines.push('### Should Have')
+      shouldReqs.forEach(r => {
+        lines.push(`- **${r.id}** [${r.type}]: ${r.description}`)
+        if (r.acceptance) lines.push(`  - _Acceptance_: ${r.acceptance}`)
+      })
+      lines.push('')
+    }
+
+    if (couldReqs.length) {
+      lines.push('### Could Have')
+      couldReqs.forEach(r => {
+        lines.push(`- **${r.id}** [${r.type}]: ${r.description}`)
+        if (r.acceptance) lines.push(`  - _Acceptance_: ${r.acceptance}`)
+      })
+      lines.push('')
+    }
+  }
+
+  if (prd.approach) {
+    lines.push('## Technical Approach')
+    lines.push(prd.approach)
+    lines.push('')
+  }
+
+  if (prd.phases.length) {
+    lines.push('## Phases')
+    prd.phases.forEach(p => {
+      lines.push(`### ${p.id}: ${p.name}`)
+      if (p.requirements.length) lines.push(`Requirements: ${p.requirements.join(', ')}`)
+      lines.push('')
+    })
+  }
+
+  if (prd.dependencies?.length) {
+    lines.push('## Dependencies')
+    lines.push('')
+    lines.push('| ID | Description | Owner | Status |')
+    lines.push('|----|-------------|-------|--------|')
+    prd.dependencies.forEach(d => {
+      lines.push(`| ${d.id} | ${d.description} | ${d.owner || '-'} | ${d.status || 'unknown'} |`)
+    })
+    lines.push('')
+  }
+
+  if (prd.risks.length) {
+    lines.push('## Risks')
+    prd.risks.forEach(r => lines.push(`- ${r}`))
+    lines.push('')
+  }
+
+  if (prd.openQuestions?.length) {
+    lines.push('## Open Questions')
+    lines.push('')
+    prd.openQuestions.forEach(q => {
+      const status = q.resolved ? '\u2713' : '?'
+      const owner = q.owner ? ` _(${q.owner})_` : ''
+      lines.push(`### ${status} ${q.id}${owner}`)
+      lines.push(q.question)
+      if (q.context) lines.push(`> Context: ${q.context}`)
+      if (q.resolved) lines.push(`**Resolved:** ${q.resolved}`)
+      lines.push('')
+    })
+  }
+
+  if (prd.outOfScope.length) {
+    lines.push('## Out of Scope')
+    prd.outOfScope.forEach(o => lines.push(`- ${o}`))
+    lines.push('')
+  }
+
+  if (prd.notes) {
+    lines.push('## Session Notes')
+    lines.push(prd.notes)
+    lines.push('')
+  }
+
+  return lines.join('\n')
+}
+
+export function PRDEditor({ prd, loading, saving, epicTitle, onSave, onDelete, onClose }: PRDEditorProps) {
   const [expanded, setExpanded] = useState<Set<Section>>(new Set(['summary']))
   const [draft, setDraft] = useState<PRD>(emptyPRD())
   const [deleteConfirm, setDeleteConfirm] = useState(false)
+  const [showMarkdown, setShowMarkdown] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     if (prd) {
@@ -503,6 +648,11 @@ export function PRDEditor({ prd, loading, saving, onSave, onDelete, onClose }: P
             Delete PRD
           </button>
         )}
+        {!isNew && (
+          <button type="button" class="btn btn-ghost btn-sm" onClick={() => setShowMarkdown(true)}>
+            View Markdown
+          </button>
+        )}
         <div class="flex-1" />
         <button type="button" class="btn btn-ghost btn-sm" onClick={onClose}>Cancel</button>
         <button
@@ -528,6 +678,31 @@ export function PRDEditor({ prd, loading, saving, onSave, onDelete, onClose }: P
         onClose={() => setDeleteConfirm(false)}
         isLoading={saving}
       />
+
+      <Modal
+        isOpen={showMarkdown}
+        onClose={() => { setShowMarkdown(false); setCopied(false) }}
+        title="PRD Markdown"
+        wide
+      >
+        <div class="relative">
+          <button
+            type="button"
+            class="btn btn-sm btn-ghost absolute top-2 right-2"
+            onClick={() => {
+              navigator.clipboard.writeText(prdToMarkdown(epicTitle, draft))
+              setCopied(true)
+              setTimeout(() => setCopied(false), 2000)
+            }}
+          >
+            {copied ? 'Copied!' : 'Copy'}
+          </button>
+          <pre class="bg-base-200 p-4 rounded-lg overflow-auto max-h-[60vh] text-sm whitespace-pre-wrap">{prdToMarkdown(epicTitle, draft)}</pre>
+        </div>
+        <div class="modal-action">
+          <button type="button" class="btn btn-ghost btn-sm" onClick={() => { setShowMarkdown(false); setCopied(false) }}>Close</button>
+        </div>
+      </Modal>
     </div>
   )
 }

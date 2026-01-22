@@ -272,6 +272,7 @@ export function EpicForm({ isOpen, onClose, onSave, epic, projectId }: EpicFormP
             prd={prd}
             loading={prdLoading}
             saving={submitting}
+            epicTitle={title}
             onSave={handlePrdSave}
             onDelete={handlePrdDelete}
             onClose={onClose}

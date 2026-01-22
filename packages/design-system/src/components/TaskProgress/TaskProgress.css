@@ -1,0 +1,40 @@
+.task-progress {
+  margin-top: 4px;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-medium);
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.progress-bar {
+  display: flex;
+  gap: 4px;
+  height: 4px;
+}
+
+.progress-segment {
+  flex: 1;
+  background: var(--border-default);
+  border-radius: 2px;
+}
+
+.progress-segment.filled {
+  background: var(--brand-primary);
+}
+
+.progress-segment.filled.orange {
+  background: #f97316;
+}
+
+.progress-segment.filled.blue {
+  background: #3b82f6;
+}
+
+.progress-segment.filled.green {
+  background: #10b981;
+}

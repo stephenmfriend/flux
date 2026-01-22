@@ -1,0 +1,7 @@
+.kanban-container {
+  display: flex;
+  gap: 16px;
+  height: calc(100vh - 200px);
+  overflow-x: auto;
+  padding-bottom: 16px;
+}

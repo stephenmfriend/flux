@@ -1,0 +1,25 @@
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dot-planning {
+  background: #A855F7;
+  box-shadow: 0 0 8px rgba(168, 85, 247, 0.4);
+}
+
+.dot-todo {
+  background: var(--text-medium);
+}
+
+.dot-progress {
+  background: #E0C872;
+  box-shadow: 0 0 8px rgba(224, 200, 114, 0.4);
+}
+
+.dot-done {
+  background: var(--brand-primary);
+  box-shadow: 0 0 8px rgba(62, 207, 142, 0.4);
+}

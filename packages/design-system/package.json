@@ -1,0 +1,32 @@
+{
+  "name": "@flux/design-system",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./styles": "./src/styles/design-system.css"
+  },
+  "scripts": {
+    "dev": "storybook dev -p 6006",
+    "build": "tsc && vite build",
+    "build-storybook": "storybook build"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "^2.9.2",
+    "@storybook/addon-essentials": "^8.0.0",
+    "@storybook/preact": "^8.0.0",
+    "@storybook/preact-vite": "^8.0.0",
+    "preact": "^10.24.3",
+    "storybook": "^8.0.0",
+    "typescript": "~5.6.2",
+    "vite": "^5.4.10"
+  },
+  "peerDependencies": {
+    "preact": "^10.0.0"
+  }
+}

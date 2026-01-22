@@ -1,0 +1,122 @@
+/* BetControlStrip - Extracted from flux.html inline styles */
+
+.bet-control-strip {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.bet-info-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bet-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-low);
+  font-weight: 600;
+}
+
+.bet-scope-text {
+  font-size: 13px;
+  color: var(--text-high);
+  line-height: 1.4;
+}
+
+.scope-cut-badge {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 4px;
+}
+
+.bet-value {
+  font-size: 13px;
+  color: var(--text-high);
+  font-weight: 500;
+}
+
+.day-tracker {
+  color: var(--text-medium);
+  margin-left: 4px;
+  font-weight: 400;
+  font-size: 12px;
+}
+
+.bet-separator {
+  width: 1px;
+  height: 32px;
+  background: var(--border-subtle);
+}
+
+.hill-slider-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hill-label-left,
+.hill-label-right {
+  font-size: 10px;
+  color: var(--text-medium);
+}
+
+.hill-track {
+  flex: 1;
+  height: 4px;
+  background: var(--border-default);
+  border-radius: 2px;
+  position: relative;
+}
+
+.hill-progress {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background: var(--brand-primary);
+  border-radius: 2px;
+}
+
+.hill-handle {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 12px;
+  height: 12px;
+  background: var(--text-high);
+  border: 2px solid var(--brand-primary);
+  border-radius: 50%;
+  cursor: grab;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.bet-btn {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-medium);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bet-btn:hover {
+  border-color: var(--brand-primary);
+  color: var(--text-high);
+}

@@ -17,6 +17,7 @@
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
+    "@flux/design-system": "workspace:*",
     "@flux/shared": "workspace:*",
     "@heroicons/react": "^2.2.0",
     "preact": "^10.24.3",

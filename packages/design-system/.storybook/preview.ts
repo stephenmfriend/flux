@@ -1,4 +1,4 @@
-import '../src/styles/design-system.css'
+import '../src/styles/tailwind.css'
 
 export const parameters = {
   backgrounds: {

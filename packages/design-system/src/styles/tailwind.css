@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Flux Design System - Supabase Dark Theme */
+
+    /* Colors - Background */
+    --color-bg-base: #161616;
+    --color-bg-surface: #1c1c1c;
+    --color-bg-surface-hover: #232323;
+    --color-bg-overlay: rgba(0, 0, 0, 0.5);
+
+    /* Colors - Borders */
+    --color-border-subtle: #2e2e2e;
+    --color-border-default: #3e3e3e;
+    --color-border-focus: #3ECF8E;
+
+    /* Colors - Brand */
+    --color-brand-primary: #3ECF8E;
+    --color-brand-primary-dark: #2db378;
+
+    /* Colors - Text */
+    --color-text-high: #EDEDED;
+    --color-text-medium: #8B949E;
+    --color-text-low: #6e7681;
+
+    /* Colors - Status Dots */
+    --color-status-planning: #A855F7;
+    --color-status-todo: #8B949E;
+    --color-status-progress: #E0C872;
+    --color-status-done: #3ECF8E;
+
+    /* Colors - Semantic */
+    --color-destructive: #ef4444;
+    --color-destructive-hover: #dc2626;
+
+    /* Border Radius */
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --radius-lg: 8px;
+    --radius-xl: 12px;
+
+    /* Shadows */
+    --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+    --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.2);
+  }
+
+  * {
+    box-sizing: border-box;
+    outline: none;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  ::-webkit-scrollbar {
+    width: 0px;
+    background: transparent;
+    display: none;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--color-bg-base);
+    color: var(--color-text-high);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}

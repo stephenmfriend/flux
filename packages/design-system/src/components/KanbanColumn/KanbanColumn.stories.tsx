@@ -3,7 +3,7 @@ import { KanbanColumn } from './KanbanColumn'
 import { TaskCard } from '../TaskCard'
 
 export default {
-  title: 'Kanban/KanbanColumn',
+  title: 'Molecules/KanbanColumn',
   component: KanbanColumn,
 }
 

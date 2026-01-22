@@ -4,7 +4,7 @@ import { KanbanColumn } from '../KanbanColumn'
 import { TaskCard } from '../TaskCard'
 
 export default {
-  title: 'Kanban/KanbanBoard',
+  title: 'Organisms/KanbanBoard',
   component: KanbanBoard,
 }
 

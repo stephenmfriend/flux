@@ -2,7 +2,7 @@ import { h } from 'preact'
 import { BetControlStrip } from './BetControlStrip'
 
 export default {
-  title: 'Bet/BetControlStrip',
+  title: 'Molecules/BetControlStrip',
   component: BetControlStrip,
 }
 

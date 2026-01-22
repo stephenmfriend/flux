@@ -1644,6 +1644,121 @@ a {
     flex: none;
 }
 
+/* --- Dashboard Stats Grid --- */
+.dashboard-stats-grid {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.stat-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    /* Ensure containment */
+    overflow: hidden;
+}
+
+.stat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.stat-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-high);
+}
+
+.stat-subtitle {
+    font-size: 12px;
+    color: var(--text-medium);
+}
+
+/* --- Repo Activity Heatmap --- */
+/* --- Repo Activity Heatmap --- */
+.git-activity-container {
+    width: calc(100% + 40px);
+    margin-left: -20px;
+    margin-right: -20px;
+    padding-left: 20px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    /* Reverted flex/spacer strategy */
+}
+
+.heatmap-wrapper {
+    display: inline-grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+    gap: 8px;
+    align-items: start;
+    /**
+     * Using border-right for spacing.
+     * Value = 44px (20px clipped by card overflow + 24px visible buffer).
+     */
+    border-right: 44px solid transparent;
+    flex-shrink: 0;
+}
+
+.heatmap-labels-y {
+    grid-row: 1;
+    grid-column: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 2px 0;
+    font-size: 10px;
+    color: var(--text-medium);
+    text-align: right;
+    /* Ensure it stretches to grid height */
+    height: 100%;
+}
+
+.hourly-grid {
+    grid-row: 1;
+    grid-column: 2;
+    display: grid;
+    grid-template-rows: repeat(7, 12px);
+    grid-auto-flow: column;
+    gap: 4px;
+}
+
+.heat-cell {
+    width: 12px;
+    height: 12px;
+    background: var(--bg-surface-hover);
+    border-radius: 2px;
+}
+
+.heat-cell.l1 {
+    background: rgba(62, 207, 142, 0.2);
+}
+
+.heat-cell.l2 {
+    background: rgba(62, 207, 142, 0.5);
+}
+
+.heat-cell.l3 {
+    background: #3ecf8e;
+}
+
+.heatmap-labels-x {
+    grid-row: 2;
+    grid-column: 2;
+    display: flex;
+    justify-content: space-between;
+    padding-top: 8px;
+    font-size: 10px;
+    color: var(--text-medium);
+}
+
 /* --- Activity Bar Chart --- */
 .activity-stat {
     font-size: 32px;
@@ -2777,4 +2892,411 @@ input[type="checkbox"] {
     font-size: 13px;
     color: var(--text-medium);
     line-height: 1.5;
+}
+
+/* Dashboard Widgets */
+.dashboard-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.stat-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    /* Reduced from 20px */
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.stat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    /* Reduced from 16px */
+}
+
+.stat-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-high);
+}
+
+.stat-subtitle {
+    font-size: 12px;
+    color: var(--text-medium);
+}
+
+/* Heatmap */
+.git-activity-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* Hourly Heatmap Grid (42 Cols x 7 Rows) */
+.heatmap-wrapper {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    margin-bottom: 8px;
+    padding-left: 28px;
+    /* Space for Y-axis */
+    position: relative;
+}
+
+/* Y-Axis Labels (Time slots) - HTML based now */
+.heatmap-labels-y {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 20px;
+    /* Space above X-axis */
+    width: 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    text-align: right;
+    padding-right: 6px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+}
+
+.heatmap-labels-y span {
+    font-size: 9px;
+    color: var(--text-low);
+    line-height: 1;
+}
+
+/* X-Axis Labels (Weeks) - HTML based now */
+.heatmap-labels-x {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 4px;
+    padding-right: 2px;
+    /* Slight adjustment for alignment */
+    width: 100%;
+}
+
+.heatmap-labels-x span {
+    font-size: 9px;
+    color: var(--text-low);
+    width: 14%;
+    /* 1/6th approx? No, let flex handle it */
+    text-align: left;
+}
+
+.hourly-grid {
+    display: grid;
+    grid-template-columns: repeat(42, 1fr);
+    /* 42 Days */
+    grid-template-rows: repeat(7, 1fr);
+    /* 7 Time Slots */
+    gap: 3px;
+    width: 100%;
+    aspect-ratio: 42/7;
+    /* Maintain grid ratio */
+}
+
+.heat-cell {
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    /* Empty state */
+    border-radius: 2px;
+}
+
+.heat-cell.active {
+    background: var(--brand-primary);
+}
+
+.heat-cell.l1 {
+    background: rgba(62, 207, 142, 0.3);
+}
+
+.heat-cell.l2 {
+    background: rgba(62, 207, 142, 0.6);
+}
+
+.heat-cell.l3 {
+    background: rgba(62, 207, 142, 1.0);
+}
+
+.heat-cell:hover {
+    transform: scale(1.2);
+    z-index: 2;
+    border: 1px solid #fff;
+}
+
+/* Calendar Grid (6 Weeks x 7 Days) */
+/* The original .heatmap-wrapper was here, but it's been replaced/modified above */
+
+.heatmap-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    margin-bottom: 6px;
+    padding-right: 0;
+    /* Align with grid */
+}
+
+.weekday-label {
+    font-size: 10px;
+    color: var(--text-low);
+    text-align: center;
+}
+
+.heatmap-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    /* 7 Days Width */
+    grid-template-rows: repeat(6, 1fr);
+    /* 6 Weeks Height */
+    gap: 4px;
+    width: 100%;
+}
+
+.heat-cell {
+    aspect-ratio: 1/1;
+    /* Keep them square-ish */
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.heat-cell:hover {
+    transform: scale(1.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.heat-cell.l1 {
+    background: rgba(62, 207, 142, 0.2);
+}
+
+.heat-cell.l2 {
+    background: rgba(62, 207, 142, 0.5);
+}
+
+.heat-cell.l3 {
+    background: var(--brand-primary);
+}
+
+.heatmap-legend {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    color: var(--text-low);
+    justify-content: flex-end;
+    margin-top: 8px;
+}
+
+/* Activity Chart (Daily - 6 Weeks) */
+.activity-chart {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    height: 100px;
+    padding-top: 20px;
+    padding-bottom: 24px;
+    /* Space for X-axis labels */
+    margin-bottom: 8px;
+    width: 100%;
+    position: relative;
+    gap: 3px;
+}
+
+.activity-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    flex: 1;
+    height: 100%;
+    position: relative;
+}
+
+/* X-Axis Labels (Months) */
+.activity-chart::after {
+    content: "Nov                                              Dec";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    font-size: 10px;
+    color: var(--text-low);
+    display: flex;
+    justify-content: space-between;
+    padding: 0 4px;
+}
+
+/* Y-Axis Grid/Labels (Activity Level) */
+.activity-chart::before {
+    content: "High  Low";
+    position: absolute;
+    left: -24px;
+    top: 20px;
+    bottom: 24px;
+    font-size: 9px;
+    color: var(--text-low);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    opacity: 0.5;
+}
+
+.activity-bar {
+    width: 100%;
+    background: var(--brand-primary);
+    border-radius: 2px;
+    min-height: 4px;
+    transition: all 0.2s ease;
+    opacity: 0.6;
+}
+
+.activity-col:hover .activity-bar {
+    opacity: 1;
+    transform: scaleY(1.1);
+}
+
+.heat-cell.l2 {
+    background: rgba(62, 207, 142, 0.5);
+}
+
+.heat-cell.l3 {
+    background: var(--brand-primary);
+}
+
+.heatmap-legend {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    color: var(--text-low);
+    justify-content: flex-end;
+}
+
+.legend-box {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+}
+
+/* PR List */
+.pr-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    /* Reduced from 12px */
+    flex: 1;
+}
+
+.pr-item {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+.pr-icon {
+    margin-top: 2px;
+    color: var(--brand-primary);
+    /* Default fallback */
+}
+
+.pr-content {
+    flex: 1;
+}
+
+.pr-link {
+    text-decoration: none;
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-high);
+    margin-bottom: 2px;
+}
+
+.pr-link:hover {
+    color: var(--brand-primary);
+}
+
+.pr-meta {
+    font-size: 11px;
+    color: var(--text-medium);
+}
+
+/* Team List */
+.team-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.team-member-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.team-member-row:hover {
+    background: var(--bg-surface-hover);
+}
+
+.avatar-circle {
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    color: #fff;
+    font-weight: 600;
+    font-size: 12px;
+    width: 24px;
+    /* Explicit size for alignment */
+    height: 24px;
+}
+
+.member-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.member-name {
+    font-size: 13px;
+    color: var(--text-high);
+    font-weight: 500;
+}
+
+.member-status {
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+}
+
+.member-expand {
+    background: none;
+    border: none;
+    color: var(--text-low);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+}
+
+.member-expand:hover {
+    color: var(--text-high);
 }

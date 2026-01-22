@@ -2,7 +2,7 @@ import { h } from 'preact'
 import { TaskProgress } from './TaskProgress'
 
 export default {
-  title: 'Task/TaskProgress',
+  title: 'Atoms/TaskProgress',
   component: TaskProgress,
 }
 

@@ -3,7 +3,7 @@ import { ColumnHeader } from './ColumnHeader'
 import { StatusDot } from '../StatusDot'
 
 export default {
-  title: 'Kanban/ColumnHeader',
+  title: 'Molecules/ColumnHeader',
   component: ColumnHeader,
 }
 

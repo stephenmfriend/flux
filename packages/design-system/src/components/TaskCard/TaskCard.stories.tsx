@@ -2,7 +2,7 @@ import { h } from 'preact'
 import { TaskCard } from './TaskCard'
 
 export default {
-  title: 'Task/TaskCard',
+  title: 'Molecules/TaskCard',
   component: TaskCard,
 }
 

@@ -133,12 +133,12 @@ export function PRDEditor({ prd, loading, saving, onSave, onDelete, onClose }: P
         <div class="collapse-content space-y-3">
           <div class="form-control">
             <label class="label py-1"><span class="label-text text-xs">Summary</span></label>
-            <input
-              type="text"
-              class="input input-bordered input-sm w-full"
+            <textarea
+              class="textarea textarea-bordered textarea-sm w-full"
               placeholder="Executive summary..."
+              rows={2}
               value={draft.summary || ''}
-              onInput={e => updateField('summary', (e.target as HTMLInputElement).value)}
+              onInput={e => updateField('summary', (e.target as HTMLTextAreaElement).value)}
             />
           </div>
           <div class="form-control">

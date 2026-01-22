@@ -93,8 +93,58 @@ export type Phase = {
   requirements: string[];        // Requirement IDs in this phase
 };
 
+// Open question needing resolution
+export type OpenQuestion = {
+  id: string;                    // Q-01
+  question: string;
+  context?: string;              // Background/options being considered
+  owner?: string;                // Who needs to answer
+  resolved?: string;             // The answer once decided
+  resolvedAt?: string;
+};
+
+// Business rule scope
+export type BusinessRuleScope = 'mvp' | 'post-mvp' | 'tbc';
+
+// Business rule - policy/constraint from stakeholders
+export type BusinessRule = {
+  id: string;                    // BR-01
+  description: string;
+  scope?: BusinessRuleScope;
+  notes?: string;
+};
+
+// Dependency status
+export type DependencyStatus = 'unknown' | 'confirmed' | 'blocked';
+
+// External dependency
+export type Dependency = {
+  id: string;                    // DEP-01
+  description: string;
+  owner?: string;                // Team/system responsible
+  status?: DependencyStatus;
+};
+
+// Term definition for glossary
+export type TermDefinition = {
+  term: string;
+  definition: string;
+};
+
+// Approval status
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
+
+// Sign-off tracking
+export type Approval = {
+  role: string;                  // "Product Owner", "Tech Lead"
+  name?: string;
+  status: ApprovalStatus;
+  date?: string;
+};
+
 // PRD (Product Requirements Document) embedded in Epic
 export type PRD = {
+  // Core
   problem: string;               // What problem are we solving?
   goals: string[];               // Success criteria
   requirements: Requirement[];   // All requirements
@@ -102,6 +152,17 @@ export type PRD = {
   phases: Phase[];               // Implementation phases
   risks: string[];               // Known risks
   outOfScope: string[];          // Explicitly out of scope
+
+  // Extended
+  summary?: string;              // Executive summary
+  sourceUrl?: string;            // Link to Miro/Figma/design doc
+  businessRules?: BusinessRule[];
+  openQuestions?: OpenQuestion[];
+  dependencies?: Dependency[];
+  successCriteria?: string[];    // Measurable metrics
+  terminology?: TermDefinition[];
+  approvals?: Approval[];
+
   createdAt: string;
   updatedAt: string;
 };

@@ -68,11 +68,16 @@ import type {
   PRD,
   Requirement,
   Phase,
+  OpenQuestion,
+  BusinessRule,
+  Dependency,
+  TermDefinition,
+  Approval,
 } from './types.js';
 
 // Re-export types and constants
 export { PRIORITY_CONFIG, PRIORITIES };
-export type { Project, Epic, Task, TaskComment, Priority, Store, Webhook, WebhookDelivery, WebhookEventType, Guardrail, PRD, Requirement, Phase, TaskWithContext, RequirementCoverage, EpicForPRDGeneration };
+export type { Project, Epic, Task, TaskComment, Priority, Store, Webhook, WebhookDelivery, WebhookEventType, Guardrail, PRD, Requirement, Phase, TaskWithContext, RequirementCoverage, EpicForPRDGeneration, OpenQuestion, BusinessRule, Dependency, TermDefinition, Approval };
 
 // Server response includes computed blocked field
 type TaskWithBlocked = Task & { blocked: boolean };

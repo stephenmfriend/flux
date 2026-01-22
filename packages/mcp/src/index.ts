@@ -58,6 +58,11 @@ import {
   type PRD,
   type Requirement,
   type Phase,
+  type OpenQuestion,
+  type BusinessRule,
+  type Dependency,
+  type TermDefinition,
+  type Approval,
 } from '@flux/shared/client';
 import { setStorageAdapter, initStore, STATUSES, WEBHOOK_EVENT_TYPES, type Guardrail } from '@flux/shared';
 import { findFluxDir, loadEnvLocal, readConfig, resolveDataPath } from '@flux/shared/config';
@@ -402,6 +407,84 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               items: { type: 'string' },
               description: 'Items explicitly out of scope',
             },
+            // Extended fields
+            summary: { type: 'string', description: 'Executive summary' },
+            sourceUrl: { type: 'string', description: 'Link to Miro/Figma/design doc' },
+            businessRules: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string', description: 'Business rule ID (e.g., BR-01)' },
+                  description: { type: 'string', description: 'Business rule description' },
+                  scope: { type: 'string', enum: ['mvp', 'post-mvp', 'tbc'], description: 'Scope of the rule' },
+                  notes: { type: 'string', description: 'Additional notes' },
+                },
+                required: ['id', 'description'],
+              },
+              description: 'Business rules - policies/constraints from stakeholders',
+            },
+            openQuestions: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string', description: 'Question ID (e.g., Q-01)' },
+                  question: { type: 'string', description: 'The question' },
+                  context: { type: 'string', description: 'Background/options being considered' },
+                  owner: { type: 'string', description: 'Who needs to answer' },
+                  resolved: { type: 'string', description: 'The answer once decided' },
+                  resolvedAt: { type: 'string', description: 'When resolved (ISO date)' },
+                },
+                required: ['id', 'question'],
+              },
+              description: 'Open questions needing resolution',
+            },
+            dependencies: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string', description: 'Dependency ID (e.g., DEP-01)' },
+                  description: { type: 'string', description: 'Dependency description' },
+                  owner: { type: 'string', description: 'Team/system responsible' },
+                  status: { type: 'string', enum: ['unknown', 'confirmed', 'blocked'], description: 'Dependency status' },
+                },
+                required: ['id', 'description'],
+              },
+              description: 'External dependencies',
+            },
+            successCriteria: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Measurable success metrics',
+            },
+            terminology: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  term: { type: 'string', description: 'The term' },
+                  definition: { type: 'string', description: 'Definition of the term' },
+                },
+                required: ['term', 'definition'],
+              },
+              description: 'Glossary of key terms',
+            },
+            approvals: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  role: { type: 'string', description: 'Role (e.g., Product Owner, Tech Lead)' },
+                  name: { type: 'string', description: 'Person name' },
+                  status: { type: 'string', enum: ['pending', 'approved', 'rejected'], description: 'Approval status' },
+                  date: { type: 'string', description: 'Approval date (ISO date)' },
+                },
+                required: ['role', 'status'],
+              },
+              description: 'Sign-off tracking',
+            },
           },
           required: ['epic_id', 'problem', 'goals', 'requirements', 'approach', 'phases', 'risks', 'outOfScope'],
         },
@@ -465,6 +548,33 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             epic_id: { type: 'string', description: 'Epic ID' },
           },
           required: ['epic_id'],
+        },
+      },
+      {
+        name: 'resolve_question',
+        description: 'Resolve an open question in a PRD. Marks the question as answered.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            epic_id: { type: 'string', description: 'Epic ID' },
+            question_id: { type: 'string', description: 'Question ID (e.g., Q-01)' },
+            resolved: { type: 'string', description: 'The answer/resolution' },
+          },
+          required: ['epic_id', 'question_id', 'resolved'],
+        },
+      },
+      {
+        name: 'update_approval',
+        description: 'Update an approval status in a PRD.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            epic_id: { type: 'string', description: 'Epic ID' },
+            role: { type: 'string', description: 'Role to update (e.g., Product Owner)' },
+            status: { type: 'string', enum: ['pending', 'approved', 'rejected'], description: 'New approval status' },
+            name: { type: 'string', description: 'Person name (optional)' },
+          },
+          required: ['epic_id', 'role', 'status'],
         },
       },
       {
@@ -833,6 +943,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     case 'update_prd': {
       const now = new Date().toISOString();
       const prd: PRD = {
+        // Core fields
         problem: args?.problem as string,
         goals: args?.goals as string[],
         requirements: args?.requirements as Requirement[],
@@ -840,6 +951,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         phases: args?.phases as Phase[],
         risks: args?.risks as string[],
         outOfScope: args?.outOfScope as string[],
+        // Extended fields
+        summary: args?.summary as string | undefined,
+        sourceUrl: args?.sourceUrl as string | undefined,
+        businessRules: args?.businessRules as BusinessRule[] | undefined,
+        openQuestions: args?.openQuestions as OpenQuestion[] | undefined,
+        dependencies: args?.dependencies as Dependency[] | undefined,
+        successCriteria: args?.successCriteria as string[] | undefined,
+        terminology: args?.terminology as TermDefinition[] | undefined,
+        approvals: args?.approvals as Approval[] | undefined,
         createdAt: now,
         updatedAt: now,
       };
@@ -921,6 +1041,79 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           type: 'text',
           text: `Epic: ${context.epic.title}\nNotes: ${context.epic.notes || '(none)'}\nTasks: ${context.tasks.length}\n\n${JSON.stringify(context, null, 2)}`
         }],
+      };
+    }
+
+    case 'resolve_question': {
+      const epicId = args?.epic_id as string;
+      const questionId = args?.question_id as string;
+      const resolved = args?.resolved as string;
+
+      const prd = await getEpicPRD(epicId);
+      if (!prd) {
+        return { content: [{ type: 'text', text: 'No PRD found for this epic' }], isError: true };
+      }
+
+      if (!prd.openQuestions?.length) {
+        return { content: [{ type: 'text', text: 'PRD has no open questions' }], isError: true };
+      }
+
+      const question = prd.openQuestions.find(q => q.id === questionId);
+      if (!question) {
+        return { content: [{ type: 'text', text: `Question ${questionId} not found` }], isError: true };
+      }
+
+      question.resolved = resolved;
+      question.resolvedAt = new Date().toISOString();
+      prd.updatedAt = new Date().toISOString();
+
+      const epic = await updateEpicPRD(epicId, prd);
+      if (!epic) {
+        return { content: [{ type: 'text', text: 'Failed to update PRD' }], isError: true };
+      }
+
+      return {
+        content: [{ type: 'text', text: `Resolved ${questionId}: ${resolved}` }],
+      };
+    }
+
+    case 'update_approval': {
+      const epicId = args?.epic_id as string;
+      const role = args?.role as string;
+      const status = args?.status as 'pending' | 'approved' | 'rejected';
+      const name = args?.name as string | undefined;
+
+      const prd = await getEpicPRD(epicId);
+      if (!prd) {
+        return { content: [{ type: 'text', text: 'No PRD found for this epic' }], isError: true };
+      }
+
+      if (!prd.approvals) {
+        prd.approvals = [];
+      }
+
+      const existing = prd.approvals.find(a => a.role === role);
+      if (existing) {
+        existing.status = status;
+        if (name) existing.name = name;
+        if (status !== 'pending') existing.date = new Date().toISOString();
+      } else {
+        prd.approvals.push({
+          role,
+          status,
+          name,
+          date: status !== 'pending' ? new Date().toISOString() : undefined,
+        });
+      }
+
+      prd.updatedAt = new Date().toISOString();
+      const epic = await updateEpicPRD(epicId, prd);
+      if (!epic) {
+        return { content: [{ type: 'text', text: 'Failed to update PRD' }], isError: true };
+      }
+
+      return {
+        content: [{ type: 'text', text: `Updated approval for ${role}: ${status}` }],
       };
     }
 

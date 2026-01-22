@@ -39,6 +39,17 @@ function prdToMarkdown(epic: { title: string }, prd: PRD): string {
   lines.push(`# PRD: ${epic.title}`);
   lines.push('');
 
+  if (prd.sourceUrl) {
+    lines.push(`**Source:** [${prd.sourceUrl}](${prd.sourceUrl})`);
+    lines.push('');
+  }
+
+  if (prd.summary) {
+    lines.push('## Executive Summary');
+    lines.push(prd.summary);
+    lines.push('');
+  }
+
   lines.push('## Problem Statement');
   lines.push(prd.problem);
   lines.push('');
@@ -46,6 +57,26 @@ function prdToMarkdown(epic: { title: string }, prd: PRD): string {
   lines.push('## Goals');
   prd.goals.forEach(g => lines.push(`- ${g}`));
   lines.push('');
+
+  if (prd.successCriteria?.length) {
+    lines.push('## Success Criteria');
+    prd.successCriteria.forEach(s => lines.push(`- ${s}`));
+    lines.push('');
+  }
+
+  if (prd.businessRules?.length) {
+    lines.push('## Business Rules');
+    lines.push('');
+    prd.businessRules.forEach(br => {
+      const scope = br.scope ? ` _(${br.scope})_` : '';
+      lines.push(`### ${br.id}${scope}`);
+      lines.push(br.description);
+      if (br.notes) {
+        lines.push(`> ${br.notes}`);
+      }
+      lines.push('');
+    });
+  }
 
   lines.push('## Requirements');
   lines.push('');
@@ -94,15 +125,66 @@ function prdToMarkdown(epic: { title: string }, prd: PRD): string {
     });
   }
 
+  if (prd.dependencies?.length) {
+    lines.push('## Dependencies');
+    lines.push('');
+    lines.push('| ID | Description | Owner | Status |');
+    lines.push('|----|-------------|-------|--------|');
+    prd.dependencies.forEach(d => {
+      lines.push(`| ${d.id} | ${d.description} | ${d.owner || '-'} | ${d.status || 'unknown'} |`);
+    });
+    lines.push('');
+  }
+
   if (prd.risks.length) {
     lines.push('## Risks');
     prd.risks.forEach(r => lines.push(`- ${r}`));
     lines.push('');
   }
 
+  if (prd.openQuestions?.length) {
+    lines.push('## Open Questions');
+    lines.push('');
+    prd.openQuestions.forEach(q => {
+      const status = q.resolved ? '✓' : '?';
+      const owner = q.owner ? ` _(${q.owner})_` : '';
+      lines.push(`### ${status} ${q.id}${owner}`);
+      lines.push(q.question);
+      if (q.context) {
+        lines.push(`> Context: ${q.context}`);
+      }
+      if (q.resolved) {
+        lines.push(`**Resolved:** ${q.resolved}`);
+      }
+      lines.push('');
+    });
+  }
+
   if (prd.outOfScope.length) {
     lines.push('## Out of Scope');
     prd.outOfScope.forEach(o => lines.push(`- ${o}`));
+    lines.push('');
+  }
+
+  if (prd.terminology?.length) {
+    lines.push('## Terminology');
+    lines.push('');
+    lines.push('| Term | Definition |');
+    lines.push('|------|------------|');
+    prd.terminology.forEach(t => {
+      lines.push(`| **${t.term}** | ${t.definition} |`);
+    });
+    lines.push('');
+  }
+
+  if (prd.approvals?.length) {
+    lines.push('## Approvals');
+    lines.push('');
+    lines.push('| Role | Name | Status | Date |');
+    lines.push('|------|------|--------|------|');
+    prd.approvals.forEach(a => {
+      lines.push(`| ${a.role} | ${a.name || '-'} | ${a.status} | ${a.date || '-'} |`);
+    });
     lines.push('');
   }
 
@@ -144,7 +226,16 @@ export async function prdCommand(
         return;
       }
 
-      console.log(`${c.bold}PRD: ${epic.title}${c.reset}\n`);
+      console.log(`${c.bold}PRD: ${epic.title}${c.reset}`);
+      if (prd.sourceUrl) {
+        console.log(`${c.dim}Source: ${prd.sourceUrl}${c.reset}`);
+      }
+      console.log('');
+
+      if (prd.summary) {
+        console.log(`${c.bold}Summary${c.reset}`);
+        console.log(`  ${prd.summary}\n`);
+      }
 
       console.log(`${c.bold}Problem${c.reset}`);
       console.log(`  ${prd.problem}\n`);
@@ -152,6 +243,24 @@ export async function prdCommand(
       console.log(`${c.bold}Goals${c.reset}`);
       prd.goals.forEach(g => console.log(`  • ${g}`));
       console.log('');
+
+      if (prd.successCriteria?.length) {
+        console.log(`${c.bold}Success Criteria${c.reset}`);
+        prd.successCriteria.forEach(s => console.log(`  ${c.green}✓${c.reset} ${s}`));
+        console.log('');
+      }
+
+      if (prd.businessRules?.length) {
+        console.log(`${c.bold}Business Rules${c.reset}`);
+        prd.businessRules.forEach(br => {
+          const scopeLabel = br.scope ? ` ${c.dim}[${br.scope}]${c.reset}` : '';
+          console.log(`  ${c.cyan}${br.id}${c.reset}${scopeLabel} ${br.description}`);
+          if (br.notes) {
+            console.log(`    ${c.dim}${br.notes}${c.reset}`);
+          }
+        });
+        console.log('');
+      }
 
       console.log(`${c.bold}Requirements${c.reset}`);
       prd.requirements.forEach(r => console.log(formatRequirement(r, '  ')));
@@ -169,15 +278,62 @@ export async function prdCommand(
         console.log('');
       }
 
+      if (prd.dependencies?.length) {
+        console.log(`${c.bold}Dependencies${c.reset}`);
+        prd.dependencies.forEach(d => {
+          const statusColor = d.status === 'confirmed' ? c.green : d.status === 'blocked' ? c.red : c.yellow;
+          const statusLabel = d.status ? ` ${statusColor}[${d.status}]${c.reset}` : '';
+          const ownerLabel = d.owner ? ` ${c.dim}(${d.owner})${c.reset}` : '';
+          console.log(`  ${c.cyan}${d.id}${c.reset}${statusLabel} ${d.description}${ownerLabel}`);
+        });
+        console.log('');
+      }
+
       if (prd.risks.length) {
         console.log(`${c.bold}Risks${c.reset}`);
         prd.risks.forEach(r => console.log(`  ${c.yellow}⚠${c.reset} ${r}`));
         console.log('');
       }
 
+      if (prd.openQuestions?.length) {
+        console.log(`${c.bold}Open Questions${c.reset}`);
+        prd.openQuestions.forEach(q => {
+          const resolved = q.resolved;
+          const icon = resolved ? `${c.green}✓${c.reset}` : `${c.yellow}?${c.reset}`;
+          const ownerLabel = q.owner ? ` ${c.dim}(${q.owner})${c.reset}` : '';
+          console.log(`  ${icon} ${c.cyan}${q.id}${c.reset} ${q.question}${ownerLabel}`);
+          if (q.context) {
+            console.log(`    ${c.dim}Context: ${q.context}${c.reset}`);
+          }
+          if (resolved) {
+            console.log(`    ${c.green}Resolved: ${resolved}${c.reset}`);
+          }
+        });
+        console.log('');
+      }
+
       if (prd.outOfScope.length) {
         console.log(`${c.bold}Out of Scope${c.reset}`);
         prd.outOfScope.forEach(o => console.log(`  ${c.dim}✗${c.reset} ${o}`));
+        console.log('');
+      }
+
+      if (prd.terminology?.length) {
+        console.log(`${c.bold}Terminology${c.reset}`);
+        prd.terminology.forEach(t => {
+          console.log(`  ${c.bold}${t.term}${c.reset}: ${t.definition}`);
+        });
+        console.log('');
+      }
+
+      if (prd.approvals?.length) {
+        console.log(`${c.bold}Approvals${c.reset}`);
+        prd.approvals.forEach(a => {
+          const statusColor = a.status === 'approved' ? c.green : a.status === 'rejected' ? c.red : c.yellow;
+          const icon = a.status === 'approved' ? '✓' : a.status === 'rejected' ? '✗' : '○';
+          const nameLabel = a.name ? ` (${a.name})` : '';
+          console.log(`  ${statusColor}${icon}${c.reset} ${a.role}${nameLabel} ${statusColor}${a.status}${c.reset}`);
+        });
       }
       break;
     }

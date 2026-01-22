@@ -22,6 +22,7 @@ import {
   deleteEpic,
   getTasks,
   getTask,
+  getTaskWithContext,
   createTask,
   updateTask,
   deleteTask,
@@ -349,6 +350,20 @@ app.get('/api/tasks/:id', (c) => {
     return c.json({ error: 'Task not found' }, 404);
   }
   return c.json({ ...task, blocked: isTaskBlocked(task.id) });
+});
+
+// Get task with full PRD context (requirements, phase, epic PRD)
+app.get('/api/tasks/:id/context', (c) => {
+  const auth = c.get('auth');
+  const taskId = c.req.param('id');
+  const context = getTaskWithContext(taskId);
+  if (!context || !canReadProject(auth, context.task.project_id)) {
+    return c.json({ error: 'Task not found' }, 404);
+  }
+  return c.json({
+    ...context,
+    task: { ...context.task, blocked: isTaskBlocked(context.task.id) },
+  });
 });
 
 app.post('/api/tasks/:id/comments', async (c) => {

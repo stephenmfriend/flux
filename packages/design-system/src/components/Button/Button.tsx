@@ -22,9 +22,9 @@ const buttonVariants = cva(
           'bg-transparent text-brand-primary underline-offset-4 hover:underline',
       },
       size: {
-        sm: 'h-8 px-4 text-sm',      // 32px height, 16px padding, 16px text
-        default: 'h-10 px-4 text-base', // 40px height, 16px padding, 16px text
-        lg: 'h-12 px-6 text-base',   // 48px height, 24px padding, 16px text
+        sm: 'h-6 px-2 text-sm',      // 24px height, 8px padding, 14px text
+        default: 'h-8 px-4 text-sm', // 32px height, 16px padding, 14px text
+        lg: 'h-10 px-6 text-base',   // 40px height, 24px padding, 16px text
       },
     },
     defaultVariants: {

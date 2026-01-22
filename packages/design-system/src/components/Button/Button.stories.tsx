@@ -1,7 +1,9 @@
 import { h } from 'preact'
+import { useState } from 'preact/hooks'
 import { Button } from './Button'
 import type { Meta, StoryObj } from '@storybook/preact'
 import { expect, userEvent, within, fn } from '@storybook/test'
+import { toggleTheme, getTheme } from '../../lib/utils'
 
 const meta: Meta<typeof Button> = {
   title: 'Atoms/Button',
@@ -284,7 +286,7 @@ export const SizeVariantMatrix: Story = {
           <Button variant="default" size="lg">Large</Button>
         </div>
       </div>
-      
+
       <div>
         <div style={{ marginBottom: '8px', fontSize: '12px', color: 'var(--text-medium)' }}>Outline variant</div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -293,7 +295,7 @@ export const SizeVariantMatrix: Story = {
           <Button variant="outline" size="lg">Large</Button>
         </div>
       </div>
-      
+
       <div>
         <div style={{ marginBottom: '8px', fontSize: '12px', color: 'var(--text-medium)' }}>Ghost variant</div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -304,4 +306,54 @@ export const SizeVariantMatrix: Story = {
       </div>
     </div>
   ),
+}
+
+// Theme Toggle Demo
+export const ThemeToggle: Story = {
+  render: () => {
+    const [theme, setThemeState] = useState(getTheme())
+
+    const handleToggle = () => {
+      const newTheme = toggleTheme()
+      setThemeState(newTheme)
+    }
+
+    return (
+      <div style={{ padding: '40px' }}>
+        <div style={{ marginBottom: '24px' }}>
+          <h2 style={{ marginBottom: '8px' }}>Current Theme: {theme}</h2>
+          <p style={{ fontSize: '14px', opacity: 0.7 }}>
+            Click the button to toggle between light and dark themes. All buttons adapt automatically via CSS variables.
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '40px' }}>
+          <Button onClick={handleToggle}>
+            Toggle Theme
+          </Button>
+          <Button variant="destructive">Destructive</Button>
+          <Button variant="outline">Outline</Button>
+          <Button variant="secondary">Secondary</Button>
+          <Button variant="ghost">Ghost</Button>
+          <Button variant="link">Link</Button>
+        </div>
+
+        <div>
+          <h3 style={{ marginBottom: '16px' }}>All Sizes:</h3>
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+            <Button size="sm">Small</Button>
+            <Button size="default">Default</Button>
+            <Button size="lg">Large</Button>
+          </div>
+        </div>
+      </div>
+    )
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: 'Interactive demo showing light/dark theme switching. Theme persists to localStorage and all components adapt automatically.',
+      },
+    },
+  },
 }

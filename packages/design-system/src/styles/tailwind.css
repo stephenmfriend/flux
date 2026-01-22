@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    /* Flux Design System - Supabase Dark Theme */
+    /* Flux Design System - Dark Theme (Default) */
 
     /* Colors - Background */
     --color-bg-base: #161616;
@@ -45,6 +45,43 @@
     /* Shadows */
     --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
     --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Light Theme Override */
+  [data-theme="light"] {
+    /* Colors - Background */
+    --color-bg-base: #ffffff;
+    --color-bg-surface: #f8f9fa;
+    --color-bg-surface-hover: #e9ecef;
+    --color-bg-overlay: rgba(0, 0, 0, 0.1);
+
+    /* Colors - Borders */
+    --color-border-subtle: #e9ecef;
+    --color-border-default: #dee2e6;
+    --color-border-focus: #3ECF8E;
+
+    /* Colors - Brand (same in both themes) */
+    --color-brand-primary: #3ECF8E;
+    --color-brand-primary-dark: #2db378;
+
+    /* Colors - Text */
+    --color-text-high: #1a1a1a;
+    --color-text-medium: #6c757d;
+    --color-text-low: #adb5bd;
+
+    /* Colors - Status Dots (same in both themes) */
+    --color-status-planning: #A855F7;
+    --color-status-todo: #8B949E;
+    --color-status-progress: #E0C872;
+    --color-status-done: #3ECF8E;
+
+    /* Colors - Semantic */
+    --color-destructive: #dc3545;
+    --color-destructive-hover: #bb2d3b;
+
+    /* Shadows (lighter for light theme) */
+    --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.15);
   }
 
   * {

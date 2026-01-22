@@ -25,11 +25,11 @@ describe('Button', () => {
 
   it('applies size classes', () => {
     const { rerender } = render(<Button size="sm">Small</Button>)
-    expect(screen.getByRole('button')).toHaveClass('h-8')
-    expect(screen.getByRole('button')).toHaveClass('px-4')
+    expect(screen.getByRole('button')).toHaveClass('h-6')
+    expect(screen.getByRole('button')).toHaveClass('px-2')
 
     rerender(<Button size="lg">Large</Button>)
-    expect(screen.getByRole('button')).toHaveClass('h-12')
+    expect(screen.getByRole('button')).toHaveClass('h-10')
     expect(screen.getByRole('button')).toHaveClass('px-6')
   })
 
@@ -125,9 +125,9 @@ describe('Button', () => {
 
   it('renders all sizes correctly', () => {
     const sizes = [
-      { name: 'sm', class: 'h-8' },
-      { name: 'default', class: 'h-10' },
-      { name: 'lg', class: 'h-12' },
+      { name: 'sm', class: 'h-6' },
+      { name: 'default', class: 'h-8' },
+      { name: 'lg', class: 'h-10' },
     ] as const
 
     sizes.forEach(({ name, class: className }) => {

@@ -8,3 +8,6 @@ import { twMerge } from 'tailwind-merge'
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
+
+// Re-export theme utilities
+export { getTheme, setTheme, toggleTheme, initTheme, type Theme } from './theme'

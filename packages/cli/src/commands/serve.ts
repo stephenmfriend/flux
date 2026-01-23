@@ -14,6 +14,10 @@ import {
   updateProject,
   deleteProject,
   getProjectStats,
+  getProjectPRD,
+  updateProjectPRD,
+  deleteProjectPRD,
+  getPRDCoverage,
   getEpics,
   getEpic,
   createEpic,
@@ -27,6 +31,9 @@ import {
   addTaskComment,
   deleteTaskComment,
   isTaskBlocked,
+  getTaskWithContext,
+  linkTaskToRequirements,
+  linkTaskToPhase,
   cleanupProject,
   getStore,
   replaceStore,
@@ -113,6 +120,30 @@ function createApp() {
     return c.json({ success: true });
   });
 
+  // Task context (for momentum/agents)
+  app.get('/api/tasks/:id/context', (c) => {
+    const context = getTaskWithContext(c.req.param('id'));
+    if (!context) return c.json({ error: 'Task not found' }, 404);
+    return c.json({
+      ...context,
+      task: { ...context.task, blocked: isTaskBlocked(context.task.id) },
+    });
+  });
+
+  // Task PRD links
+  app.put('/api/tasks/:id/requirements', async (c) => {
+    const body = await c.req.json();
+    const task = linkTaskToRequirements(c.req.param('id'), body.requirement_ids || []);
+    if (!task) return c.json({ error: 'Task not found' }, 404);
+    return c.json(task);
+  });
+  app.put('/api/tasks/:id/phase', async (c) => {
+    const body = await c.req.json();
+    const task = linkTaskToPhase(c.req.param('id'), body.phase_id);
+    if (!task) return c.json({ error: 'Task not found' }, 404);
+    return c.json(task);
+  });
+
   // Comments
   app.post('/api/tasks/:id/comments', async (c) => {
     const body = await c.req.json();
@@ -125,6 +156,33 @@ function createApp() {
       return c.json({ error: 'Not found' }, 404);
     }
     return c.json({ success: true });
+  });
+
+  // Project PRD
+  app.get('/api/projects/:id/prd', (c) => {
+    const project = getProject(c.req.param('id'));
+    if (!project) return c.json({ error: 'Project not found' }, 404);
+    const prd = getProjectPRD(c.req.param('id'));
+    return c.json(prd || null);
+  });
+  app.put('/api/projects/:id/prd', async (c) => {
+    const project = getProject(c.req.param('id'));
+    if (!project) return c.json({ error: 'Project not found' }, 404);
+    const body = await c.req.json();
+    const updated = updateProjectPRD(c.req.param('id'), body);
+    return c.json(updated);
+  });
+  app.delete('/api/projects/:id/prd', (c) => {
+    const project = getProject(c.req.param('id'));
+    if (!project) return c.json({ error: 'Project not found' }, 404);
+    deleteProjectPRD(c.req.param('id'));
+    return c.json({ success: true });
+  });
+  app.get('/api/projects/:id/prd/coverage', (c) => {
+    const project = getProject(c.req.param('id'));
+    if (!project) return c.json({ error: 'Project not found' }, 404);
+    const coverage = getPRDCoverage(c.req.param('id'));
+    return c.json(coverage);
   });
 
   // Cleanup

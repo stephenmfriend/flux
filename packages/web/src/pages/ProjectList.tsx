@@ -257,7 +257,7 @@ export function ProjectList(_props: RoutableProps) {
                     </span>
                   )}
                   {project.prd && (
-                    <span class="badge badge-soft badge-sm badge-secondary">
+                    <span class="badge badge-soft badge-sm badge-info">
                       <DocumentTextIcon className="h-3 w-3 mr-1" />
                       PRD
                     </span>

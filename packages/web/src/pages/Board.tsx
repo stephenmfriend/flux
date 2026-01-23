@@ -360,7 +360,7 @@ export function Board({ projectId }: BoardProps) {
           <div class="flex gap-2">
             <ThemeToggle />
             <button
-              class={`btn btn-sm ${prd ? 'btn-secondary' : 'btn-ghost'}`}
+              class={`btn btn-sm ${prd ? 'btn-info' : 'btn-ghost'}`}
               onClick={openPrdForm}
               title={prd ? 'Edit PRD' : 'Create PRD'}
             >

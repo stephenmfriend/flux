@@ -108,6 +108,12 @@ type Epic = {
   depends_on: string[];
   notes: string;
   project_id: string;
+};
+
+type Project = {
+  id: string;
+  name: string;
+  description?: string;
   prd?: PRD;                     // Embedded Product Requirements Document
 };
 
@@ -115,16 +121,12 @@ type PRD = {
   problem: string;
   goals: string[];
   requirements: Requirement[];   // REQ-001, REQ-002, etc.
-  approach: string;
+  businessRules: BusinessRule[]; // BR-01, BR-02, etc.
   phases: Phase[];               // PHASE-01, PHASE-02, etc.
+  openQuestions: OpenQuestion[]; // Q-01, Q-02, etc.
   risks: string[];
   outOfScope: string[];
-};
-
-type Project = {
-  id: string;
-  name: string;
-  description?: string;
+  notes?: string;                // Cross-session agent learnings
 };
 ```
 

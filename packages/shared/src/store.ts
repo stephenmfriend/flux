@@ -281,26 +281,26 @@ export function deleteEpic(id: string): boolean {
 
 // ============ PRD Operations ============
 
-export function updateEpicPRD(epicId: string, prd: PRD): Epic | undefined {
-  const index = db.data.epics.findIndex(e => e.id === epicId);
+export function updateProjectPRD(projectId: string, prd: PRD): Project | undefined {
+  const index = db.data.projects.findIndex(p => p.id === projectId);
   if (index === -1) return undefined;
-  db.data.epics[index].prd = {
+  db.data.projects[index].prd = {
     ...prd,
     updatedAt: new Date().toISOString(),
   };
   db.write();
-  return db.data.epics[index];
+  return db.data.projects[index];
 }
 
-export function getEpicPRD(epicId: string): PRD | undefined {
-  const epic = db.data.epics.find(e => e.id === epicId);
-  return epic?.prd;
+export function getProjectPRD(projectId: string): PRD | undefined {
+  const project = db.data.projects.find(p => p.id === projectId);
+  return project?.prd;
 }
 
-export function deleteEpicPRD(epicId: string): boolean {
-  const index = db.data.epics.findIndex(e => e.id === epicId);
+export function deleteProjectPRD(projectId: string): boolean {
+  const index = db.data.projects.findIndex(p => p.id === projectId);
   if (index === -1) return false;
-  delete db.data.epics[index].prd;
+  delete db.data.projects[index].prd;
   db.write();
   return true;
 }
@@ -310,7 +310,7 @@ export type TaskWithContext = {
   task: Task;
   linkedRequirements: Requirement[];
   phase: Phase | undefined;
-  epicPrd: PRD | undefined;
+  prd: PRD | undefined;
 };
 
 export function getTaskWithContext(taskId: string): TaskWithContext | undefined {
@@ -319,26 +319,25 @@ export function getTaskWithContext(taskId: string): TaskWithContext | undefined 
 
   let linkedRequirements: Requirement[] = [];
   let phase: Phase | undefined;
-  let epicPrd: PRD | undefined;
+  let prd: PRD | undefined;
 
-  if (task.epic_id) {
-    const epic = db.data.epics.find(e => e.id === task.epic_id);
-    if (epic?.prd) {
-      epicPrd = epic.prd;
-      // Get linked requirements
-      if (task.requirement_ids?.length) {
-        linkedRequirements = epic.prd.requirements.filter(r =>
-          task.requirement_ids!.includes(r.id)
-        );
-      }
-      // Get phase
-      if (task.phase_id) {
-        phase = epic.prd.phases.find(p => p.id === task.phase_id);
-      }
+  // Get PRD from project
+  const project = db.data.projects.find(p => p.id === task.project_id);
+  if (project?.prd) {
+    prd = project.prd;
+    // Get linked requirements
+    if (task.requirement_ids?.length) {
+      linkedRequirements = project.prd.requirements.filter(r =>
+        task.requirement_ids!.includes(r.id)
+      );
+    }
+    // Get phase
+    if (task.phase_id) {
+      phase = project.prd.phases.find(p => p.id === task.phase_id);
     }
   }
 
-  return { task, linkedRequirements, phase, epicPrd };
+  return { task, linkedRequirements, phase, prd };
 }
 
 // PRD coverage: which requirements have tasks?
@@ -350,14 +349,14 @@ export type RequirementCoverage = {
   covered: boolean;
 };
 
-export function getPRDCoverage(epicId: string): RequirementCoverage[] {
-  const epic = db.data.epics.find(e => e.id === epicId);
-  if (!epic?.prd) return [];
+export function getPRDCoverage(projectId: string): RequirementCoverage[] {
+  const project = db.data.projects.find(p => p.id === projectId);
+  if (!project?.prd) return [];
 
-  const tasksInEpic = db.data.tasks.filter(t => t.epic_id === epicId && !t.archived);
+  const tasksInProject = db.data.tasks.filter(t => t.project_id === projectId && !t.archived);
 
-  return epic.prd.requirements.map(req => {
-    const linkedTasks = tasksInEpic.filter(t =>
+  return project.prd.requirements.map(req => {
+    const linkedTasks = tasksInProject.filter(t =>
       t.requirement_ids?.includes(req.id)
     );
     return {
@@ -390,9 +389,9 @@ export function linkTaskToPhase(taskId: string, phaseId: string | undefined): Ta
   return db.data.tasks[index];
 }
 
-// Get epic context for PRD generation (brownfield: tasks → PRD)
-export type EpicForPRDGeneration = {
-  epic: { id: string; title: string; notes: string };
+// Get project context for PRD generation (brownfield: tasks → PRD)
+export type ProjectForPRDGeneration = {
+  project: { id: string; name: string; description?: string };
   tasks: {
     id: string;
     title: string;
@@ -403,12 +402,12 @@ export type EpicForPRDGeneration = {
   }[];
 };
 
-export function getEpicForPRDGeneration(epicId: string): EpicForPRDGeneration | undefined {
-  const epic = db.data.epics.find(e => e.id === epicId);
-  if (!epic) return undefined;
+export function getProjectForPRDGeneration(projectId: string): ProjectForPRDGeneration | undefined {
+  const project = db.data.projects.find(p => p.id === projectId);
+  if (!project) return undefined;
 
   const tasks = db.data.tasks
-    .filter(t => t.epic_id === epicId && !t.archived)
+    .filter(t => t.project_id === projectId && !t.archived)
     .map(t => ({
       id: t.id,
       title: t.title,
@@ -419,7 +418,7 @@ export function getEpicForPRDGeneration(epicId: string): EpicForPRDGeneration | 
     }));
 
   return {
-    epic: { id: epic.id, title: epic.title, notes: epic.notes },
+    project: { id: project.id, name: project.name, description: project.description },
     tasks,
   };
 }

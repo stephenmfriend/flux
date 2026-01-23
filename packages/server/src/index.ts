@@ -20,9 +20,9 @@ import {
   createEpic,
   updateEpic,
   deleteEpic,
-  getEpicPRD,
-  updateEpicPRD,
-  deleteEpicPRD,
+  getProjectPRD,
+  updateProjectPRD,
+  deleteProjectPRD,
   getPRDCoverage,
   getTasks,
   getTask,
@@ -335,62 +335,62 @@ app.delete('/api/epics/:id', (c) => {
   return c.json({ success: true });
 });
 
-// Epic PRD
-app.get('/api/epics/:id/prd', (c) => {
+// Project PRD
+app.get('/api/projects/:id/prd', (c) => {
   const auth = c.get('auth');
-  const epicId = c.req.param('id');
-  const epic = getEpic(epicId);
-  if (!epic) return c.json({ error: 'Epic not found' }, 404);
-  if (!canReadProject(auth, epic.project_id)) {
-    return c.json({ error: 'Epic not found' }, 404);
+  const projectId = c.req.param('id');
+  const project = getProject(projectId);
+  if (!project) return c.json({ error: 'Project not found' }, 404);
+  if (!canReadProject(auth, projectId)) {
+    return c.json({ error: 'Project not found' }, 404);
   }
-  const prd = getEpicPRD(epicId);
+  const prd = getProjectPRD(projectId);
   if (!prd) return c.json(null);
   return c.json(prd);
 });
 
-app.put('/api/epics/:id/prd', async (c) => {
+app.put('/api/projects/:id/prd', async (c) => {
   const auth = c.get('auth');
-  const epicId = c.req.param('id');
-  const epic = getEpic(epicId);
-  if (!epic) return c.json({ error: 'Epic not found' }, 404);
-  if (!canWriteProject(auth, epic.project_id)) {
-    return c.json({ error: 'Epic not found' }, 404);
+  const projectId = c.req.param('id');
+  const project = getProject(projectId);
+  if (!project) return c.json({ error: 'Project not found' }, 404);
+  if (!canWriteProject(auth, projectId)) {
+    return c.json({ error: 'Project not found' }, 404);
   }
   const prd = await c.req.json().catch(() => null);
   if (!prd || typeof prd.problem !== 'string') {
     return c.json({ error: 'Invalid PRD: problem field required' }, 400);
   }
-  const updated = updateEpicPRD(epicId, prd);
-  if (!updated) return c.json({ error: 'Epic not found' }, 404);
-  triggerWebhooks('epic.updated', { epic: updated }, epic.project_id);
+  const updated = updateProjectPRD(projectId, prd);
+  if (!updated) return c.json({ error: 'Project not found' }, 404);
+  triggerWebhooks('project.updated', { project: updated }, projectId);
   return c.json(updated);
 });
 
-app.delete('/api/epics/:id/prd', (c) => {
+app.delete('/api/projects/:id/prd', (c) => {
   const auth = c.get('auth');
-  const epicId = c.req.param('id');
-  const epic = getEpic(epicId);
-  if (!epic) return c.json({ error: 'Epic not found' }, 404);
-  if (!canWriteProject(auth, epic.project_id)) {
-    return c.json({ error: 'Epic not found' }, 404);
+  const projectId = c.req.param('id');
+  const project = getProject(projectId);
+  if (!project) return c.json({ error: 'Project not found' }, 404);
+  if (!canWriteProject(auth, projectId)) {
+    return c.json({ error: 'Project not found' }, 404);
   }
-  const success = deleteEpicPRD(epicId);
+  const success = deleteProjectPRD(projectId);
   if (!success) return c.json({ error: 'PRD not found' }, 404);
-  const updated = getEpic(epicId);
-  if (updated) triggerWebhooks('epic.updated', { epic: updated }, epic.project_id);
+  const updated = getProject(projectId);
+  if (updated) triggerWebhooks('project.updated', { project: updated }, projectId);
   return c.json({ success: true });
 });
 
-app.get('/api/epics/:id/prd/coverage', (c) => {
+app.get('/api/projects/:id/prd/coverage', (c) => {
   const auth = c.get('auth');
-  const epicId = c.req.param('id');
-  const epic = getEpic(epicId);
-  if (!epic) return c.json({ error: 'Epic not found' }, 404);
-  if (!canReadProject(auth, epic.project_id)) {
-    return c.json({ error: 'Epic not found' }, 404);
+  const projectId = c.req.param('id');
+  const project = getProject(projectId);
+  if (!project) return c.json({ error: 'Project not found' }, 404);
+  if (!canReadProject(auth, projectId)) {
+    return c.json({ error: 'Project not found' }, 404);
   }
-  const coverage = getPRDCoverage(epicId);
+  const coverage = getPRDCoverage(projectId);
   return c.json(coverage);
 });
 
@@ -417,7 +417,7 @@ app.get('/api/tasks/:id', (c) => {
   return c.json({ ...task, blocked: isTaskBlocked(task.id) });
 });
 
-// Get task with full PRD context (requirements, phase, epic PRD)
+// Get task with full PRD context (requirements, phase, project PRD)
 app.get('/api/tasks/:id/context', (c) => {
   const auth = c.get('auth');
   const taskId = c.req.param('id');

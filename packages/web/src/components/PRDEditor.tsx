@@ -7,7 +7,7 @@ interface PRDEditorProps {
   prd: PRD | null
   loading: boolean
   saving: boolean
-  epicTitle: string
+  projectName: string
   onSave: (prd: PRD) => Promise<void>
   onDelete: () => Promise<void>
   onClose: () => void
@@ -31,9 +31,9 @@ const emptyPRD = (): PRD => ({
   updatedAt: new Date().toISOString(),
 })
 
-function prdToMarkdown(epicTitle: string, prd: PRD): string {
+function prdToMarkdown(projectName: string, prd: PRD): string {
   const lines: string[] = []
-  lines.push(`# PRD: ${epicTitle}`)
+  lines.push(`# PRD: ${projectName}`)
   lines.push('')
 
   if (prd.sourceUrl) {
@@ -172,7 +172,7 @@ function prdToMarkdown(epicTitle: string, prd: PRD): string {
   return lines.join('\n')
 }
 
-export function PRDEditor({ prd, loading, saving, epicTitle, onSave, onDelete, onClose }: PRDEditorProps) {
+export function PRDEditor({ prd, loading, saving, projectName, onSave, onDelete, onClose }: PRDEditorProps) {
   const [expanded, setExpanded] = useState<Set<Section>>(new Set(['summary']))
   const [draft, setDraft] = useState<PRD>(emptyPRD())
   const [deleteConfirm, setDeleteConfirm] = useState(false)
@@ -668,7 +668,7 @@ export function PRDEditor({ prd, loading, saving, epicTitle, onSave, onDelete, o
       <ConfirmModal
         isOpen={deleteConfirm}
         title="Delete PRD?"
-        description="This will remove the PRD from this epic. Tasks linked to requirements will be unlinked."
+        description="This will remove the PRD from this project. Tasks linked to requirements will be unlinked."
         confirmLabel="Delete"
         confirmClassName="btn-error"
         onConfirm={async () => {
@@ -690,14 +690,14 @@ export function PRDEditor({ prd, loading, saving, epicTitle, onSave, onDelete, o
             type="button"
             class="btn btn-sm btn-ghost absolute top-2 right-2"
             onClick={() => {
-              navigator.clipboard.writeText(prdToMarkdown(epicTitle, draft))
+              navigator.clipboard.writeText(prdToMarkdown(projectName, draft))
               setCopied(true)
               setTimeout(() => setCopied(false), 2000)
             }}
           >
             {copied ? 'Copied!' : 'Copy'}
           </button>
-          <pre class="bg-base-200 p-4 rounded-lg overflow-auto max-h-[60vh] text-sm whitespace-pre-wrap">{prdToMarkdown(epicTitle, draft)}</pre>
+          <pre class="bg-base-200 p-4 rounded-lg overflow-auto max-h-[60vh] text-sm whitespace-pre-wrap">{prdToMarkdown(projectName, draft)}</pre>
         </div>
         <div class="modal-action">
           <button type="button" class="btn btn-ghost btn-sm" onClick={() => { setShowMarkdown(false); setCopied(false) }}>Close</button>

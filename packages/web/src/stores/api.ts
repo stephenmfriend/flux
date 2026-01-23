@@ -300,7 +300,7 @@ export interface TaskContext {
   task: TaskWithBlocked;
   linkedRequirements: Requirement[];
   phase: Phase | null;
-  epicPrd: PRD | null;
+  prd: PRD | null;
 }
 
 export interface RequirementCoverage {
@@ -308,14 +308,14 @@ export interface RequirementCoverage {
   taskIds: string[];
 }
 
-export async function getEpicPRD(epicId: string): Promise<PRD | null> {
-  const res = await authFetch(`${API_BASE}/epics/${epicId}/prd`);
+export async function getProjectPRD(projectId: string): Promise<PRD | null> {
+  const res = await authFetch(`${API_BASE}/projects/${projectId}/prd`);
   if (!res.ok) return null;
   return res.json();
 }
 
-export async function updateEpicPRD(epicId: string, prd: Partial<PRD>): Promise<Epic | null> {
-  const res = await authFetch(`${API_BASE}/epics/${epicId}/prd`, {
+export async function updateProjectPRD(projectId: string, prd: Partial<PRD>): Promise<Project | null> {
+  const res = await authFetch(`${API_BASE}/projects/${projectId}/prd`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(prd),
@@ -324,8 +324,8 @@ export async function updateEpicPRD(epicId: string, prd: Partial<PRD>): Promise<
   return res.json();
 }
 
-export async function deleteEpicPRD(epicId: string): Promise<boolean> {
-  const res = await authFetch(`${API_BASE}/epics/${epicId}/prd`, { method: 'DELETE' });
+export async function deleteProjectPRD(projectId: string): Promise<boolean> {
+  const res = await authFetch(`${API_BASE}/projects/${projectId}/prd`, { method: 'DELETE' });
   return res.ok;
 }
 
@@ -355,8 +355,8 @@ export async function linkTaskToPhase(taskId: string, phaseId: string | null): P
   return res.json();
 }
 
-export async function getPRDCoverage(epicId: string): Promise<RequirementCoverage[]> {
-  const res = await authFetch(`${API_BASE}/epics/${epicId}/prd/coverage`);
+export async function getPRDCoverage(projectId: string): Promise<RequirementCoverage[]> {
+  const res = await authFetch(`${API_BASE}/projects/${projectId}/prd/coverage`);
   if (!res.ok) return [];
   return res.json();
 }

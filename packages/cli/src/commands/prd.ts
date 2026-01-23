@@ -1,13 +1,13 @@
 import {
-  getEpic,
-  getEpicPRD,
-  updateEpicPRD,
+  getProject,
+  getProjectPRD,
+  updateProjectPRD,
   getPRDCoverage,
   linkTaskToRequirements,
   linkTaskToPhase,
   getTask,
   getTasks,
-  getEpicForPRDGeneration,
+  getProjectForPRDGeneration,
   setTaskVerifyResult,
 } from '../client.js';
 import { output } from '../index.js';
@@ -34,9 +34,9 @@ function formatRequirement(req: Requirement, indent: string = ''): string {
 }
 
 // Export PRD as markdown
-function prdToMarkdown(epic: { title: string }, prd: PRD): string {
+function prdToMarkdown(project: { name: string }, prd: PRD): string {
   const lines: string[] = [];
-  lines.push(`# PRD: ${epic.title}`);
+  lines.push(`# PRD: ${project.name}`);
   lines.push('');
 
   if (prd.sourceUrl) {
@@ -209,31 +209,31 @@ export async function prdCommand(
 ): Promise<void> {
   switch (subcommand) {
     case 'show': {
-      const epicId = args[0];
-      if (!epicId) {
-        console.error('Usage: flux prd show <epic-id>');
+      const projectId = args[0];
+      if (!projectId) {
+        console.error('Usage: flux prd show <project-id>');
         process.exit(1);
       }
 
-      const epic = await getEpic(epicId);
-      if (!epic) {
-        console.error(`Epic not found: ${epicId}`);
+      const project = await getProject(projectId);
+      if (!project) {
+        console.error(`Project not found: ${projectId}`);
         process.exit(1);
       }
 
-      const prd = await getEpicPRD(epicId);
+      const prd = await getProjectPRD(projectId);
       if (!prd) {
-        console.error(`No PRD found for epic: ${epicId}`);
-        console.error(`Create one with: flux prd init ${epicId}`);
+        console.error(`No PRD found for project: ${projectId}`);
+        console.error(`Create one with: flux prd init ${projectId}`);
         process.exit(1);
       }
 
       if (json) {
-        output({ epic, prd }, true);
+        output({ project, prd }, true);
         return;
       }
 
-      console.log(`${c.bold}PRD: ${epic.title}${c.reset}`);
+      console.log(`${c.bold}PRD: ${project.name}${c.reset}`);
       if (prd.sourceUrl) {
         console.log(`${c.dim}Source: ${prd.sourceUrl}${c.reset}`);
       }
@@ -359,25 +359,25 @@ export async function prdCommand(
     }
 
     case 'export': {
-      const epicId = args[0];
-      if (!epicId) {
-        console.error('Usage: flux prd export <epic-id> [-o file.md]');
+      const projectId = args[0];
+      if (!projectId) {
+        console.error('Usage: flux prd export <project-id> [-o file.md]');
         process.exit(1);
       }
 
-      const epic = await getEpic(epicId);
-      if (!epic) {
-        console.error(`Epic not found: ${epicId}`);
+      const project = await getProject(projectId);
+      if (!project) {
+        console.error(`Project not found: ${projectId}`);
         process.exit(1);
       }
 
-      const prd = await getEpicPRD(epicId);
+      const prd = await getProjectPRD(projectId);
       if (!prd) {
-        console.error(`No PRD found for epic: ${epicId}`);
+        console.error(`No PRD found for project: ${projectId}`);
         process.exit(1);
       }
 
-      const markdown = prdToMarkdown(epic, prd);
+      const markdown = prdToMarkdown(project, prd);
 
       const outFile = flags.o as string || flags.output as string;
       if (outFile) {
@@ -391,31 +391,31 @@ export async function prdCommand(
     }
 
     case 'coverage': {
-      const epicId = args[0];
-      if (!epicId) {
-        console.error('Usage: flux prd coverage <epic-id>');
+      const projectId = args[0];
+      if (!projectId) {
+        console.error('Usage: flux prd coverage <project-id>');
         process.exit(1);
       }
 
-      const epic = await getEpic(epicId);
-      if (!epic) {
-        console.error(`Epic not found: ${epicId}`);
+      const project = await getProject(projectId);
+      if (!project) {
+        console.error(`Project not found: ${projectId}`);
         process.exit(1);
       }
 
-      if (!epic.prd) {
-        console.error(`No PRD found for epic: ${epicId}`);
+      if (!project.prd) {
+        console.error(`No PRD found for project: ${projectId}`);
         process.exit(1);
       }
 
-      const coverage = await getPRDCoverage(epicId);
+      const coverage = await getPRDCoverage(projectId);
 
       if (json) {
         output(coverage, true);
         return;
       }
 
-      console.log(`${c.bold}PRD Coverage: ${epic.title}${c.reset}\n`);
+      console.log(`${c.bold}PRD Coverage: ${project.name}${c.reset}\n`);
 
       const covered = coverage.filter(c => c.covered).length;
       const total = coverage.length;
@@ -509,23 +509,23 @@ export async function prdCommand(
     }
 
     case 'init': {
-      const epicId = args[0];
-      if (!epicId) {
-        console.error('Usage: flux prd init <epic-id>');
+      const projectId = args[0];
+      if (!projectId) {
+        console.error('Usage: flux prd init <project-id>');
         console.error('');
-        console.error('Initialize a PRD for an epic. This will create a PRD structure');
+        console.error('Initialize a PRD for a project. This will create a PRD structure');
         console.error('that can be populated via MCP tools or edited directly.');
         process.exit(1);
       }
 
-      const epic = await getEpic(epicId);
-      if (!epic) {
-        console.error(`Epic not found: ${epicId}`);
+      const project = await getProject(projectId);
+      if (!project) {
+        console.error(`Project not found: ${projectId}`);
         process.exit(1);
       }
 
-      if (epic.prd) {
-        console.error(`Epic already has a PRD. Use 'flux prd show ${epicId}' to view it.`);
+      if (project.prd) {
+        console.error(`Project already has a PRD. Use 'flux prd show ${projectId}' to view it.`);
         process.exit(1);
       }
 
@@ -543,7 +543,7 @@ export async function prdCommand(
         updatedAt: now,
       };
 
-      const updated = await updateEpicPRD(epicId, prd);
+      const updated = await updateProjectPRD(projectId, prd);
       if (!updated) {
         console.error('Failed to create PRD');
         process.exit(1);
@@ -552,34 +552,34 @@ export async function prdCommand(
       if (json) {
         output(updated, true);
       } else {
-        console.log(`Created PRD for epic: ${epic.title}`);
+        console.log(`Created PRD for project: ${project.name}`);
         console.log('');
         console.log('Next steps:');
         console.log(`  • Use MCP tools to populate the PRD via AI conversation`);
-        console.log(`  • Run 'flux prd show ${epicId}' to view the PRD`);
-        console.log(`  • Run 'flux prd coverage ${epicId}' to check requirement coverage`);
+        console.log(`  • Run 'flux prd show ${projectId}' to view the PRD`);
+        console.log(`  • Run 'flux prd coverage ${projectId}' to check requirement coverage`);
       }
       break;
     }
 
     case 'generate': {
-      const epicId = args[0];
-      if (!epicId) {
-        console.error('Usage: flux prd generate <epic-id>');
+      const projectId = args[0];
+      if (!projectId) {
+        console.error('Usage: flux prd generate <project-id>');
         console.error('');
-        console.error('Generate a PRD from existing tasks in an epic.');
+        console.error('Generate a PRD from existing tasks in a project.');
         console.error('Outputs task context for AI to create a PRD.');
         process.exit(1);
       }
 
-      const context = await getEpicForPRDGeneration(epicId);
+      const context = await getProjectForPRDGeneration(projectId);
       if (!context) {
-        console.error(`Epic not found: ${epicId}`);
+        console.error(`Project not found: ${projectId}`);
         process.exit(1);
       }
 
       if (context.tasks.length === 0) {
-        console.error(`Epic has no tasks. Add tasks first, then generate PRD.`);
+        console.error(`Project has no tasks. Add tasks first, then generate PRD.`);
         process.exit(1);
       }
 
@@ -588,9 +588,9 @@ export async function prdCommand(
         return;
       }
 
-      console.log(`${c.bold}Epic: ${context.epic.title}${c.reset}`);
-      if (context.epic.notes) {
-        console.log(`${c.dim}Notes: ${context.epic.notes}${c.reset}`);
+      console.log(`${c.bold}Project: ${context.project.name}${c.reset}`);
+      if (context.project.description) {
+        console.log(`${c.dim}Description: ${context.project.description}${c.reset}`);
       }
       console.log('');
       console.log(`${c.bold}Tasks (${context.tasks.length}):${c.reset}`);
@@ -612,37 +612,37 @@ export async function prdCommand(
 
       console.log('');
       console.log(`${c.bold}Next steps:${c.reset}`);
-      console.log(`  Use the MCP tool 'get_epic_for_prd_generation' to get this data,`);
+      console.log(`  Use the MCP tool 'get_project_for_prd_generation' to get this data,`);
       console.log(`  then use 'update_prd' to create the PRD based on these tasks.`);
       console.log(`  Finally use 'link_task_to_requirements' to link each task.`);
       break;
     }
 
     case 'verify': {
-      const epicId = args[0];
-      if (!epicId) {
-        console.error('Usage: flux prd verify <epic-id>');
+      const projectId = args[0];
+      if (!projectId) {
+        console.error('Usage: flux prd verify <project-id>');
         process.exit(1);
       }
 
-      const epic = await getEpic(epicId);
-      if (!epic) {
-        console.error(`Epic not found: ${epicId}`);
+      const project = await getProject(projectId);
+      if (!project) {
+        console.error(`Project not found: ${projectId}`);
         process.exit(1);
       }
 
-      // Get all tasks in this epic
-      const allTasks = await getTasks(epic.project_id);
-      const epicTasks = allTasks.filter(t => t.epic_id === epicId && !t.archived);
+      // Get all tasks in this project
+      const allTasks = await getTasks(projectId);
+      const projectTasks = allTasks.filter(t => !t.archived);
 
-      if (epicTasks.length === 0) {
-        console.log('No tasks in this epic');
+      if (projectTasks.length === 0) {
+        console.log('No tasks in this project');
         break;
       }
 
       const results: { id: string; title: string; passed: boolean | null; output?: string }[] = [];
 
-      for (const task of epicTasks) {
+      for (const task of projectTasks) {
         if (!task.verify) {
           results.push({ id: task.id, title: task.title, passed: null });
           continue;
@@ -674,7 +674,7 @@ export async function prdCommand(
       const failCount = results.filter(r => r.passed === false).length;
       const noVerify = results.filter(r => r.passed === null).length;
 
-      console.log(`${c.bold}Verification: ${epic.title}${c.reset}\n`);
+      console.log(`${c.bold}Verification: ${project.name}${c.reset}\n`);
 
       for (const r of results) {
         if (r.passed === true) {
@@ -690,7 +690,7 @@ export async function prdCommand(
       }
 
       console.log('');
-      console.log(`Coverage: ${passCount + failCount}/${epicTasks.length} tasks have verify commands`);
+      console.log(`Coverage: ${passCount + failCount}/${projectTasks.length} tasks have verify commands`);
       if (passCount + failCount > 0) {
         console.log(`Results: ${passCount} passed, ${failCount} failed`);
       }
@@ -698,22 +698,22 @@ export async function prdCommand(
     }
 
     case 'notes': {
-      const epicId = args[0];
-      if (!epicId) {
-        console.error('Usage: flux prd notes <epic-id>           # Show notes');
-        console.error('       flux prd notes <epic-id> -a "note" # Add note');
+      const projectId = args[0];
+      if (!projectId) {
+        console.error('Usage: flux prd notes <project-id>           # Show notes');
+        console.error('       flux prd notes <project-id> -a "note" # Add note');
         process.exit(1);
       }
 
-      const epic = await getEpic(epicId);
-      if (!epic) {
-        console.error(`Epic not found: ${epicId}`);
+      const project = await getProject(projectId);
+      if (!project) {
+        console.error(`Project not found: ${projectId}`);
         process.exit(1);
       }
 
-      const prd = await getEpicPRD(epicId);
+      const prd = await getProjectPRD(projectId);
       if (!prd) {
-        console.error(`No PRD found for epic: ${epicId}`);
+        console.error(`No PRD found for project: ${projectId}`);
         process.exit(1);
       }
 
@@ -724,7 +724,7 @@ export async function prdCommand(
         prd.notes = prd.notes ? `${prd.notes}\n${newNote}` : newNote;
         prd.updatedAt = new Date().toISOString();
 
-        const updated = await updateEpicPRD(epicId, prd);
+        const updated = await updateProjectPRD(projectId, prd);
         if (!updated) {
           console.error('Failed to update PRD');
           process.exit(1);
@@ -746,11 +746,11 @@ export async function prdCommand(
 
       if (!prd.notes) {
         console.log(`${c.dim}No session notes for this PRD${c.reset}`);
-        console.log(`Add one with: flux prd notes ${epicId} -a "Your note"`);
+        console.log(`Add one with: flux prd notes ${projectId} -a "Your note"`);
         break;
       }
 
-      console.log(`${c.bold}Session Notes: ${epic.title}${c.reset}\n`);
+      console.log(`${c.bold}Session Notes: ${project.name}${c.reset}\n`);
       for (const line of prd.notes.split('\n')) {
         const match = line.match(/^\[(\d{4}-\d{2}-\d{2})\] (.*)$/);
         if (match) {
@@ -766,16 +766,16 @@ export async function prdCommand(
       console.error(`Usage: flux prd <command> [options]
 
 Commands:
-  init <epic-id>              Create a new PRD for an epic
-  generate <epic-id>          Generate PRD from existing tasks
-  show <epic-id>              Display the PRD
-  export <epic-id> [-o file]  Export PRD as markdown
-  coverage <epic-id>          Show requirement coverage by tasks
-  verify <epic-id>            Run verify commands for all tasks
-  notes <epic-id>             Show session notes
-  notes <epic-id> -a "note"   Add a session note
-  link <task-id> <req-ids...> Link a task to requirements
-  phase <task-id> <phase-id>  Set task's phase (--clear to remove)
+  init <project-id>              Create a new PRD for a project
+  generate <project-id>          Generate PRD from existing tasks
+  show <project-id>              Display the PRD
+  export <project-id> [-o file]  Export PRD as markdown
+  coverage <project-id>          Show requirement coverage by tasks
+  verify <project-id>            Run verify commands for all tasks
+  notes <project-id>             Show session notes
+  notes <project-id> -a "note"   Add a session note
+  link <task-id> <req-ids...>    Link a task to requirements
+  phase <task-id> <phase-id>     Set task's phase (--clear to remove)
 `);
       process.exit(1);
   }

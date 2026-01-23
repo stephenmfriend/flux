@@ -29,14 +29,14 @@ import {
   updateEpic,
   deleteEpic,
   // PRD operations
-  getEpicPRD,
-  updateEpicPRD,
-  deleteEpicPRD,
+  getProjectPRD,
+  updateProjectPRD,
+  deleteProjectPRD,
   getPRDCoverage,
   getTaskWithContext,
   linkTaskToRequirements,
   linkTaskToPhase,
-  getEpicForPRDGeneration,
+  getProjectForPRDGeneration,
   getTasks,
   getTask,
   createTask,
@@ -342,22 +342,22 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       // PRD tools
       {
         name: 'get_prd',
-        description: 'Get the PRD (Product Requirements Document) for an epic',
+        description: 'Get the PRD (Product Requirements Document) for a project',
         inputSchema: {
           type: 'object',
           properties: {
-            epic_id: { type: 'string', description: 'Epic ID' },
+            project_id: { type: 'string', description: 'Project ID' },
           },
-          required: ['epic_id'],
+          required: ['project_id'],
         },
       },
       {
         name: 'update_prd',
-        description: 'Create or update the PRD for an epic. Include all fields when updating.',
+        description: 'Create or update the PRD for a project. Include all fields when updating.',
         inputSchema: {
           type: 'object',
           properties: {
-            epic_id: { type: 'string', description: 'Epic ID' },
+            project_id: { type: 'string', description: 'Project ID' },
             problem: { type: 'string', description: 'Problem statement - what problem are we solving?' },
             goals: {
               type: 'array',
@@ -486,7 +486,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               description: 'Sign-off tracking',
             },
           },
-          required: ['epic_id', 'problem', 'goals', 'requirements', 'approach', 'phases', 'risks', 'outOfScope'],
+          required: ['project_id', 'problem', 'goals', 'requirements', 'approach', 'phases', 'risks', 'outOfScope'],
         },
       },
       {
@@ -495,14 +495,14 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         inputSchema: {
           type: 'object',
           properties: {
-            epic_id: { type: 'string', description: 'Epic ID' },
+            project_id: { type: 'string', description: 'Project ID' },
           },
-          required: ['epic_id'],
+          required: ['project_id'],
         },
       },
       {
         name: 'get_task_with_context',
-        description: 'Get a task with full PRD context (linked requirements, phase, epic PRD). Use this when starting work on a task to understand the full context.',
+        description: 'Get a task with full PRD context (linked requirements, phase, project PRD). Use this when starting work on a task to understand the full context.',
         inputSchema: {
           type: 'object',
           properties: {
@@ -540,14 +540,14 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         },
       },
       {
-        name: 'get_epic_for_prd_generation',
-        description: 'Get epic and task context for generating a PRD from existing tasks (brownfield). Use this to analyze existing tasks and create a PRD that documents what they implement. Returns epic info and all tasks with their acceptance_criteria, guardrails, and dependencies.',
+        name: 'get_project_for_prd_generation',
+        description: 'Get project and task context for generating a PRD from existing tasks (brownfield). Use this to analyze existing tasks and create a PRD that documents what they implement. Returns project info and all tasks with their acceptance_criteria, guardrails, and dependencies.',
         inputSchema: {
           type: 'object',
           properties: {
-            epic_id: { type: 'string', description: 'Epic ID' },
+            project_id: { type: 'string', description: 'Project ID' },
           },
-          required: ['epic_id'],
+          required: ['project_id'],
         },
       },
       {
@@ -556,11 +556,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         inputSchema: {
           type: 'object',
           properties: {
-            epic_id: { type: 'string', description: 'Epic ID' },
+            project_id: { type: 'string', description: 'Project ID' },
             question_id: { type: 'string', description: 'Question ID (e.g., Q-01)' },
             resolved: { type: 'string', description: 'The answer/resolution' },
           },
-          required: ['epic_id', 'question_id', 'resolved'],
+          required: ['project_id', 'question_id', 'resolved'],
         },
       },
       {
@@ -569,24 +569,24 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         inputSchema: {
           type: 'object',
           properties: {
-            epic_id: { type: 'string', description: 'Epic ID' },
+            project_id: { type: 'string', description: 'Project ID' },
             role: { type: 'string', description: 'Role to update (e.g., Product Owner)' },
             status: { type: 'string', enum: ['pending', 'approved', 'rejected'], description: 'New approval status' },
             name: { type: 'string', description: 'Person name (optional)' },
           },
-          required: ['epic_id', 'role', 'status'],
+          required: ['project_id', 'role', 'status'],
         },
       },
       {
         name: 'add_prd_note',
-        description: 'Append a note to the epic PRD for cross-session context. Use this to persist important decisions, blockers, or learnings that future tasks should know.',
+        description: 'Append a note to the project PRD for cross-session context. Use this to persist important decisions, blockers, or learnings that future tasks should know.',
         inputSchema: {
           type: 'object',
           properties: {
-            epic_id: { type: 'string', description: 'Epic ID' },
+            project_id: { type: 'string', description: 'Project ID' },
             note: { type: 'string', description: 'Decision, blocker, or learning to persist' },
           },
-          required: ['epic_id', 'note'],
+          required: ['project_id', 'note'],
         },
       },
       {
@@ -943,9 +943,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     // PRD operations
     case 'get_prd': {
-      const prd = await getEpicPRD(args?.epic_id as string);
+      const prd = await getProjectPRD(args?.project_id as string);
       if (!prd) {
-        return { content: [{ type: 'text', text: 'No PRD found for this epic' }], isError: true };
+        return { content: [{ type: 'text', text: 'No PRD found for this project' }], isError: true };
       }
       return {
         content: [{ type: 'text', text: JSON.stringify(prd, null, 2) }],
@@ -977,22 +977,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       };
 
       // Preserve createdAt if updating existing PRD
-      const existing = await getEpicPRD(args?.epic_id as string);
+      const existing = await getProjectPRD(args?.project_id as string);
       if (existing) {
         prd.createdAt = existing.createdAt;
       }
 
-      const epic = await updateEpicPRD(args?.epic_id as string, prd);
-      if (!epic) {
-        return { content: [{ type: 'text', text: 'Epic not found' }], isError: true };
+      const project = await updateProjectPRD(args?.project_id as string, prd);
+      if (!project) {
+        return { content: [{ type: 'text', text: 'Project not found' }], isError: true };
       }
       return {
-        content: [{ type: 'text', text: `Updated PRD for epic "${epic.title}"\n\n${JSON.stringify(epic.prd, null, 2)}` }],
+        content: [{ type: 'text', text: `Updated PRD for project "${project.name}"\n\n${JSON.stringify(project.prd, null, 2)}` }],
       };
     }
 
     case 'get_prd_coverage': {
-      const coverage = await getPRDCoverage(args?.epic_id as string);
+      const coverage = await getPRDCoverage(args?.project_id as string);
       if (coverage.length === 0) {
         return { content: [{ type: 'text', text: 'No PRD found or no requirements defined' }] };
       }
@@ -1043,27 +1043,27 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       };
     }
 
-    case 'get_epic_for_prd_generation': {
-      const context = await getEpicForPRDGeneration(args?.epic_id as string);
+    case 'get_project_for_prd_generation': {
+      const context = await getProjectForPRDGeneration(args?.project_id as string);
       if (!context) {
-        return { content: [{ type: 'text', text: 'Epic not found' }], isError: true };
+        return { content: [{ type: 'text', text: 'Project not found' }], isError: true };
       }
       return {
         content: [{
           type: 'text',
-          text: `Epic: ${context.epic.title}\nNotes: ${context.epic.notes || '(none)'}\nTasks: ${context.tasks.length}\n\n${JSON.stringify(context, null, 2)}`
+          text: `Project: ${context.project.name}\nDescription: ${context.project.description || '(none)'}\nTasks: ${context.tasks.length}\n\n${JSON.stringify(context, null, 2)}`
         }],
       };
     }
 
     case 'resolve_question': {
-      const epicId = args?.epic_id as string;
+      const projectId = args?.project_id as string;
       const questionId = args?.question_id as string;
       const resolved = args?.resolved as string;
 
-      const prd = await getEpicPRD(epicId);
+      const prd = await getProjectPRD(projectId);
       if (!prd) {
-        return { content: [{ type: 'text', text: 'No PRD found for this epic' }], isError: true };
+        return { content: [{ type: 'text', text: 'No PRD found for this project' }], isError: true };
       }
 
       if (!prd.openQuestions?.length) {
@@ -1079,8 +1079,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       question.resolvedAt = new Date().toISOString();
       prd.updatedAt = new Date().toISOString();
 
-      const epic = await updateEpicPRD(epicId, prd);
-      if (!epic) {
+      const project = await updateProjectPRD(projectId, prd);
+      if (!project) {
         return { content: [{ type: 'text', text: 'Failed to update PRD' }], isError: true };
       }
 
@@ -1090,14 +1090,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
 
     case 'update_approval': {
-      const epicId = args?.epic_id as string;
+      const projectId = args?.project_id as string;
       const role = args?.role as string;
       const status = args?.status as 'pending' | 'approved' | 'rejected';
       const name = args?.name as string | undefined;
 
-      const prd = await getEpicPRD(epicId);
+      const prd = await getProjectPRD(projectId);
       if (!prd) {
-        return { content: [{ type: 'text', text: 'No PRD found for this epic' }], isError: true };
+        return { content: [{ type: 'text', text: 'No PRD found for this project' }], isError: true };
       }
 
       if (!prd.approvals) {
@@ -1119,8 +1119,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       prd.updatedAt = new Date().toISOString();
-      const epic = await updateEpicPRD(epicId, prd);
-      if (!epic) {
+      const project = await updateProjectPRD(projectId, prd);
+      if (!project) {
         return { content: [{ type: 'text', text: 'Failed to update PRD' }], isError: true };
       }
 
@@ -1130,12 +1130,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
 
     case 'add_prd_note': {
-      const epicId = args?.epic_id as string;
+      const projectId = args?.project_id as string;
       const note = args?.note as string;
 
-      const prd = await getEpicPRD(epicId);
+      const prd = await getProjectPRD(projectId);
       if (!prd) {
-        return { content: [{ type: 'text', text: 'No PRD found for this epic' }], isError: true };
+        return { content: [{ type: 'text', text: 'No PRD found for this project' }], isError: true };
       }
 
       const timestamp = new Date().toISOString().split('T')[0];
@@ -1143,8 +1143,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       prd.notes = prd.notes ? `${prd.notes}\n${newNote}` : newNote;
       prd.updatedAt = new Date().toISOString();
 
-      const epic = await updateEpicPRD(epicId, prd);
-      if (!epic) {
+      const project = await updateProjectPRD(projectId, prd);
+      if (!project) {
         return { content: [{ type: 'text', text: 'Failed to update PRD' }], isError: true };
       }
 

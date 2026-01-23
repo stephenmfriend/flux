@@ -142,7 +142,7 @@ export type Approval = {
   date?: string;
 };
 
-// PRD (Product Requirements Document) embedded in Epic
+// PRD (Product Requirements Document) embedded in Project
 export type PRD = {
   // Core
   problem: string;               // What problem are we solving?
@@ -177,7 +177,6 @@ export type Epic = {
   notes: string;
   auto: boolean;
   project_id: string;
-  prd?: PRD;                     // Optional PRD for this epic
 };
 
 // Project visibility: public = anyone can read, private = key required
@@ -189,6 +188,7 @@ export type Project = {
   name: string;
   description?: string;
   visibility?: ProjectVisibility;
+  prd?: PRD;                     // Optional PRD for this project
 };
 
 // ============ API Key Types ============

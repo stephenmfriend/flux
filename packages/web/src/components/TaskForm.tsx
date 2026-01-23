@@ -9,7 +9,7 @@ import {
   deleteTaskComment,
   getEpics,
   getTasks,
-  getEpicPRD,
+  getProjectPRD,
   linkTaskToRequirements,
   linkTaskToPhase,
   setTaskVerify,
@@ -56,8 +56,8 @@ export function TaskForm({
   const [newGuardrailNumber, setNewGuardrailNumber] = useState("");
   const [newGuardrailText, setNewGuardrailText] = useState("");
 
-  // PRD link state
-  const [epicPrd, setEpicPrd] = useState<PRD | null>(null);
+  // PRD link state (PRD is at project level)
+  const [projectPrd, setProjectPrd] = useState<PRD | null>(null);
   const [prdLoading, setPrdLoading] = useState(false);
   const [linkedRequirements, setLinkedRequirements] = useState<string[]>([]);
   const [phaseId, setPhaseId] = useState<string>("");
@@ -80,20 +80,18 @@ export function TaskForm({
     }
   }, [isOpen, task, projectId, defaultEpicId]);
 
-  // Load PRD when epic changes
+  // Load project PRD when form opens
   useEffect(() => {
-    if (epicId) {
-      loadEpicPrd(epicId);
-    } else {
-      setEpicPrd(null);
+    if (isOpen && projectId) {
+      loadProjectPrd(projectId);
     }
-  }, [epicId]);
+  }, [isOpen, projectId]);
 
-  const loadEpicPrd = async (eid: string) => {
+  const loadProjectPrd = async (pid: string) => {
     setPrdLoading(true);
     try {
-      const prd = await getEpicPRD(eid);
-      setEpicPrd(prd);
+      const prd = await getProjectPRD(pid);
+      setProjectPrd(prd);
     } finally {
       setPrdLoading(false);
     }
@@ -159,7 +157,7 @@ export function TaskForm({
           guardrails: guardrails.length > 0 ? guardrails : undefined,
         });
         // Handle PRD links separately
-        if (epicPrd) {
+        if (projectPrd) {
           await linkTaskToRequirements(task.id, linkedRequirements);
           await linkTaskToPhase(task.id, phaseId || null);
         }
@@ -456,7 +454,7 @@ export function TaskForm({
             </div>
 
             {/* PRD Links - only show if epic has PRD */}
-            {isEdit && epicPrd && (
+            {isEdit && projectPrd && (
               <div class="form-control mb-4">
                 <label class="label">
                   <span class="label-text">PRD Links</span>
@@ -473,14 +471,14 @@ export function TaskForm({
                       onChange={(e) => setPhaseId((e.target as HTMLSelectElement).value)}
                     >
                       <option value="">No phase</option>
-                      {epicPrd.phases.map((p) => (
+                      {projectPrd.phases.map((p) => (
                         <option key={p.id} value={p.id}>
                           {p.name || p.id}
                         </option>
                       ))}
                     </select>
                   </div>
-                  {epicPrd.requirements.length > 0 && (
+                  {projectPrd.requirements.length > 0 && (
                     <div>
                       <label class="label py-0">
                         <span class="label-text text-xs">Requirements</span>
@@ -489,7 +487,7 @@ export function TaskForm({
                         )}
                       </label>
                       <div class="max-h-32 overflow-y-auto">
-                        {epicPrd.requirements.map((req) => (
+                        {projectPrd.requirements.map((req) => (
                           <label key={req.id} class="flex items-center gap-2 px-2 py-1 hover:bg-base-200 cursor-pointer rounded">
                             <input
                               type="checkbox"

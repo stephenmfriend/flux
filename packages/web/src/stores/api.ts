@@ -1,48 +1,56 @@
-import type { Task, Epic, Project, Webhook, WebhookDelivery, WebhookEventType, TaskComment, CommentAuthor, KeyScope } from '@flux/shared';
-import { getToken } from './auth';
+import type { Task, Epic, Project, Webhook, WebhookDelivery, WebhookEventType, TaskComment, CommentAuthor, KeyScope, UserProjectAccess, UserRole } from '@flux/shared'
+import { getToken } from './auth'
 
-const API_BASE = import.meta.env.DEV ? 'http://localhost:3000/api' : '/api';
+const API_BASE = import.meta.env.DEV ? 'http://localhost:3589/api' : '/api'
+
+// Token getter for async token support (Clerk)
+let asyncTokenGetter: (() => Promise<string | null>) | null = null
+
+export function setAsyncTokenGetter(getter: (() => Promise<string | null>) | null) {
+  asyncTokenGetter = getter
+}
 
 // Create fetch wrapper with auth headers
-function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
-  const token = getToken();
-  const headers = new Headers(options.headers);
+async function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
+  const headers = new Headers(options.headers)
+  // Try async getter first (Clerk), fall back to localStorage token
+  const token = asyncTokenGetter ? await asyncTokenGetter() : getToken()
   if (token) {
-    headers.set('Authorization', `Bearer ${token}`);
+    headers.set('Authorization', `Bearer ${token}`)
   }
-  return fetch(url, { ...options, headers });
+  return fetch(url, { ...options, headers })
 }
 
 // Project with stats from API
 export interface ProjectWithStats extends Project {
-  stats: { total: number; done: number };
+  stats: { total: number; done: number }
 }
 
 // Task with blocked status from API
 export interface TaskWithBlocked extends Task {
-  blocked: boolean;
+  blocked: boolean
 }
 
 // ============ Project Operations ============
 
 export async function getProjects(): Promise<ProjectWithStats[]> {
-  const res = await authFetch(`${API_BASE}/projects`);
-  return res.json();
+  const res = await authFetch(`${API_BASE}/projects`)
+  return res.json()
 }
 
 export async function getProject(id: string): Promise<ProjectWithStats | null> {
-  const res = await authFetch(`${API_BASE}/projects/${id}`);
-  if (!res.ok) return null;
-  return res.json();
+  const res = await authFetch(`${API_BASE}/projects/${id}`)
+  if (!res.ok) return null
+  return res.json()
 }
 
-export async function createProject(name: string, description?: string): Promise<Project> {
+export async function createProject(name: string, description?: string, visibility?: 'public' | 'private'): Promise<Project> {
   const res = await authFetch(`${API_BASE}/projects`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, description }),
-  });
-  return res.json();
+    body: JSON.stringify({ name, description, visibility }),
+  })
+  return res.json()
 }
 
 export async function updateProject(id: string, updates: Partial<Omit<Project, 'id'>>): Promise<Project | null> {
@@ -50,26 +58,26 @@ export async function updateProject(id: string, updates: Partial<Omit<Project, '
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(updates),
-  });
-  if (!res.ok) return null;
-  return res.json();
+  })
+  if (!res.ok) return null
+  return res.json()
 }
 
 export async function deleteProject(id: string): Promise<void> {
-  await fetch(`${API_BASE}/projects/${id}`, { method: 'DELETE' });
+  await authFetch(`${API_BASE}/projects/${id}`, { method: 'DELETE' })
 }
 
 // ============ Epic Operations ============
 
 export async function getEpics(projectId: string): Promise<Epic[]> {
-  const res = await authFetch(`${API_BASE}/projects/${projectId}/epics`);
-  return res.json();
+  const res = await authFetch(`${API_BASE}/projects/${projectId}/epics`)
+  return res.json()
 }
 
 export async function getEpic(id: string): Promise<Epic | null> {
-  const res = await authFetch(`${API_BASE}/epics/${id}`);
-  if (!res.ok) return null;
-  return res.json();
+  const res = await authFetch(`${API_BASE}/epics/${id}`)
+  if (!res.ok) return null
+  return res.json()
 }
 
 export async function createEpic(projectId: string, title: string, notes?: string): Promise<Epic> {
@@ -77,8 +85,8 @@ export async function createEpic(projectId: string, title: string, notes?: strin
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ title, notes }),
-  });
-  return res.json();
+  })
+  return res.json()
 }
 
 export async function updateEpic(id: string, updates: Partial<Omit<Epic, 'id'>>): Promise<Epic | null> {
@@ -86,27 +94,27 @@ export async function updateEpic(id: string, updates: Partial<Omit<Epic, 'id'>>)
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(updates),
-  });
-  if (!res.ok) return null;
-  return res.json();
+  })
+  if (!res.ok) return null
+  return res.json()
 }
 
 export async function deleteEpic(id: string): Promise<boolean> {
-  const res = await authFetch(`${API_BASE}/epics/${id}`, { method: 'DELETE' });
-  return res.ok;
+  const res = await authFetch(`${API_BASE}/epics/${id}`, { method: 'DELETE' })
+  return res.ok
 }
 
 // ============ Task Operations ============
 
 export async function getTasks(projectId: string): Promise<TaskWithBlocked[]> {
-  const res = await authFetch(`${API_BASE}/projects/${projectId}/tasks`);
-  return res.json();
+  const res = await authFetch(`${API_BASE}/projects/${projectId}/tasks`)
+  return res.json()
 }
 
 export async function getTask(id: string): Promise<TaskWithBlocked | null> {
-  const res = await authFetch(`${API_BASE}/tasks/${id}`);
-  if (!res.ok) return null;
-  return res.json();
+  const res = await authFetch(`${API_BASE}/tasks/${id}`)
+  if (!res.ok) return null
+  return res.json()
 }
 
 export async function createTask(
@@ -118,8 +126,8 @@ export async function createTask(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ title, epic_id: epicId }),
-  });
-  return res.json();
+  })
+  return res.json()
 }
 
 export async function updateTask(id: string, updates: Partial<Omit<Task, 'id'>>): Promise<TaskWithBlocked | null> {
@@ -127,14 +135,14 @@ export async function updateTask(id: string, updates: Partial<Omit<Task, 'id'>>)
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(updates),
-  });
-  if (!res.ok) return null;
-  return res.json();
+  })
+  if (!res.ok) return null
+  return res.json()
 }
 
 export async function deleteTask(id: string): Promise<boolean> {
-  const res = await authFetch(`${API_BASE}/tasks/${id}`, { method: 'DELETE' });
-  return res.ok;
+  const res = await authFetch(`${API_BASE}/tasks/${id}`, { method: 'DELETE' })
+  return res.ok
 }
 
 export async function addTaskComment(
@@ -146,13 +154,13 @@ export async function addTaskComment(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ body, author }),
-  });
-  return res.json();
+  })
+  return res.json()
 }
 
 export async function deleteTaskComment(id: string, commentId: string): Promise<boolean> {
-  const res = await authFetch(`${API_BASE}/tasks/${id}/comments/${commentId}`, { method: 'DELETE' });
-  return res.ok;
+  const res = await authFetch(`${API_BASE}/tasks/${id}/comments/${commentId}`, { method: 'DELETE' })
+  return res.ok
 }
 
 export async function cleanupProject(
@@ -164,26 +172,26 @@ export async function cleanupProject(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ archiveTasks, archiveEpics }),
-  });
-  return res.json();
+  })
+  return res.json()
 }
 
 export async function resetDatabase(): Promise<{ success: boolean }> {
-  const res = await authFetch(`${API_BASE}/reset`, { method: 'POST' });
-  return res.json();
+  const res = await authFetch(`${API_BASE}/reset`, { method: 'POST' })
+  return res.json()
 }
 
 // ============ Webhook Operations ============
 
 export async function getWebhooks(): Promise<Webhook[]> {
-  const res = await authFetch(`${API_BASE}/webhooks`);
-  return res.json();
+  const res = await authFetch(`${API_BASE}/webhooks`)
+  return res.json()
 }
 
 export async function getWebhook(id: string): Promise<Webhook | null> {
-  const res = await authFetch(`${API_BASE}/webhooks/${id}`);
-  if (!res.ok) return null;
-  return res.json();
+  const res = await authFetch(`${API_BASE}/webhooks/${id}`)
+  if (!res.ok) return null
+  return res.json()
 }
 
 export async function createWebhook(
@@ -196,8 +204,8 @@ export async function createWebhook(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name, url, events, ...options }),
-  });
-  return res.json();
+  })
+  return res.json()
 }
 
 export async function updateWebhook(
@@ -208,57 +216,80 @@ export async function updateWebhook(
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(updates),
-  });
-  if (!res.ok) return null;
-  return res.json();
+  })
+  if (!res.ok) return null
+  return res.json()
 }
 
 export async function deleteWebhook(id: string): Promise<boolean> {
-  const res = await authFetch(`${API_BASE}/webhooks/${id}`, { method: 'DELETE' });
-  return res.ok;
+  const res = await authFetch(`${API_BASE}/webhooks/${id}`, { method: 'DELETE' })
+  return res.ok
 }
 
 export async function testWebhook(id: string): Promise<{
-  success: boolean;
-  status_code?: number;
-  response?: string;
-  error?: string;
+  success: boolean
+  status_code?: number
+  response?: string
+  error?: string
 }> {
-  const res = await authFetch(`${API_BASE}/webhooks/${id}/test`, { method: 'POST' });
-  return res.json();
+  const res = await authFetch(`${API_BASE}/webhooks/${id}/test`, { method: 'POST' })
+  return res.json()
 }
 
 export async function getWebhookDeliveries(webhookId: string, limit: number = 50): Promise<WebhookDelivery[]> {
-  const res = await authFetch(`${API_BASE}/webhooks/${webhookId}/deliveries?limit=${limit}`);
-  return res.json();
+  const res = await authFetch(`${API_BASE}/webhooks/${webhookId}/deliveries?limit=${limit}`)
+  return res.json()
 }
 
 // ============ Auth Operations ============
 
 export interface AuthStatus {
-  authenticated: boolean;
-  keyType: 'server' | 'project' | 'env' | 'anonymous';
-  projectIds?: string[];
+  authenticated: boolean
+  keyType: 'server' | 'project' | 'env' | 'anonymous' | 'clerk'
+  projectIds?: string[]
+  clerkEnabled?: boolean
+  clerkUserId?: string
+  clerkUserRole?: UserRole
 }
 
 export interface ApiKeyInfo {
-  id: string;
-  prefix: string;
-  name: string;
-  scope: KeyScope;
-  created_at: string;
-  last_used_at?: string;
+  id: string
+  prefix: string
+  name: string
+  scope: KeyScope
+  created_at: string
+  last_used_at?: string
+  user_id?: string
+}
+
+export interface UserInfo {
+  clerk_id: string
+  role: UserRole
+  created_at: string
+  project_access: UserProjectAccess[]
 }
 
 export async function getAuthStatus(): Promise<AuthStatus> {
-  const res = await authFetch(`${API_BASE}/auth/status`);
-  return res.json();
+  const res = await authFetch(`${API_BASE}/auth/status`)
+  return res.json()
+}
+
+export async function getCurrentUser(): Promise<UserInfo | null> {
+  const res = await authFetch(`${API_BASE}/users/me`)
+  if (!res.ok) return null
+  return res.json()
 }
 
 export async function getApiKeys(): Promise<ApiKeyInfo[]> {
-  const res = await authFetch(`${API_BASE}/auth/keys`);
-  if (!res.ok) return [];
-  return res.json();
+  const res = await authFetch(`${API_BASE}/auth/keys`)
+  if (!res.ok) return []
+  return res.json()
+}
+
+export async function getMyApiKeys(): Promise<ApiKeyInfo[]> {
+  const res = await authFetch(`${API_BASE}/auth/my-keys`)
+  if (!res.ok) return []
+  return res.json()
 }
 
 export async function createApiKey(
@@ -269,13 +300,13 @@ export async function createApiKey(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name, project_ids: projectIds }),
-  });
-  return res.json();
+  })
+  return res.json()
 }
 
 export async function deleteApiKey(id: string): Promise<boolean> {
-  const res = await authFetch(`${API_BASE}/auth/keys/${id}`, { method: 'DELETE' });
-  return res.ok;
+  const res = await authFetch(`${API_BASE}/auth/keys/${id}`, { method: 'DELETE' })
+  return res.ok
 }
 
 export async function completeCliAuth(
@@ -287,6 +318,35 @@ export async function completeCliAuth(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ token, name, project_ids: projectIds }),
-  });
-  return res.json();
+  })
+  return res.json()
+}
+
+// ============ Project Access Operations ============
+
+export async function getProjectAccess(projectId: string): Promise<UserProjectAccess[]> {
+  const res = await authFetch(`${API_BASE}/projects/${projectId}/access`)
+  if (!res.ok) return []
+  return res.json()
+}
+
+export async function grantProjectAccess(
+  projectId: string,
+  userId: string,
+  access: 'write' | 'admin'
+): Promise<UserProjectAccess | null> {
+  const res = await authFetch(`${API_BASE}/projects/${projectId}/access`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ user_id: userId, access }),
+  })
+  if (!res.ok) return null
+  return res.json()
+}
+
+export async function revokeProjectAccess(projectId: string, userId: string): Promise<boolean> {
+  const res = await authFetch(`${API_BASE}/projects/${projectId}/access/${encodeURIComponent(userId)}`, {
+    method: 'DELETE',
+  })
+  return res.ok
 }

@@ -1,4 +1,4 @@
-import type { Task, Epic, Project, Store, Webhook, WebhookDelivery, WebhookEventType, WebhookPayload, StoreWithWebhooks, Priority, CommentAuthor, TaskComment, Guardrail, ApiKey, KeyScope, CliAuthRequest } from './types.js';
+import type { Task, Epic, Project, Store, Webhook, WebhookDelivery, WebhookEventType, WebhookPayload, StoreWithWebhooks, StoreWithAuth, Priority, CommentAuthor, TaskComment, Guardrail, ApiKey, KeyScope, CliAuthRequest, UserRecord, UserRole, UserProjectAccess, ProjectAccess } from './types.js';
 
 // Auth functions injected at runtime (server-side only, uses Node crypto)
 type AuthFunctions = {
@@ -758,7 +758,8 @@ export function getApiKey(id: string): ApiKey | undefined {
  */
 export function createApiKey(
   name: string,
-  scope: KeyScope
+  scope: KeyScope,
+  userId?: string
 ): { rawKey: string; apiKey: ApiKey } {
   ensureApiKeysArrays();
   const { key, prefix, hash } = requireAuth().generateKey();
@@ -769,6 +770,7 @@ export function createApiKey(
     name,
     scope,
     created_at: new Date().toISOString(),
+    user_id: userId,
   };
   getWebhookData().api_keys!.push(apiKey);
   db.write();
@@ -842,7 +844,8 @@ export function getCliAuthRequest(token: string): CliAuthRequest | undefined {
 export function completeCliAuthRequest(
   token: string,
   name: string,
-  scope: KeyScope
+  scope: KeyScope,
+  userId?: string
 ): { rawKey: string; apiKey: ApiKey } | undefined {
   ensureApiKeysArrays();
   const data = getWebhookData();
@@ -851,7 +854,7 @@ export function completeCliAuthRequest(
   if (new Date(request.expires_at) < new Date()) return undefined;
   if (request.completed_at) return undefined;
 
-  const { rawKey, apiKey } = createApiKey(name, scope);
+  const { rawKey, apiKey } = createApiKey(name, scope, userId);
   request.name = name;
   request.scope = scope;
   // Encrypt the key with the temp token so it's not stored in plaintext
@@ -890,4 +893,121 @@ export function cleanupExpiredAuthRequests(): number {
   const removed = original - (data.cli_auth_requests?.length || 0);
   if (removed > 0) db.write();
   return removed;
+}
+
+// ============ User Operations (Clerk) ============
+
+function getAuthData(): StoreWithAuth {
+  return db.data as StoreWithAuth;
+}
+
+function ensureUserArrays(): void {
+  const data = getAuthData();
+  if (!data.users) data.users = [];
+  if (!data.user_project_access) data.user_project_access = [];
+}
+
+export function getUsers(): UserRecord[] {
+  ensureUserArrays();
+  return [...(getAuthData().users || [])];
+}
+
+export function getUser(clerkId: string): UserRecord | undefined {
+  ensureUserArrays();
+  return getAuthData().users?.find(u => u.clerk_id === clerkId);
+}
+
+export function createUser(clerkId: string, role: UserRole = 'user'): UserRecord {
+  ensureUserArrays();
+  const existing = getUser(clerkId);
+  if (existing) return existing;
+  const user: UserRecord = {
+    clerk_id: clerkId,
+    role,
+    created_at: new Date().toISOString(),
+  };
+  getAuthData().users!.push(user);
+  db.write();
+  return user;
+}
+
+export function updateUserRole(clerkId: string, role: UserRole): UserRecord | undefined {
+  ensureUserArrays();
+  const users = getAuthData().users!;
+  const index = users.findIndex(u => u.clerk_id === clerkId);
+  if (index === -1) return undefined;
+  users[index] = { ...users[index], role };
+  db.write();
+  return users[index];
+}
+
+export function hasAnyUsers(): boolean {
+  ensureUserArrays();
+  return (getAuthData().users?.length || 0) > 0;
+}
+
+// ============ User Project Access Operations ============
+
+export function getUserProjectAccess(userId: string, projectId: string): UserProjectAccess | undefined {
+  ensureUserArrays();
+  return getAuthData().user_project_access?.find(
+    a => a.user_id === userId && a.project_id === projectId
+  );
+}
+
+export function getUserAccessForProject(projectId: string): UserProjectAccess[] {
+  ensureUserArrays();
+  return (getAuthData().user_project_access || []).filter(a => a.project_id === projectId);
+}
+
+export function getProjectsForUser(userId: string): UserProjectAccess[] {
+  ensureUserArrays();
+  return (getAuthData().user_project_access || []).filter(a => a.user_id === userId);
+}
+
+export function grantProjectAccess(
+  userId: string,
+  projectId: string,
+  access: ProjectAccess,
+  grantedBy?: string
+): UserProjectAccess {
+  ensureUserArrays();
+  const data = getAuthData();
+  const existing = data.user_project_access?.find(
+    a => a.user_id === userId && a.project_id === projectId
+  );
+  if (existing) {
+    existing.access = access;
+    existing.granted_at = new Date().toISOString();
+    if (grantedBy) existing.granted_by = grantedBy;
+    db.write();
+    return existing;
+  }
+  const accessRecord: UserProjectAccess = {
+    user_id: userId,
+    project_id: projectId,
+    access,
+    granted_at: new Date().toISOString(),
+    granted_by: grantedBy,
+  };
+  data.user_project_access!.push(accessRecord);
+  db.write();
+  return accessRecord;
+}
+
+export function revokeProjectAccess(userId: string, projectId: string): boolean {
+  ensureUserArrays();
+  const data = getAuthData();
+  const index = data.user_project_access?.findIndex(
+    a => a.user_id === userId && a.project_id === projectId
+  ) ?? -1;
+  if (index === -1) return false;
+  data.user_project_access!.splice(index, 1);
+  db.write();
+  return true;
+}
+
+export function getApiKeysForUser(userId: string): ApiKey[] {
+  ensureApiKeysArrays();
+  return (getWebhookData().api_keys || []).filter(k => k.user_id === userId);
 }

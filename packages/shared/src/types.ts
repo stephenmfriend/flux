@@ -94,6 +94,29 @@ export type ApiKey = {
   scope: KeyScope;
   created_at: string;
   last_used_at?: string;
+  user_id?: string;        // Clerk user who created (optional for legacy)
+};
+
+// ============ User & Access Types (Clerk) ============
+
+// User-project access levels (no 'read' - use public visibility instead)
+export type ProjectAccess = 'write' | 'admin';
+
+export type UserProjectAccess = {
+  user_id: string;        // Clerk user ID
+  project_id: string;
+  access: ProjectAccess;
+  granted_at: string;
+  granted_by?: string;    // Clerk user ID who granted
+};
+
+// Server-level user roles
+export type UserRole = 'user' | 'admin';
+
+export type UserRecord = {
+  clerk_id: string;
+  role: UserRole;
+  created_at: string;
 };
 
 // Pending CLI auth request (temp token -> eventual key)
@@ -230,4 +253,10 @@ export type StoreWithWebhooks = Store & {
   webhook_deliveries?: WebhookDelivery[];
   api_keys?: ApiKey[];
   cli_auth_requests?: CliAuthRequest[];
+};
+
+// Store with Clerk user/access data
+export type StoreWithAuth = StoreWithWebhooks & {
+  users?: UserRecord[];
+  user_project_access?: UserProjectAccess[];
 };

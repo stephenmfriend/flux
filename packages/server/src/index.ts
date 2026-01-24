@@ -46,14 +46,21 @@ import {
   pollCliAuthRequest,
   cleanupExpiredAuthRequests,
   setAuthFunctions,
+  getUser,
+  getUserAccessForProject,
+  getProjectsForUser,
+  grantProjectAccess,
+  revokeProjectAccess,
+  getApiKeysForUser,
   type WebhookEventType,
   type KeyScope,
+  type ProjectAccess,
 } from '@flux/shared';
 import { generateKey, generateTempToken, validateKey, encrypt, decrypt } from '@flux/shared/auth';
 import { findFluxDir, loadEnvLocal, readConfig, resolveDataPath } from '@flux/shared/config';
 import { createAdapter } from '@flux/shared/adapters';
 import { handleWebhookEvent, testWebhookDelivery } from './webhook-service.js';
-import { authMiddleware, filterProjects, canReadProject, canWriteProject, requireServerAccess, type AuthContext } from './middleware/auth.js';
+import { authMiddleware, filterProjects, canReadProject, canWriteProject, canAdminProject, requireServerAccess, isClerkConfigured, isAuthRequired, type AuthContext } from './middleware/auth.js';
 import { rateLimit } from './middleware/rate-limit.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -241,25 +248,46 @@ app.get('/api/projects/:id', (c) => {
   return c.json({ ...project, stats: getProjectStats(project.id) });
 });
 
-app.post('/api/projects', requireServerAccess, async (c) => {
+app.post('/api/projects', async (c) => {
+  const auth = c.get('auth');
+  // Allow dev mode, server access, or authenticated Clerk users
+  const canCreate = !isAuthRequired() || auth.keyType === 'env' || auth.keyType === 'server' ||
+    (auth.keyType === 'clerk' && auth.clerkUserId);
+  if (!canCreate) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
   const body = await c.req.json();
   const project = createProject(body.name, body.description, body.visibility);
+  // Auto-grant admin access to Clerk creator
+  if (auth.keyType === 'clerk' && auth.clerkUserId) {
+    grantProjectAccess(auth.clerkUserId, project.id, 'admin');
+  }
   triggerWebhooks('project.created', { project });
   return c.json(project, 201);
 });
 
-app.patch('/api/projects/:id', requireServerAccess, async (c) => {
+app.patch('/api/projects/:id', async (c) => {
+  const auth = c.get('auth');
+  const projectId = c.req.param('id');
+  if (!canAdminProject(auth, projectId)) {
+    return c.json({ error: 'Project not found' }, 404);
+  }
   const body = await c.req.json();
-  const previous = getProject(c.req.param('id'));
-  const project = updateProject(c.req.param('id'), body);
+  const previous = getProject(projectId);
+  const project = updateProject(projectId, body);
   if (!project) return c.json({ error: 'Project not found' }, 404);
   triggerWebhooks('project.updated', { project, previous }, project.id);
   return c.json(project);
 });
 
-app.delete('/api/projects/:id', requireServerAccess, (c) => {
-  const project = getProject(c.req.param('id'));
-  deleteProject(c.req.param('id'));
+app.delete('/api/projects/:id', (c) => {
+  const auth = c.get('auth');
+  const projectId = c.req.param('id');
+  if (!canAdminProject(auth, projectId)) {
+    return c.json({ error: 'Project not found' }, 404);
+  }
+  const project = getProject(projectId);
+  deleteProject(projectId);
   if (project) {
     triggerWebhooks('project.deleted', { project }, project.id);
   }
@@ -548,12 +576,52 @@ app.get('/api/auth/status', (c) => {
     authenticated: auth.keyType !== 'anonymous',
     keyType: auth.keyType,
     projectIds: auth.projectIds,
+    clerkEnabled: isClerkConfigured(),
+    clerkUserId: auth.clerkUserId,
+    clerkUserRole: auth.clerkUserRole,
   });
 });
 
-// List API keys
+// Get current user info (Clerk users)
+app.get('/api/users/me', (c) => {
+  const auth = c.get('auth');
+  if (auth.keyType !== 'clerk' || !auth.clerkUserId) {
+    return c.json({ error: 'Not a Clerk user' }, 400);
+  }
+  const user = getUser(auth.clerkUserId);
+  if (!user) {
+    return c.json({ error: 'User not found' }, 404);
+  }
+  const projectAccess = getProjectsForUser(auth.clerkUserId);
+  return c.json({
+    clerk_id: user.clerk_id,
+    role: user.role,
+    created_at: user.created_at,
+    project_access: projectAccess,
+  });
+});
+
+// List all API keys (server access only)
 app.get('/api/auth/keys', requireServerAccess, (c) => {
   const keys = getApiKeys().map(k => ({
+    id: k.id,
+    prefix: k.prefix,
+    name: k.name,
+    scope: k.scope,
+    created_at: k.created_at,
+    last_used_at: k.last_used_at,
+    user_id: k.user_id,
+  }));
+  return c.json(keys);
+});
+
+// List current user's API keys (Clerk users)
+app.get('/api/auth/my-keys', (c) => {
+  const auth = c.get('auth');
+  if (auth.keyType !== 'clerk' || !auth.clerkUserId) {
+    return c.json({ error: 'Not authenticated' }, 401);
+  }
+  const keys = getApiKeysForUser(auth.clerkUserId).map(k => ({
     id: k.id,
     prefix: k.prefix,
     name: k.name,
@@ -565,20 +633,48 @@ app.get('/api/auth/keys', requireServerAccess, (c) => {
 });
 
 // Create API key
-app.post('/api/auth/keys', requireServerAccess, keyCreateRateLimit, async (c) => {
+app.post('/api/auth/keys', keyCreateRateLimit, async (c) => {
+  const auth = c.get('auth');
   const body = await c.req.json();
   if (!body.name) {
     return c.json({ error: 'Name required' }, 400);
   }
-  if (body.project_ids !== undefined) {
-    if (!Array.isArray(body.project_ids) || body.project_ids.length === 0) {
-      return c.json({ error: 'project_ids must be a non-empty array' }, 400);
+
+  // Determine scope and validate permissions
+  let scope: KeyScope;
+  let userId: string | undefined;
+
+  if (auth.keyType === 'env' || auth.keyType === 'server') {
+    // Server access can create any key
+    scope = body.project_ids
+      ? { type: 'project', project_ids: body.project_ids }
+      : { type: 'server' };
+  } else if (auth.keyType === 'clerk' && auth.clerkUserId) {
+    userId = auth.clerkUserId;
+    // Server admins can create any key
+    if (auth.clerkUserRole === 'admin') {
+      scope = body.project_ids
+        ? { type: 'project', project_ids: body.project_ids }
+        : { type: 'server' };
+    } else {
+      // Regular users can only create project-scoped keys for projects they have write+ access to
+      if (!body.project_ids || !Array.isArray(body.project_ids) || body.project_ids.length === 0) {
+        return c.json({ error: 'Non-admin users must specify project_ids' }, 400);
+      }
+      // Validate user has write+ access to all requested projects
+      const userAccess = getProjectsForUser(auth.clerkUserId);
+      const accessibleIds = new Set(userAccess.map(a => a.project_id));
+      const unauthorized = body.project_ids.filter((id: string) => !accessibleIds.has(id));
+      if (unauthorized.length > 0) {
+        return c.json({ error: `No access to projects: ${unauthorized.join(', ')}` }, 403);
+      }
+      scope = { type: 'project', project_ids: body.project_ids };
     }
+  } else {
+    return c.json({ error: 'Unauthorized' }, 401);
   }
-  const scope: KeyScope = body.project_ids
-    ? { type: 'project', project_ids: body.project_ids }
-    : { type: 'server' };
-  const { rawKey, apiKey } = createApiKey(body.name, scope);
+
+  const { rawKey, apiKey } = createApiKey(body.name, scope, userId);
   return c.json({
     key: rawKey,
     id: apiKey.id,
@@ -590,10 +686,36 @@ app.post('/api/auth/keys', requireServerAccess, keyCreateRateLimit, async (c) =>
 });
 
 // Delete API key
-app.delete('/api/auth/keys/:id', requireServerAccess, (c) => {
-  const success = deleteApiKey(c.req.param('id'));
-  if (!success) return c.json({ error: 'Key not found' }, 404);
-  return c.json({ success: true });
+app.delete('/api/auth/keys/:id', (c) => {
+  const auth = c.get('auth');
+  const keyId = c.req.param('id');
+
+  // Server access can delete any key
+  if (auth.keyType === 'env' || auth.keyType === 'server') {
+    const success = deleteApiKey(keyId);
+    if (!success) return c.json({ error: 'Key not found' }, 404);
+    return c.json({ success: true });
+  }
+
+  // Clerk users can delete their own keys
+  if (auth.keyType === 'clerk' && auth.clerkUserId) {
+    // Admins can delete any key
+    if (auth.clerkUserRole === 'admin') {
+      const success = deleteApiKey(keyId);
+      if (!success) return c.json({ error: 'Key not found' }, 404);
+      return c.json({ success: true });
+    }
+    // Regular users can only delete their own keys
+    const userKeys = getApiKeysForUser(auth.clerkUserId);
+    if (!userKeys.find(k => k.id === keyId)) {
+      return c.json({ error: 'Key not found' }, 404);
+    }
+    const success = deleteApiKey(keyId);
+    if (!success) return c.json({ error: 'Key not found' }, 404);
+    return c.json({ success: true });
+  }
+
+  return c.json({ error: 'Unauthorized' }, 401);
 });
 
 // CLI auth flow: Start auth request
@@ -612,23 +734,92 @@ app.post('/api/auth/cli-poll', authRateLimit, async (c) => {
 });
 
 // CLI auth flow: Complete from web
-app.post('/api/auth/cli-complete', requireServerAccess, async (c) => {
+app.post('/api/auth/cli-complete', async (c) => {
+  const auth = c.get('auth');
   const body = await c.req.json();
   if (!body.token || !body.name) {
     return c.json({ error: 'Token and name required' }, 400);
   }
-  if (body.project_ids !== undefined) {
-    if (!Array.isArray(body.project_ids) || body.project_ids.length === 0) {
-      return c.json({ error: 'project_ids must be a non-empty array' }, 400);
+
+  let scope: KeyScope;
+  let userId: string | undefined;
+
+  if (auth.keyType === 'env' || auth.keyType === 'server') {
+    scope = body.project_ids
+      ? { type: 'project', project_ids: body.project_ids }
+      : { type: 'server' };
+  } else if (auth.keyType === 'clerk' && auth.clerkUserId) {
+    userId = auth.clerkUserId;
+    if (auth.clerkUserRole === 'admin') {
+      scope = body.project_ids
+        ? { type: 'project', project_ids: body.project_ids }
+        : { type: 'server' };
+    } else {
+      // Non-admin Clerk users must specify project_ids they have access to
+      if (!body.project_ids || !Array.isArray(body.project_ids) || body.project_ids.length === 0) {
+        return c.json({ error: 'Non-admin users must specify project_ids' }, 400);
+      }
+      const userAccess = getProjectsForUser(auth.clerkUserId);
+      const accessibleIds = new Set(userAccess.map(a => a.project_id));
+      const unauthorized = body.project_ids.filter((id: string) => !accessibleIds.has(id));
+      if (unauthorized.length > 0) {
+        return c.json({ error: `No access to projects: ${unauthorized.join(', ')}` }, 403);
+      }
+      scope = { type: 'project', project_ids: body.project_ids };
     }
+  } else {
+    return c.json({ error: 'Unauthorized' }, 401);
   }
-  const scope: KeyScope = body.project_ids
-    ? { type: 'project', project_ids: body.project_ids }
-    : { type: 'server' };
-  const result = completeCliAuthRequest(body.token, body.name, scope);
+
+  const result = completeCliAuthRequest(body.token, body.name, scope, userId);
   if (!result) {
     return c.json({ error: 'Invalid or expired token' }, 400);
   }
+  return c.json({ success: true });
+});
+
+// ============ Project Access Routes ============
+
+// List users with access to a project
+app.get('/api/projects/:id/access', (c) => {
+  const auth = c.get('auth');
+  const projectId = c.req.param('id');
+  if (!canAdminProject(auth, projectId)) {
+    return c.json({ error: 'Project not found' }, 404);
+  }
+  const access = getUserAccessForProject(projectId);
+  return c.json(access);
+});
+
+// Grant/update access to a project
+app.post('/api/projects/:id/access', async (c) => {
+  const auth = c.get('auth');
+  const projectId = c.req.param('id');
+  if (!canAdminProject(auth, projectId)) {
+    return c.json({ error: 'Project not found' }, 404);
+  }
+  const body = await c.req.json();
+  if (!body.user_id || !body.access) {
+    return c.json({ error: 'user_id and access required' }, 400);
+  }
+  if (body.access !== 'write' && body.access !== 'admin') {
+    return c.json({ error: 'access must be "write" or "admin"' }, 400);
+  }
+  const grantedBy = auth.clerkUserId;
+  const record = grantProjectAccess(body.user_id, projectId, body.access as ProjectAccess, grantedBy);
+  return c.json(record, 201);
+});
+
+// Revoke access from a project
+app.delete('/api/projects/:id/access/:userId', (c) => {
+  const auth = c.get('auth');
+  const projectId = c.req.param('id');
+  const userId = c.req.param('userId');
+  if (!canAdminProject(auth, projectId)) {
+    return c.json({ error: 'Project not found' }, 404);
+  }
+  const success = revokeProjectAccess(userId, projectId);
+  if (!success) return c.json({ error: 'Access not found' }, 404);
   return c.json({ success: true });
 });
 
@@ -679,7 +870,7 @@ if (existsSync(webDistPath)) {
 }
 
 // Start server
-const port = parseInt(process.env.PORT || '3000');
+const port = parseInt(process.env.PORT || '3589'); // 3589 = FLUX on keypad
 console.log(`Flux server running at http://localhost:${port}`);
 
 serve({

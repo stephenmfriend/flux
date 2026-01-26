@@ -28,7 +28,6 @@ export function createSqliteAdapter(filePath: string): StorageAdapter {
   const updateStmt = db.prepare('UPDATE store SET data = ? WHERE id = 1');
 
   let _data: Store = { ...defaultData };
-  let _dirty = false;  // Track if we have pending modifications
 
   // Helper to read fresh data from DB
   const readFromDb = (): Store => {
@@ -45,32 +44,58 @@ export function createSqliteAdapter(filePath: string): StorageAdapter {
 
   return {
     get data() {
-      // Only read fresh if we don't have pending modifications
-      // This prevents losing in-flight changes while allowing fresh reads
-      if (!_dirty) {
-        _data = readFromDb();
-      }
-      _dirty = true;  // Mark as dirty once accessed (may be modified)
       return _data;
     },
     read() {
-      // Explicit read - always refresh from DB (call at start of request)
+      // Always refresh from DB - critical for concurrent access
       _data = readFromDb();
-      _dirty = false;
       if (!selectStmt.get()) {
         // Initialize DB if empty
         insertStmt.run(JSON.stringify(_data));
       }
     },
     write() {
-      const serialized = JSON.stringify(_data);
-      const row = selectStmt.get();
-      if (row) {
-        updateStmt.run(serialized);
-      } else {
-        insertStmt.run(serialized);
-      }
-      _dirty = false;  // Clear dirty flag after write
+      // Use transaction to ensure atomic read-modify-write
+      db.transaction(() => {
+        // Re-read current state inside transaction
+        const current = readFromDb();
+        
+        // Merge changes: preserve any data added by other processes
+        // This prevents lost updates by merging rather than overwriting
+        const merged: Store = {
+          projects: mergeById(current.projects, _data.projects),
+          epics: mergeById(current.epics, _data.epics),
+          tasks: mergeById(current.tasks, _data.tasks),
+        };
+        
+        const serialized = JSON.stringify(merged);
+        const row = selectStmt.get();
+        if (row) {
+          updateStmt.run(serialized);
+        } else {
+          insertStmt.run(serialized);
+        }
+        
+        // Update in-memory state to match what we wrote
+        _data = merged;
+      })();
     },
   };
+}
+
+// Merge arrays by ID, preferring items from 'updated' but keeping items only in 'current'
+function mergeById<T extends { id: string }>(current: T[], updated: T[]): T[] {
+  const result = new Map<string, T>();
+  
+  // Start with current items
+  for (const item of current) {
+    result.set(item.id, item);
+  }
+  
+  // Overlay with updated items (overwrites if same ID)
+  for (const item of updated) {
+    result.set(item.id, item);
+  }
+  
+  return Array.from(result.values());
 }

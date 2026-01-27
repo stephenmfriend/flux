@@ -1,18 +1,15 @@
-version: '3.8'
-
 services:
-  # Web UI and API server
-  flux-web:
-    image: flux-mcp
-    build: .
+  flux:
+    build:
+      context: .
+      args:
+        BUILD_SHA: ${BUILD_SHA:-local}
+        BUILD_TIME: ${BUILD_TIME:-}
+    container_name: flux-web
     ports:
       - "3000:3000"
     volumes:
-      - flux-data:/app/packages/data
+      - ./data:/app/.flux
     environment:
-      - FLUX_DATA=/app/packages/data/flux.sqlite
-    command: bun packages/server/dist/index.js
+      - FLUX_DATA=/app/.flux/data.sqlite
     restart: unless-stopped
-
-volumes:
-  flux-data:

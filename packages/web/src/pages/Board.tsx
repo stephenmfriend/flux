@@ -22,6 +22,7 @@ import { STATUSES, STATUS_CONFIG, EPIC_COLORS } from "@flux/shared";
 import {
   TaskForm,
   EpicForm,
+  ProjectContextEditor,
   DraggableTaskCard,
   DroppableColumn,
   ThemeToggle,
@@ -31,6 +32,7 @@ import {
   ArrowLeftIcon,
   Bars3BottomLeftIcon,
   ChevronRightIcon,
+  DocumentTextIcon,
   EyeIcon,
   EyeSlashIcon,
   MagnifyingGlassIcon,
@@ -58,6 +60,7 @@ export function Board({ projectId }: BoardProps) {
   // Modal state
   const [taskFormOpen, setTaskFormOpen] = useState(false);
   const [epicFormOpen, setEpicFormOpen] = useState(false);
+  const [contextEditorOpen, setContextEditorOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<TaskWithBlocked | undefined>(
     undefined
   );
@@ -310,6 +313,14 @@ export function Board({ projectId }: BoardProps) {
           </div>
           <div class="flex gap-2">
             <ThemeToggle />
+            <button
+              class="btn btn-ghost btn-sm"
+              onClick={() => setContextEditorOpen(true)}
+              title="Project Context"
+            >
+              <DocumentTextIcon className="h-4 w-4" />
+              Context
+            </button>
             <button
               class="btn btn-primary btn-sm"
               onClick={() => openNewTask()}
@@ -747,6 +758,12 @@ export function Board({ projectId }: BoardProps) {
           onSave={refreshData}
           epic={editingEpic}
           projectId={projectId!}
+        />
+        <ProjectContextEditor
+          isOpen={contextEditorOpen}
+          onClose={() => setContextEditorOpen(false)}
+          projectId={projectId!}
+          projectName={projectName}
         />
 
         {/* Cleanup Dialog */}

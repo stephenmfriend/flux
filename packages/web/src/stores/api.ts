@@ -1,4 +1,4 @@
-import type { Task, Epic, Project, Webhook, WebhookDelivery, WebhookEventType, TaskComment, CommentAuthor, KeyScope, Blob as FluxBlob } from '@flux/shared';
+import type { Task, Epic, Project, ProjectContext, Webhook, WebhookDelivery, WebhookEventType, TaskComment, CommentAuthor, KeyScope, Blob as FluxBlob } from '@flux/shared';
 import { getToken } from './auth';
 
 const API_BASE = import.meta.env.DEV ? 'http://localhost:3000/api' : '/api';
@@ -57,6 +57,35 @@ export async function updateProject(id: string, updates: Partial<Omit<Project, '
 
 export async function deleteProject(id: string): Promise<void> {
   await fetch(`${API_BASE}/projects/${id}`, { method: 'DELETE' });
+}
+
+// ============ Project Context Operations ============
+
+export async function getProjectContext(projectId: string): Promise<ProjectContext | null> {
+  const res = await authFetch(`${API_BASE}/projects/${projectId}/context`);
+  if (!res.ok) return null;
+  const data = await res.json();
+  return Object.keys(data).length > 0 ? data : null;
+}
+
+export async function updateProjectContext(projectId: string, context: ProjectContext): Promise<Project | null> {
+  const res = await authFetch(`${API_BASE}/projects/${projectId}/context`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(context),
+  });
+  if (!res.ok) return null;
+  return res.json();
+}
+
+export async function addProjectContextNote(projectId: string, note: string): Promise<Project | null> {
+  const res = await authFetch(`${API_BASE}/projects/${projectId}/context/note`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ note }),
+  });
+  if (!res.ok) return null;
+  return res.json();
 }
 
 // ============ Epic Operations ============

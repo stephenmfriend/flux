@@ -30,6 +30,7 @@ ARG BUILD_TIME
 ENV BUILD_SHA=$BUILD_SHA
 ENV BUILD_TIME=$BUILD_TIME
 ENV NODE_ENV=production
+ENV HOME=/tmp/flux
 
 # Create non-root user for security
 RUN groupadd --system --gid 1001 flux && \

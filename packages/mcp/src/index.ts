@@ -365,6 +365,17 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         },
       },
       {
+        name: 'get_task',
+        description: 'Get a single task with full details including comments',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            task_id: { type: 'string', description: 'Task ID' },
+          },
+          required: ['task_id'],
+        },
+      },
+      {
         name: 'create_task',
         description: 'Create a new task in a project. Use add_task_comment to add notes.',
         inputSchema: {
@@ -749,6 +760,21 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       });
       return {
         content: [{ type: 'text', text: JSON.stringify(slim, null, 2) }],
+      };
+    }
+
+    case 'get_task': {
+      const task = await getTask(args?.task_id as string);
+      if (!task) {
+        return { content: [{ type: 'text', text: 'Task not found' }], isError: true };
+      }
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({ ...task, blocked: await isTaskBlocked(task.id) }, null, 2),
+          },
+        ],
       };
     }
 

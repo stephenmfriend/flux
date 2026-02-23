@@ -197,10 +197,14 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
   if (tasksMatch) {
     const taskList = await getTasks(tasksMatch[1]);
     const tasks = await Promise.all(
-      taskList.map(async t => ({
-        ...t,
-        blocked: await isTaskBlocked(t.id),
-      }))
+      taskList.map(async t => {
+        const { comments, ...rest } = t;
+        return {
+          ...rest,
+          comment_count: comments?.length ?? 0,
+          blocked: await isTaskBlocked(t.id),
+        };
+      })
     );
     return {
       contents: [
@@ -714,10 +718,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     case 'list_tasks': {
       const taskList = await getTasks(args?.project_id as string);
       let tasks = await Promise.all(
-        taskList.map(async t => ({
-          ...t,
-          blocked: await isTaskBlocked(t.id),
-        }))
+        taskList.map(async t => {
+          const { comments, ...rest } = t;
+          return {
+            ...rest,
+            comment_count: comments?.length ?? 0,
+            blocked: await isTaskBlocked(t.id),
+          };
+        })
       );
 
       // Apply filters
@@ -735,8 +743,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     case 'list_ready_tasks': {
       const tasks = await getReadyTasks(args?.project_id as string | undefined);
+      const slim = tasks.map(t => {
+        const { comments, ...rest } = t;
+        return { ...rest, comment_count: comments?.length ?? 0 };
+      });
       return {
-        content: [{ type: 'text', text: JSON.stringify(tasks, null, 2) }],
+        content: [{ type: 'text', text: JSON.stringify(slim, null, 2) }],
       };
     }
 

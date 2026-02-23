@@ -55,48 +55,13 @@ export function createSqliteAdapter(filePath: string): StorageAdapter {
       }
     },
     write() {
-      // Use transaction to ensure atomic read-modify-write
-      db.transaction(() => {
-        // Re-read current state inside transaction
-        const current = readFromDb();
-        
-        // Merge changes: preserve any data added by other processes
-        // This prevents lost updates by merging rather than overwriting
-        const merged: Store = {
-          projects: mergeById(current.projects, _data.projects),
-          epics: mergeById(current.epics, _data.epics),
-          tasks: mergeById(current.tasks, _data.tasks),
-          blobs: mergeById(current.blobs || [], _data.blobs || []),
-        };
-        
-        const serialized = JSON.stringify(merged);
-        const row = selectStmt.get();
-        if (row) {
-          updateStmt.run(serialized);
-        } else {
-          insertStmt.run(serialized);
-        }
-        
-        // Update in-memory state to match what we wrote
-        _data = merged;
-      })();
+      const serialized = JSON.stringify(_data);
+      const row = selectStmt.get();
+      if (row) {
+        updateStmt.run(serialized);
+      } else {
+        insertStmt.run(serialized);
+      }
     },
   };
-}
-
-// Merge arrays by ID, preferring items from 'updated' but keeping items only in 'current'
-function mergeById<T extends { id: string }>(current: T[], updated: T[]): T[] {
-  const result = new Map<string, T>();
-  
-  // Start with current items
-  for (const item of current) {
-    result.set(item.id, item);
-  }
-  
-  // Overlay with updated items (overwrites if same ID)
-  for (const item of updated) {
-    result.set(item.id, item);
-  }
-  
-  return Array.from(result.values());
 }

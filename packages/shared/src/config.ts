@@ -2,10 +2,11 @@ import { resolve, dirname } from 'path';
 import { existsSync, readFileSync, writeFileSync, chmodSync } from 'fs';
 
 export type FluxConfig = {
-  server?: string;    // Server URL (server mode)
-  apiKey?: string;    // API key for server auth (supports $ENV_VAR)
-  dataFile?: string;  // Local data file path (file mode)
-  project?: string;   // Default project ID
+  server?: string;        // Server URL (server mode)
+  apiKey?: string;        // API key for server auth (supports $ENV_VAR)
+  dataFile?: string;      // Local data file path (file mode)
+  project?: string;       // Default project ID
+  instructions?: string;  // MCP server instructions for agents
 };
 
 // Expand $ENV_VAR references in string values

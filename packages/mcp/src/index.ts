@@ -95,6 +95,7 @@ const server = new Server(
       resources: {},
       tools: {},
     },
+    ...(config.instructions && { instructions: config.instructions }),
   }
 );
 

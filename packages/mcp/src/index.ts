@@ -36,6 +36,7 @@ import {
   addTaskComment,
   deleteTaskComment,
   isTaskBlocked,
+  isTaskBlocker,
   getReadyTasks,
   getWebhooks,
   getWebhook,
@@ -204,6 +205,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
           ...rest,
           comment_count: comments?.length ?? 0,
           blocked: await isTaskBlocked(t.id),
+          blocker: isTaskBlocker(t.id),
         };
       })
     );
@@ -761,6 +763,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             ...rest,
             comment_count: comments?.length ?? 0,
             blocked: await isTaskBlocked(t.id),
+            blocker: isTaskBlocker(t.id),
           };
         })
       );
@@ -801,7 +804,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         content: [
           {
             type: 'text',
-            text: JSON.stringify({ ...task, blocked: await isTaskBlocked(task.id) }, null, 2),
+            text: JSON.stringify({ ...task, blocked: await isTaskBlocked(task.id), blocker: isTaskBlocker(task.id) }, null, 2),
           },
         ],
       };
@@ -870,7 +873,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         content: [
           {
             type: 'text',
-            text: `Updated task: ${JSON.stringify({ ...task, blocked: await isTaskBlocked(task.id) }, null, 2)}`,
+            text: `Updated task: ${JSON.stringify({ ...task, blocked: await isTaskBlocked(task.id), blocker: isTaskBlocker(task.id) }, null, 2)}`,
           },
         ],
       };

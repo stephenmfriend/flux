@@ -73,7 +73,7 @@ export function DraggableTaskCard({
         ref={setNodeRef}
         style={style}
         class={`bg-base-100 rounded-lg shadow-sm px-3 py-2 cursor-grab hover:shadow-md transition-shadow active:cursor-grabbing touch-none ${
-          task.blocked ? 'ring-2 ring-warning/50' : ''
+          task.blocker ? 'ring-2 ring-error/50' : task.blocked ? 'ring-2 ring-warning/50' : ''
         }`}
         onClick={handleClick}
         {...(listeners as any)}
@@ -91,6 +91,11 @@ export function DraggableTaskCard({
           {task.priority !== undefined && (
             <span class={`badge badge-xs flex-shrink-0 ${PRIORITY_BADGE[task.priority]}`}>
               P{task.priority}
+            </span>
+          )}
+          {task.blocker && (
+            <span class="badge badge-xs badge-error flex-shrink-0">
+              Blocker
             </span>
           )}
           <span class="font-medium text-sm truncate flex-1">{task.title}</span>
@@ -150,8 +155,13 @@ export function DraggableTaskCard({
             P{task.priority}
           </span>
         )}
+        {task.blocker && (
+          <span class={`badge badge-xs badge-error ${task.priority === undefined ? 'ml-auto' : ''}`}>
+            Blocker
+          </span>
+        )}
         {task.blocked && (
-          <span class={`badge badge-xs badge-warning ${task.priority === undefined ? 'ml-auto' : ''}`}>
+          <span class={`badge badge-xs badge-warning ${task.priority === undefined && !task.blocker ? 'ml-auto' : ''}`}>
             Blocked
           </span>
         )}

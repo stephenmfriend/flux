@@ -18,9 +18,10 @@ export interface ProjectWithStats extends Project {
   stats: { total: number; done: number };
 }
 
-// Task with blocked status from API
+// Task with blocked/blocker status from API
 export interface TaskWithBlocked extends Task {
   blocked: boolean;
+  blocker: boolean;
 }
 
 // ============ Project Operations ============

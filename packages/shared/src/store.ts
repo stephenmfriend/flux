@@ -486,6 +486,14 @@ export function isTaskBlocked(taskId: string): boolean {
   });
 }
 
+export function isTaskBlocker(taskId: string): boolean {
+  return db.data.tasks.some(t =>
+    !t.archived &&
+    t.status !== 'done' &&
+    t.depends_on.includes(taskId)
+  );
+}
+
 // Get ready tasks: unblocked, not done, not archived, sorted by priority
 export function getReadyTasks(projectId?: string): Task[] {
   let tasks = db.data.tasks.filter(t => !t.archived && t.status !== 'done');

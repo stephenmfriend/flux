@@ -28,6 +28,7 @@ import {
   addTaskComment,
   deleteTaskComment,
   isTaskBlocked,
+  isTaskBlocker,
   getReadyTasks,
   cleanupProject,
   getWebhooks,
@@ -347,6 +348,7 @@ app.get('/api/projects/:projectId/tasks', (c) => {
   const tasks = getTasks(projectId).map(t => ({
     ...t,
     blocked: isTaskBlocked(t.id),
+    blocker: isTaskBlocker(t.id),
   }));
   return c.json(tasks);
 });
@@ -357,7 +359,7 @@ app.get('/api/tasks/:id', (c) => {
   if (!task || !canReadProject(auth, task.project_id)) {
     return c.json({ error: 'Task not found' }, 404);
   }
-  return c.json({ ...task, blocked: isTaskBlocked(task.id) });
+  return c.json({ ...task, blocked: isTaskBlocked(task.id), blocker: isTaskBlocker(task.id) });
 });
 
 app.post('/api/tasks/:id/comments', async (c) => {
@@ -449,7 +451,7 @@ app.patch('/api/tasks/:id', async (c) => {
     triggerWebhooks(event, { task, previous }, task.project_id);
   }
 
-  return c.json({ ...task, blocked: isTaskBlocked(task.id) });
+  return c.json({ ...task, blocked: isTaskBlocked(task.id), blocker: isTaskBlocker(task.id) });
 });
 
 app.delete('/api/tasks/:id', (c) => {

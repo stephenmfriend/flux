@@ -133,7 +133,7 @@ export function DraggableTaskCard({
       ref={setNodeRef}
       style={style}
       class={`bg-base-100 rounded-lg shadow-sm p-4 cursor-grab hover:shadow-md transition-shadow active:cursor-grabbing touch-none ${
-        task.blocked ? 'ring-2 ring-warning/50' : ''
+        task.blocker ? 'ring-2 ring-error/50' : task.blocked ? 'ring-2 ring-warning/50' : ''
       }`}
       onClick={handleClick}
       {...(listeners as any)}

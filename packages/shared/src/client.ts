@@ -21,6 +21,7 @@ import {
   updateTask as localUpdateTask,
   deleteTask as localDeleteTask,
   isTaskBlocked as localIsTaskBlocked,
+  isTaskBlocker as localIsTaskBlocker,
   addTaskComment as localAddTaskComment,
   deleteTaskComment as localDeleteTaskComment,
   getReadyTasks as localGetReadyTasks,
@@ -61,8 +62,8 @@ import type {
 export { PRIORITY_CONFIG, PRIORITIES };
 export type { Project, Epic, Task, TaskComment, Priority, Store, Blob, Webhook, WebhookDelivery, WebhookEventType, Guardrail };
 
-// Server response includes computed blocked field
-type TaskWithBlocked = Task & { blocked: boolean };
+// Server response includes computed blocked/blocker fields
+type TaskWithBlocked = Task & { blocked: boolean; blocker: boolean };
 
 // Typed HTTP error for better error discrimination
 export class FluxHttpError extends Error {
@@ -308,6 +309,19 @@ export async function isTaskBlocked(id: string): Promise<boolean> {
     }
   }
   return localIsTaskBlocked(id);
+}
+
+export async function isTaskBlocker(id: string): Promise<boolean> {
+  if (serverUrl) {
+    try {
+      const task = await http<TaskWithBlocked>('GET', `/api/tasks/${id}`);
+      return task.blocker;
+    } catch (e) {
+      if (e instanceof FluxHttpError && e.isNotFound) return false;
+      throw e;
+    }
+  }
+  return localIsTaskBlocker(id);
 }
 
 // Comments

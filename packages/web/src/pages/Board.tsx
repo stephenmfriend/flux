@@ -175,7 +175,7 @@ export function Board({ projectId }: BoardProps) {
       getEpics(projectId),
     ]);
     setTasks(tasksData);
-    setEpics(epicsData);
+    setEpics([...epicsData].sort((a, b) => a.title.localeCompare(b.title)));
   };
 
   // Handle drag end

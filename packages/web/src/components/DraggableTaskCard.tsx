@@ -3,6 +3,12 @@ import { useDraggable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 import type { TaskWithBlocked } from '../stores'
 
+const PRIORITY_BADGE: Record<number, string> = {
+  0: 'badge-error',
+  1: 'badge-warning',
+  2: 'badge-success',
+}
+
 interface DraggableTaskCardProps {
   task: TaskWithBlocked
   epicColor?: string
@@ -82,6 +88,11 @@ export function DraggableTaskCard({
             class="w-2 h-2 rounded-full flex-shrink-0"
             style={{ backgroundColor: epicColor }}
           />
+          {task.priority !== undefined && (
+            <span class={`badge badge-xs flex-shrink-0 ${PRIORITY_BADGE[task.priority]}`}>
+              P{task.priority}
+            </span>
+          )}
           <span class="font-medium text-sm truncate flex-1">{task.title}</span>
           {task.blocked && (
             <span class="text-xs bg-warning/20 text-warning px-1.5 py-0.5 rounded font-medium flex-shrink-0">
@@ -134,8 +145,13 @@ export function DraggableTaskCard({
           style={{ backgroundColor: epicColor }}
         />
         <span class="text-xs text-base-content/50 font-medium">{epicTitle}</span>
+        {task.priority !== undefined && (
+          <span class={`badge badge-xs ml-auto ${PRIORITY_BADGE[task.priority]}`}>
+            P{task.priority}
+          </span>
+        )}
         {task.blocked && (
-          <span class="ml-auto text-xs bg-warning/20 text-warning px-1.5 py-0.5 rounded font-medium">
+          <span class={`badge badge-xs badge-warning ${task.priority === undefined ? 'ml-auto' : ''}`}>
             Blocked
           </span>
         )}

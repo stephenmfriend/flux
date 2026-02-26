@@ -351,6 +351,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               enum: STATUSES,
               description: 'Optional: filter by status',
             },
+            priority: {
+              type: 'integer',
+              enum: PRIORITIES,
+              description: 'Optional: filter by priority (0=urgent, 1=normal, 2=low)',
+            },
           },
           required: ['project_id'],
         },
@@ -767,6 +772,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       if (args?.status) {
         tasks = tasks.filter(t => t.status === args.status);
       }
+      if (args?.priority !== undefined) {
+        tasks = tasks.filter(t => t.priority === args.priority);
+      }
 
       return {
         content: [{ type: 'text', text: JSON.stringify(tasks, null, 2) }],
@@ -836,7 +844,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       if (args?.epic_id !== undefined) updates.epic_id = args.epic_id || undefined;
       if (args?.depends_on) updates.depends_on = args.depends_on;
       if (args?.blocked_reason !== undefined) {
-        updates.blocked_reason = args.blocked_reason || undefined; // Empty string clears
+        const br = args.blocked_reason as string | null;
+        updates.blocked_reason = (!br || br === '-' || br === 'clear') ? null : br;
       }
       if (args?.priority !== undefined) updates.priority = args.priority;
       if (args?.agent !== undefined) updates.agent = args.agent || undefined;

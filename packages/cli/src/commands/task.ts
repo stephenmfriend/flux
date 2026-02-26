@@ -148,7 +148,7 @@ export async function taskCommand(
         }
       }
 
-      const updates: { title?: string; status?: string; epic_id?: string; priority?: Priority; blocked_reason?: string; depends_on?: string[]; acceptance_criteria?: string[]; guardrails?: Guardrail[] } = {};
+      const updates: { title?: string; status?: string; epic_id?: string; priority?: Priority; blocked_reason?: string | null; depends_on?: string[]; acceptance_criteria?: string[]; guardrails?: Guardrail[] } = {};
       if (flags.title) updates.title = flags.title as string;
       if (flags.status) updates.status = flags.status as string;
       if (flags.epic) updates.epic_id = flags.epic as string;
@@ -166,7 +166,7 @@ export async function taskCommand(
           process.exit(1);
         }
         const blockedVal = flags.blocked as string;
-        updates.blocked_reason = (blockedVal === 'clear' || blockedVal === '-' || blockedVal === '') ? undefined : blockedVal;
+        updates.blocked_reason = (blockedVal === 'clear' || blockedVal === '-' || blockedVal === '') ? null : blockedVal;
       }
 
       // Parse acceptance criteria (--ac can be repeated) or clear with --clear-ac

@@ -376,6 +376,10 @@ export function updateTask(id: string, updates: Partial<Omit<Task, 'id'>>): Task
     ...processedUpdates,
     updated_at: new Date().toISOString(),
   };
+  // Explicit null clears optional fields (null survives JSON transport, undefined does not)
+  if (db.data.tasks[index].blocked_reason == null) {
+    delete db.data.tasks[index].blocked_reason;
+  }
   db.write();
   return db.data.tasks[index];
 }

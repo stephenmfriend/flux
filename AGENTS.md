@@ -143,3 +143,16 @@ You have access to Flux for task management via MCP or CLI.
 
 **If context is lost:** Re-list projects/tasks. Ask user if ambiguous.
 <!-- FLUX:END -->
+
+## Running commands through the toolchain wrapper
+
+The agent Bash shell is non-interactive and has **no direnv hook**, so `.envrc` is not auto-loaded even when allowed. Run repo commands through the self-detecting wrapper so they resolve the right toolchain in every execution environment (Claude Code cloud, Codex sandbox, inside a Nix shell, or a plain shell):
+
+```bash
+./scripts/shell-exec.sh <command>
+# examples:
+./scripts/shell-exec.sh task check
+./scripts/shell-exec.sh pnpm test
+```
+
+`shell-exec.sh` always prepends the repo's `bin/tools` and `node_modules/.bin` to `PATH`, then adapts to the environment: it picks up the `.nvmrc` Node version under Claude Code cloud, reuses the cached direnv profile under Codex, prioritises Nix store paths when already inside a Nix shell, and enters `nix develop` for flake-backed repos (running the command directly when the repo has no flake). Always use the relative path so it matches permission rules.

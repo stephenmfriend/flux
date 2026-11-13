@@ -5,8 +5,11 @@
 #
 # Handles five scenarios:
 #   1. Claude Code cloud (CLAUDE_CODE_REMOTE=true): Use .nvmrc for Node version, run directly
-#   2. Codex cloud (CODEX_ENV_* variables): Run directly, Nix not available
-#   3. Codex Desktop sandbox (CODEX_CI or CODEX_SHELL): Reuse cached direnv env, run directly
+#   2. Codex cloud with a pinned runtime (CODEX_ENV_* variables, set only when the
+#      environment pins a language version): Run directly, Nix not available
+#   3. Any other Codex agent shell (CODEX_CI=1, which Codex injects into every command
+#      it runs locally or in cloud; Codex Desktop also sets CODEX_SHELL=1): Reuse cached
+#      direnv env, else hydrate via direnv exec, else run directly
 #   4. Already in Nix shell: Ensure Nix paths prioritised, run directly
 #   5. Outside Nix: Enter nix develop first when the repo has a flake
 #
@@ -50,8 +53,10 @@ load_cached_direnv_profile() {
   if [[ -n "$selected_rc" ]]; then
     # shellcheck source=/dev/null
     source "$selected_rc" >/dev/null 2>&1
-    return
+    return "$?"
   fi
+
+  return 1
 }
 
 prepend_repo_tool_paths
@@ -67,15 +72,25 @@ if [[ "${CLAUDE_CODE_REMOTE:-}" == "true" ]]; then
   exec "$@"
 fi
 
-# Codex cloud: run directly (Nix not available).
+# Codex cloud with a pinned runtime: run directly (Nix not available).
 if [[ -n "${CODEX_ENV_NODE_VERSION:-}" ]]; then
   exec "$@"
 fi
 
-# Codex Desktop blocks direct Nix daemon access, but the cached direnv profile
-# can still provide the pinned toolchain when the worktree has been hydrated.
+# Codex agent shells block direct Nix daemon access. Reuse a cached direnv
+# profile when present; otherwise allow and load this worktree's flake before
+# dispatch. Codex cloud without a pinned runtime also lands here and has neither
+# a cached profile nor direnv, so it falls through to direct dispatch.
 if [[ -n "${CODEX_CI:-}" || -n "${CODEX_SHELL:-}" ]]; then
-  load_cached_direnv_profile
+  if load_cached_direnv_profile; then
+    exec "$@"
+  fi
+
+  if [[ -f "${repo_root}/.envrc" ]] && command -v direnv >/dev/null 2>&1; then
+    direnv allow "${repo_root}/.envrc"
+    exec direnv exec "${repo_root}" "$@"
+  fi
+
   exec "$@"
 fi
 

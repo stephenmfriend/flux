@@ -50,8 +50,10 @@ load_cached_direnv_profile() {
   if [[ -n "$selected_rc" ]]; then
     # shellcheck source=/dev/null
     source "$selected_rc" >/dev/null 2>&1
-    return
+    return "$?"
   fi
+
+  return 1
 }
 
 prepend_repo_tool_paths
@@ -72,11 +74,20 @@ if [[ -n "${CODEX_ENV_NODE_VERSION:-}" ]]; then
   exec "$@"
 fi
 
-# Codex Desktop blocks direct Nix daemon access, but the cached direnv profile
-# can still provide the pinned toolchain when the worktree has been hydrated.
+# Codex Desktop blocks direct Nix daemon access. Reuse a cached direnv profile
+# when present; otherwise allow and load this worktree's flake before dispatch.
 if [[ -n "${CODEX_CI:-}" || -n "${CODEX_SHELL:-}" ]]; then
-  load_cached_direnv_profile
-  exec "$@"
+  if load_cached_direnv_profile; then
+    exec "$@"
+  fi
+
+  if [[ -f "${repo_root}/.envrc" ]] && command -v direnv >/dev/null 2>&1; then
+    direnv allow "${repo_root}/.envrc"
+    exec direnv exec "${repo_root}" "$@"
+  fi
+
+  echo "shell-exec: no cached direnv profile and direnv is unavailable for ${repo_root}" >&2
+  exit 1
 fi
 
 # If already in Nix shell, ensure Nix paths are first then run directly

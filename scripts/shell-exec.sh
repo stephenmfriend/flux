@@ -5,8 +5,11 @@
 #
 # Handles five scenarios:
 #   1. Claude Code cloud (CLAUDE_CODE_REMOTE=true): Use .nvmrc for Node version, run directly
-#   2. Codex cloud (CODEX_ENV_* variables): Run directly, Nix not available
-#   3. Codex Desktop sandbox (CODEX_CI or CODEX_SHELL): Reuse cached direnv env, run directly
+#   2. Codex cloud with a pinned runtime (CODEX_ENV_* variables, set only when the
+#      environment pins a language version): Run directly, Nix not available
+#   3. Any other Codex agent shell (CODEX_CI=1, which Codex injects into every command
+#      it runs locally or in cloud; Codex Desktop also sets CODEX_SHELL=1): Reuse cached
+#      direnv env, else hydrate via direnv exec, else run directly
 #   4. Already in Nix shell: Ensure Nix paths prioritised, run directly
 #   5. Outside Nix: Enter nix develop first when the repo has a flake
 #
@@ -69,13 +72,15 @@ if [[ "${CLAUDE_CODE_REMOTE:-}" == "true" ]]; then
   exec "$@"
 fi
 
-# Codex cloud: run directly (Nix not available).
+# Codex cloud with a pinned runtime: run directly (Nix not available).
 if [[ -n "${CODEX_ENV_NODE_VERSION:-}" ]]; then
   exec "$@"
 fi
 
-# Codex Desktop blocks direct Nix daemon access. Reuse a cached direnv profile
-# when present; otherwise allow and load this worktree's flake before dispatch.
+# Codex agent shells block direct Nix daemon access. Reuse a cached direnv
+# profile when present; otherwise allow and load this worktree's flake before
+# dispatch. Codex cloud without a pinned runtime also lands here and has neither
+# a cached profile nor direnv, so it falls through to direct dispatch.
 if [[ -n "${CODEX_CI:-}" || -n "${CODEX_SHELL:-}" ]]; then
   if load_cached_direnv_profile; then
     exec "$@"
@@ -86,8 +91,7 @@ if [[ -n "${CODEX_CI:-}" || -n "${CODEX_SHELL:-}" ]]; then
     exec direnv exec "${repo_root}" "$@"
   fi
 
-  echo "shell-exec: no cached direnv profile and direnv is unavailable for ${repo_root}" >&2
-  exit 1
+  exec "$@"
 fi
 
 # If already in Nix shell, ensure Nix paths are first then run directly

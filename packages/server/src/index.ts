@@ -224,6 +224,20 @@ const broadcastChange = (info: ChangeEventInfo) => {
   }
 };
 
+// A stream keeps the auth it connected with, so revoking a key must end the
+// streams opened with it; a reconnect re-authenticates and the revoked token fails.
+const closeSseClientsForKey = (keyId: string) => {
+  for (const client of sseClients) {
+    if (client.auth.apiKey?.id !== keyId) continue;
+    sseClients.delete(client);
+    try {
+      client.controller.close();
+    } catch {
+      // Already closed by the client disconnecting
+    }
+  }
+};
+
 // Emit a mutation event: rich SSE change event for live clients + webhooks.
 const emitEvent = (
   event: WebhookEventType,
@@ -882,8 +896,10 @@ app.post('/api/auth/keys', requireServerAccess, keyCreateRateLimit, async (c) =>
 
 // Delete API key
 app.delete('/api/auth/keys/:id', requireServerAccess, (c) => {
-  const success = deleteApiKey(c.req.param('id'));
+  const keyId = c.req.param('id');
+  const success = deleteApiKey(keyId);
   if (!success) return c.json({ error: 'Key not found' }, 404);
+  closeSseClientsForKey(keyId);
   return c.json({ success: true });
 });
 

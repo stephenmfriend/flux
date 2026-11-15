@@ -144,8 +144,10 @@ export function TaskForm({
           epic_id: epicId || undefined,
           depends_on: dependsOn,
           blocked_reason: blockedReason.trim(),
-          acceptance_criteria: acceptanceCriteria.length > 0 ? acceptanceCriteria : undefined,
-          guardrails: guardrails.length > 0 ? guardrails : undefined,
+          // Always send the arrays: the store keeps a field the update omits,
+          // so dropping an empty list would leave the last item in place
+          acceptance_criteria: acceptanceCriteria,
+          guardrails,
         });
       } else {
         const newTask = await createTask(

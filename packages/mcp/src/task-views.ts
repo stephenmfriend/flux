@@ -11,8 +11,21 @@ export async function taskSummary(task: Task) {
   return {
     ...rest,
     comment_count: comments?.length ?? 0,
-    ...(await taskFlags(task.id)),
+    ...(await listedFlags(task)),
   };
+}
+
+/**
+ * The server's task list already carries blocked/blocker, so reuse them in
+ * remote mode instead of two extra HTTP lookups per task; local storage and
+ * the ready list arrive without them and are looked up.
+ */
+async function listedFlags(task: Task) {
+  const listed = task as Task & { blocked?: unknown; blocker?: unknown };
+  if (typeof listed.blocked === 'boolean' && typeof listed.blocker === 'boolean') {
+    return { blocked: listed.blocked, blocker: listed.blocker };
+  }
+  return taskFlags(task.id);
 }
 
 /** Whether a task is blocked (waits on another) and is a blocker (others wait on it). */

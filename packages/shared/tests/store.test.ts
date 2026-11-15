@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { Store } from '../src/types.js';
+import type { Project, Store } from '../src/types.js';
 import {
   addDependency,
   addTaskComment,
@@ -17,6 +17,7 @@ import {
   isTaskBlocked,
   removeDependency,
   setStorageAdapter,
+  updateProject,
   updateTask,
 } from '../src/store.js';
 
@@ -79,6 +80,73 @@ describe('store', () => {
     expect(adapter.data.epics[0].project_id).toBe('legacy');
     expect(adapter.data.project).toBeUndefined();
     expect(adapter.write).toHaveBeenCalledTimes(1);
+  });
+
+  it('defaults new projects to private', () => {
+    const project = createProject('Project');
+
+    expect(project.visibility).toBe('private');
+    expect(getProject(project.id)?.visibility).toBe('private');
+  });
+
+  it('keeps an explicit public visibility', () => {
+    const project = createProject('Project', undefined, 'public');
+
+    expect(project.visibility).toBe('public');
+  });
+
+  it('coerces an unrecognised visibility to private', () => {
+    // The server passes request bodies straight through, so an unexpected
+    // value must not fall through to the auth layer's `!== 'private'` check.
+    const project = createProject('Project', undefined, 'PUBLIC' as 'public');
+
+    expect(project.visibility).toBe('private');
+  });
+
+  it('keeps an explicit private visibility', () => {
+    const project = createProject('Project', undefined, 'private');
+
+    expect(project.visibility).toBe('private');
+  });
+
+  it('only lets the exact value "public" make a project public on update', () => {
+    const project = createProject('Project');
+    expect(project.visibility).toBe('private');
+
+    // The server hands updateProject an untyped request body, so anything that
+    // is not literally 'public' must leave the project private - the auth layer
+    // treats every non-'private' value as world-readable.
+    for (const value of ['PUBLIC', 'Public', '', 'yes', null, 0, {}]) {
+      updateProject(project.id, { visibility: value as 'public' });
+      expect(getProject(project.id)?.visibility).toBe('private');
+    }
+
+    updateProject(project.id, { visibility: 'public' });
+    expect(getProject(project.id)?.visibility).toBe('public');
+
+    updateProject(project.id, { visibility: 'private' });
+    expect(getProject(project.id)?.visibility).toBe('private');
+  });
+
+  it('leaves visibility alone when an update does not mention it', () => {
+    const project = createProject('Project', undefined, 'public');
+
+    updateProject(project.id, { name: 'Renamed' });
+
+    expect(getProject(project.id)?.visibility).toBe('public');
+    expect(getProject(project.id)?.name).toBe('Renamed');
+  });
+
+  it('ignores an id in an update so a project cannot be re-keyed', () => {
+    const project = createProject('Project');
+    const task = createTask(project.id, 'Task');
+
+    updateProject(project.id, { id: 'hijacked', name: 'Renamed' } as Partial<Project>);
+
+    expect(getProject('hijacked')).toBeUndefined();
+    expect(getProject(project.id)?.name).toBe('Renamed');
+    // The task would be orphaned if the project had been re-keyed.
+    expect(getTasks(project.id).map(t => t.id)).toContain(task.id);
   });
 
   it('removes tasks and epics when a project is deleted', () => {
@@ -207,6 +275,33 @@ describe('store', () => {
 
     expect(task.acceptance_criteria).toHaveLength(2);
     expect(task.acceptance_criteria?.[0]).toBe('Processes in <100ms');
+  });
+
+  it('creates, updates and clears task description', () => {
+    const project = createProject('Project');
+    const task = createTask(project.id, 'Task', undefined, {
+      description: 'Some context\nacross lines',
+    });
+    expect(task.description).toBe('Some context\nacross lines');
+
+    expect(updateTask(task.id, { description: 'Revised' })?.description).toBe('Revised');
+    expect(updateTask(task.id, { status: 'todo' })?.description).toBe('Revised');
+    expect(updateTask(task.id, { description: '' })?.description).toBeUndefined();
+  });
+
+  it('keeps guardrails when updating other fields', () => {
+    const project = createProject('Project');
+    const task = createTask(project.id, 'Task', undefined, {
+      guardrails: [{ id: 'g1', number: 1, text: 'Keep me' }],
+    });
+    expect(updateTask(task.id, { status: 'todo' })?.guardrails).toHaveLength(1);
+  });
+
+  it('clears blocked_reason with an empty string', () => {
+    const project = createProject('Project');
+    const task = createTask(project.id, 'Task');
+    updateTask(task.id, { blocked_reason: 'Waiting on vendor' });
+    expect(updateTask(task.id, { blocked_reason: '' })?.blocked_reason).toBeUndefined();
   });
 
   it('creates task with guardrails and generates IDs', () => {

@@ -2,11 +2,65 @@
 
 ## Authentication
 
-The API uses Bearer token authentication via `FLUX_API_KEY` environment variable.
+The API uses Bearer token authentication. Keys come from the `FLUX_API_KEY`
+environment variable and/or stored API keys created via `/api/auth/keys`.
 
-- **GET/HEAD requests** are public (readonly)
-- **All other methods** require `Authorization: Bearer <FLUX_API_KEY>` header
-- If `FLUX_API_KEY` is not set, all requests are allowed (dev mode)
+The server runs in one of three modes:
+
+| Mode | Condition | Behavior |
+|------|-----------|----------|
+| **Keys** | `FLUX_API_KEY` set or stored keys exist | GET/HEAD on public projects work anonymously; all other requests require `Authorization: Bearer <key>` |
+| **Open** | No keys, `FLUX_ALLOW_ANONYMOUS=1` set | All requests allowed — only use on trusted networks |
+| **Locked** | No keys, no opt-in (default) | All API requests rejected with 401 (except `GET /api/auth/status`) |
+
+A fresh server with no configuration is **locked by default**. Set
+`FLUX_API_KEY=<secret>` to enable authenticated access, or set
+`FLUX_ALLOW_ANONYMOUS=1` to explicitly opt into open access.
+
+Key scopes:
+
+- **Server keys** (`FLUX_API_KEY` or stored server-scoped keys): full access, including webhooks, key management, and `/api/reset`
+- **Project keys**: read/write limited to their `project_ids`; private projects outside that list return 404
+
+Project visibility:
+
+- Projects are **private by default**. With keys enabled, a private project (and its epics, tasks, comments and blobs) returns 404 to clients without a key, and its events are withheld from unauthorised SSE listeners. In locked mode (no keys and no `FLUX_ALLOW_ANONYMOUS`), requests are rejected with 401.
+- Pass `visibility: "public"` when creating or updating a project to make it readable without a key. Writes require a server key unless the server is in open mode (`FLUX_ALLOW_ANONYMOUS=1` with no keys).
+
+Other security-related environment variables:
+
+| Variable | Description |
+|----------|-------------|
+| `HOST` | Interface the server binds to (default `127.0.0.1`, loopback only). Set to `0.0.0.0` to accept connections from the network |
+| `FLUX_ALLOW_ANONYMOUS` | Set to `1`/`true`/`yes` to allow keyless open access |
+| `FLUX_CORS_ORIGINS` | Comma-separated list of additional allowed CORS origins. Localhost origins are always allowed; all others are rejected by default |
+| `FLUX_MAX_BLOB_SIZE` | Max blob upload size in bytes (default 10 MB) |
+
+All responses carry security headers (CSP, `X-Content-Type-Options`,
+`X-Frame-Options`). Auth endpoints, blob uploads, and `/api/reset` are
+rate-limited per client IP.
+
+## Live Updates (SSE)
+
+`GET /api/events` streams Server-Sent Events:
+
+| Event | Payload | When |
+|-------|---------|------|
+| `connected` | `"ok"` | On connect — refresh to catch missed updates |
+| `change` | `{event, project_id, project_name, title, status}` | On every API mutation. `event` is a webhook event type (`task.created`, `task.status_changed`, …) |
+| `data-changed` | `{ts}` | Generic invalidation ping, e.g. when the CLI writes the data file directly |
+
+`change` events are **scoped by auth**: clients only receive events for
+projects they can read, and events without a project scope require server
+access. Because `EventSource` cannot send an `Authorization` header, pass the
+API key as a query parameter to receive events for private projects:
+
+```
+GET /api/events?token=<api-key>
+```
+
+The web UI uses `change` events to refresh only the affected board and to
+drive opt-in browser notifications (bell icon on the board).
 
 ## Endpoints
 

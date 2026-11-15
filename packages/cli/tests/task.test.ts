@@ -220,6 +220,16 @@ describe('task command', () => {
       expect(mockUpdateTask).toHaveBeenCalledWith('task-2', { depends_on: ['task-1'] });
     });
 
+    it('applies dependencies given alongside a note', async () => {
+      mockAddTaskComment.mockResolvedValue({ id: 'c-1', body: 'Why', author: 'user' });
+      mockUpdateTask.mockResolvedValue({ id: 'task-2', title: 'Test', status: 'todo', depends_on: ['task-1'] });
+
+      await taskCommand('update', ['task-2'], { note: 'Why', d: 'task-1' }, false);
+
+      expect(mockAddTaskComment).toHaveBeenCalledWith('task-2', 'Why', 'user');
+      expect(mockUpdateTask).toHaveBeenCalledWith('task-2', { depends_on: ['task-1'] });
+    });
+
     it('exits with error when no id provided', async () => {
       await expect(taskCommand('update', [], {}, false)).rejects.toThrow('process.exit(1)');
     });

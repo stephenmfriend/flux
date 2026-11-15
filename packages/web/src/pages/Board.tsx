@@ -1,9 +1,10 @@
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import { route, RoutableProps } from "preact-router";
 import {
   DndContext,
   DragEndEvent,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   closestCenter,
@@ -17,19 +18,33 @@ import {
   cleanupProject,
   type TaskWithBlocked,
 } from "../stores";
-import type { Epic } from "@flux/shared";
-import { STATUSES, STATUS_CONFIG, EPIC_COLORS } from "@flux/shared";
+import type { Epic, Status } from "@flux/shared";
+import { STATUSES, STATUS_CONFIG, EPIC_COLORS, EPIC_COLOR_UNASSIGNED } from "@flux/shared";
 import {
   TaskForm,
   EpicForm,
   DraggableTaskCard,
   DroppableColumn,
+  Modal,
+  Select,
   ThemeToggle,
 } from "../components";
 import { useBoardPreferences } from "../hooks/useBoardPreferences";
+import { getToken } from "../stores/auth";
+import {
+  isSupported as notificationsSupported,
+  isEnabled as notificationsEnabled,
+  enable as enableNotifications,
+  disable as disableNotifications,
+  notifyChange,
+  type ChangeEvent,
+} from "../lib/notifications";
 import {
   ArrowLeftIcon,
   Bars3BottomLeftIcon,
+  BellIcon,
+  BellSlashIcon,
+  ChevronDownIcon,
   ChevronRightIcon,
   EyeIcon,
   EyeSlashIcon,
@@ -65,11 +80,37 @@ export function Board({ projectId }: BoardProps) {
   const [defaultEpicId, setDefaultEpicId] = useState<string | undefined>(
     undefined
   );
+  const [createMenuOpen, setCreateMenuOpen] = useState(false);
 
   // Filter state
   const [searchQuery, setSearchQuery] = useState("");
   const [filterEpicId, setFilterEpicId] = useState<string | "all">("all");
   const [filterStatus, setFilterStatus] = useState<string | "all">("all");
+
+  // Browser notification preference
+  const [notificationsOn, setNotificationsOn] = useState(notificationsEnabled());
+
+  // "/" focuses the search box from anywhere on the board
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      e.preventDefault();
+      searchInputRef.current?.focus();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   // Cleanup dialog state
   const [cleanupDialogOpen, setCleanupDialogOpen] = useState(false);
@@ -86,12 +127,15 @@ export function Board({ projectId }: BoardProps) {
     toggleEpicCollapse,
   } = useBoardPreferences(projectId ?? "");
 
-  // Configure sensors with activation constraint to allow clicks
+  // Keep mouse dragging immediate after 8px; let touch users scroll before a long press.
   const sensors = useSensors(
-    useSensor(PointerSensor, {
+    useSensor(MouseSensor, {
       activationConstraint: {
         distance: 8,
       },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 250, tolerance: 8 },
     })
   );
 
@@ -120,12 +164,41 @@ export function Board({ projectId }: BoardProps) {
       }, 100);
     };
 
+    // Rich `change` events carry a project scope, so the follow-up file-watch
+    // ping for the same mutation can be skipped (or the whole refresh, when
+    // the change belongs to another project).
+    let suppressPingUntil = 0;
+
     const connect = () => {
       if (!isMounted) return;
 
-      source = new EventSource(`${eventsBase}/api/events`);
+      // EventSource can't send headers; pass the token so the server can
+      // scope change events to projects this client may read.
+      const token = getToken();
+      const query = token ? `?token=${encodeURIComponent(token)}` : "";
+      source = new EventSource(`${eventsBase}/api/events${query}`);
 
-      source.addEventListener("data-changed", scheduleRefresh);
+      source.addEventListener("change", (e) => {
+        let change: ChangeEvent;
+        try {
+          change = JSON.parse((e as MessageEvent).data);
+        } catch {
+          return;
+        }
+        suppressPingUntil = Date.now() + 400;
+        if (change.project_id && change.project_id !== projectId) {
+          return; // another project changed — nothing to refresh here
+        }
+        notifyChange(change);
+        scheduleRefresh();
+      });
+
+      source.addEventListener("data-changed", () => {
+        // Generic invalidation ping (e.g. CLI wrote the data file). Skip it
+        // when a rich change event already covered the same mutation.
+        if (Date.now() < suppressPingUntil) return;
+        scheduleRefresh();
+      });
 
       source.addEventListener("connected", () => {
         // Refresh data on reconnect to catch any missed updates
@@ -192,11 +265,21 @@ export function Board({ projectId }: BoardProps) {
     if (!task) return;
 
     if (task.status !== newStatus || task.epic_id !== newEpicId) {
-      await updateTask(taskId, {
-        status: newStatus,
-        epic_id: newEpicId,
-      });
-      await refreshData();
+      // Move the card locally first so it lands in the target column on drop,
+      // rather than snapping back to its origin while the request is in flight.
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === taskId ? { ...t, status: newStatus, epic_id: newEpicId } : t
+        )
+      );
+      try {
+        await updateTask(taskId, {
+          status: newStatus,
+          epic_id: newEpicId,
+        });
+      } finally {
+        await refreshData();
+      }
     }
   };
 
@@ -276,12 +359,25 @@ export function Board({ projectId }: BoardProps) {
   const getDropZoneId = (status: string, epicId: string | undefined) =>
     `${status}:${epicId ?? "unassigned"}`;
 
+  const mobileColumnHeader = (status: Status, epicId?: string) => (
+    <>
+      <span class="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: STATUS_CONFIG[status].color }} />
+      <span class="font-medium text-sm">{STATUS_CONFIG[status].label}</span>
+      <span class="text-base-content/40 text-sm">{getColumnTasks(status, epicId).length}</span>
+      {status === "planning" && (
+        <button class="btn btn-ghost btn-sm btn-circle ml-auto" title="Add task" onClick={() => openNewTask(epicId)}>
+          <PlusIcon className="h-4 w-4" />
+        </button>
+      )}
+    </>
+  );
+
   // Get total task count
   const totalTaskCount = tasks.filter(filterTask).length;
 
   if (loading) {
     return (
-      <div class="min-h-screen bg-base-200 flex items-center justify-center">
+      <div class="app-shell flex items-center justify-center">
         <span class="loading loading-spinner loading-lg text-primary"></span>
       </div>
     );
@@ -293,14 +389,14 @@ export function Board({ projectId }: BoardProps) {
       collisionDetection={closestCenter}
       onDragEnd={handleDragEnd}
     >
-      <div class="min-h-screen bg-base-200">
+      <div class="app-shell">
         {/* Header */}
-        <div class="navbar bg-base-100 shadow-lg mb-4">
-          <div class="flex-1 flex items-center">
-            <button class="btn btn-ghost btn-circle" onClick={() => route("/")}>
+        <div class="navbar app-navbar board-navbar mb-4">
+          <div class="board-heading flex-1 flex items-center">
+            <button class="btn btn-ghost btn-circle" aria-label="Back to projects" onClick={() => route("/")}>
               <ArrowLeftIcon className="h-5 w-5" />
             </button>
-            <div class="flex items-center gap-2 px-2">
+            <div class="board-title flex items-center gap-2 px-2">
               <Squares2X2Icon className="h-6 w-6 text-primary" />
               <h1 class="text-xl font-bold">{projectName}</h1>
               <span class="text-base-content/50 text-lg ml-1">
@@ -308,65 +404,149 @@ export function Board({ projectId }: BoardProps) {
               </span>
             </div>
           </div>
-          <div class="flex gap-2">
+          <div class="board-actions flex flex-wrap items-center justify-end gap-1.5">
+            {notificationsSupported() && (
+              <button
+                class="btn btn-ghost btn-circle btn-sm"
+                onClick={async () => {
+                  if (notificationsOn) {
+                    disableNotifications();
+                    setNotificationsOn(false);
+                  } else {
+                    setNotificationsOn(await enableNotifications());
+                  }
+                }}
+                title={
+                  notificationsOn
+                    ? "Disable browser notifications"
+                    : "Enable browser notifications for this board"
+                }
+              >
+                {notificationsOn ? (
+                  <BellIcon className="h-5 w-5" />
+                ) : (
+                  <BellSlashIcon className="h-5 w-5 text-base-content/50" />
+                )}
+              </button>
+            )}
             <ThemeToggle />
-            <button
-              class="btn btn-primary btn-sm"
-              onClick={() => openNewTask()}
-            >
-              New Task
-            </button>
-            <button class="btn btn-neutral btn-sm" onClick={openNewEpic}>
-              New Epic
-            </button>
+            <div class="join">
+              <button
+                class="btn btn-primary btn-sm join-item gap-1.5"
+                onClick={() => {
+                  setCreateMenuOpen(false);
+                  openNewTask();
+                }}
+                aria-label="Create new task"
+                title="Create new task"
+              >
+                <PlusIcon className="h-4 w-4" />
+                New
+              </button>
+              <div
+                class={`dropdown dropdown-end ${createMenuOpen ? "dropdown-open" : ""}`}
+                onBlur={(event) => {
+                  if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+                    setCreateMenuOpen(false);
+                  }
+                }}
+              >
+                <button
+                  type="button"
+                  class="btn btn-primary btn-sm join-item px-2"
+                  aria-label="Choose what to create"
+                  aria-haspopup="menu"
+                  aria-expanded={createMenuOpen}
+                  title="More creation options"
+                  onClick={() => setCreateMenuOpen((open) => !open)}
+                >
+                  <ChevronDownIcon className="h-4 w-4" />
+                </button>
+                <ul
+                  role="menu"
+                  class="dropdown-content menu z-40 mt-2 w-40 rounded-box border border-base-300 bg-base-100 p-2 shadow-lg"
+                >
+                  <li role="none">
+                    <button
+                      role="menuitem"
+                      onClick={() => {
+                        setCreateMenuOpen(false);
+                        openNewTask();
+                      }}
+                    >
+                      New Task
+                    </button>
+                  </li>
+                  <li role="none">
+                    <button
+                      role="menuitem"
+                      onClick={() => {
+                        setCreateMenuOpen(false);
+                        openNewEpic();
+                      }}
+                    >
+                      New Epic
+                    </button>
+                  </li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div class="px-6 pb-0">
+        <div class="px-3 sm:px-6 pb-0">
           {/* Filter Bar */}
-          <div class="bg-base-100 rounded-xl p-4 shadow-sm mb-6">
-            <div class="flex items-center gap-4">
-              <div class="relative flex-1 max-w-sm">
+          <div class="surface-panel board-toolbar rounded-xl p-4 mb-6">
+            <div class="board-toolbar-row flex items-center gap-3 sm:gap-4">
+              <div class="board-search relative flex-1 min-w-48">
                 <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-base-content/40" />
                 <input
+                  ref={searchInputRef}
                   type="text"
-                  placeholder="Search tasks..."
-                  class="input input-bordered w-full pl-10 text-sm"
+                  placeholder="Search tasks and comments..."
+                  class="input input-bordered w-full pl-10 pr-10 text-sm"
                   value={searchQuery}
                   onInput={(e) =>
                     setSearchQuery((e.target as HTMLInputElement).value)
                   }
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") {
+                      setSearchQuery("");
+                      (e.target as HTMLInputElement).blur();
+                    }
+                  }}
                 />
+                <kbd class="kbd kbd-sm absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-base-content/40 hidden sm:inline-flex">
+                  /
+                </kbd>
               </div>
-              <select
-                class="select select-bordered text-sm font-medium"
+              <Select
+                class="board-filter w-44"
+                ariaLabel="Filter by epic"
                 value={filterEpicId}
-                onChange={(e) =>
-                  setFilterEpicId((e.target as HTMLSelectElement).value)
-                }
-              >
-                <option value="all">All Epics</option>
-                {epics.map((epic) => (
-                  <option key={epic.id} value={epic.id}>
-                    {epic.title}
-                  </option>
-                ))}
-                <option value="unassigned">Unassigned</option>
-              </select>
-              <select
-                class="select select-bordered text-sm font-medium"
+                onChange={setFilterEpicId}
+                options={[
+                  { value: "all", label: "All Epics" },
+                  ...epics.map((epic) => ({
+                    value: epic.id,
+                    label: epic.title,
+                  })),
+                  { value: "unassigned", label: "Unassigned" },
+                ]}
+              />
+              <Select
+                class="board-filter w-40"
+                ariaLabel="Filter by status"
                 value={filterStatus}
-                onChange={(e) =>
-                  setFilterStatus((e.target as HTMLSelectElement).value)
-                }
-              >
-                <option value="all">All Statuses</option>
-                {STATUSES.map((status) => (
-                  <option key={status} value={status}>
-                    {STATUS_CONFIG[status].label}
-                  </option>
-                ))}
-              </select>
+                onChange={setFilterStatus}
+                options={[
+                  { value: "all", label: "All Statuses" },
+                  ...STATUSES.map((status) => ({
+                    value: status,
+                    label: STATUS_CONFIG[status].label,
+                  })),
+                ]}
+              />
               {(searchQuery ||
                 filterEpicId !== "all" ||
                 filterStatus !== "all") && (
@@ -381,7 +561,6 @@ export function Board({ projectId }: BoardProps) {
                   Clear
                 </button>
               )}
-              <div class="flex-1" />
               <button
                 class="btn btn-ghost btn-sm"
                 onClick={() => setCleanupDialogOpen(true)}
@@ -433,8 +612,10 @@ export function Board({ projectId }: BoardProps) {
           </div>
         </div>
 
+        <p class="px-3 mb-3 text-xs text-base-content/50 md:hidden">Tap a task to edit. Hold to drag between statuses.</p>
+
         {/* Swimlanes */}
-        <div class="px-6 pb-6 space-y-4">
+        <div class="px-3 sm:px-6 pb-6 space-y-4">
           {/* Epic Swimlanes */}
           {epics
             .filter(
@@ -448,11 +629,11 @@ export function Board({ projectId }: BoardProps) {
               return (
                 <div
                   key={epic.id}
-                  class="bg-base-100 rounded-xl shadow-sm overflow-hidden"
+                  class="surface-panel rounded-2xl overflow-hidden"
                 >
                   {/* Epic Header */}
                   <div
-                    class="p-4 flex items-center gap-3 cursor-pointer hover:bg-base-200 transition-colors"
+                    class="board-epic-header p-4 flex items-center gap-3 cursor-pointer hover:bg-base-200 transition-colors"
                     onClick={() => toggleEpicCollapse(epic.id)}
                   >
                     <ChevronRightIcon
@@ -464,8 +645,8 @@ export function Board({ projectId }: BoardProps) {
                       class="w-3 h-3 rounded-full flex-shrink-0"
                       style={{ backgroundColor: epicColor }}
                     />
-                    <span class="font-semibold">{epic.title}</span>
-                    <span class="text-base-content/40 text-sm bg-base-200 px-2 py-0.5 rounded">
+                    <span class="board-epic-title font-semibold">{epic.title}</span>
+                    <span class="board-epic-count text-base-content/40 text-sm bg-base-200 px-2 py-0.5 rounded">
                       {taskCount} task{taskCount !== 1 ? "s" : ""}
                     </span>
                     <div class="ml-auto flex items-center gap-3">
@@ -496,19 +677,18 @@ export function Board({ projectId }: BoardProps) {
 
                   {/* Epic Content */}
                   {!isCollapsed && (
-                    <div class="px-4 pb-4">
-                      <div class="flex gap-4">
+                    <div class="board-lane-scroll lane-content-enter px-4 pb-4">
+                      <div class="board-lane-content flex flex-col md:flex-row gap-4">
                         {/* Collapsed Planning Column */}
                         {planningCollapsed && (
                           <div
-                            class="w-8 min-h-[100px] bg-base-200 rounded-lg flex items-center justify-center cursor-pointer hover:bg-base-300 transition-colors relative"
+                            class="board-planning-toggle w-8 min-h-[100px] bg-base-200 rounded-lg flex items-center justify-center cursor-pointer hover:bg-base-300 transition-colors relative"
                             onClick={() => setPlanningCollapsed(false)}
                             title="Show Planning column"
                           >
                             <div class="absolute inset-0 flex items-center justify-center">
                               <span
-                                class="text-xs font-medium text-base-content/60 whitespace-nowrap"
-                                style={{ transform: "rotate(-90deg)" }}
+                                class="board-planning-label text-xs font-medium text-base-content/60 whitespace-nowrap"
                               >
                                 Planning (
                                 {getColumnTasks("planning", epic.id).length})
@@ -522,9 +702,9 @@ export function Board({ projectId }: BoardProps) {
                         <div class="flex-1">
                           {/* Column Headers */}
                           <div
-                            class={`grid ${
+                            class={`board-status-grid grid ${
                               planningCollapsed ? "grid-cols-3" : "grid-cols-4"
-                            } gap-4 mb-3`}
+                            } gap-4 mb-3 hidden md:grid`}
                           >
                             {STATUSES.filter(
                               (s) => !planningCollapsed || s !== "planning"
@@ -568,7 +748,7 @@ export function Board({ projectId }: BoardProps) {
 
                           {/* Columns */}
                           <div
-                            class={`grid ${
+                            class={`board-status-grid grid ${
                               planningCollapsed ? "grid-cols-3" : "grid-cols-4"
                             } gap-4`}
                           >
@@ -578,6 +758,7 @@ export function Board({ projectId }: BoardProps) {
                               <DroppableColumn
                                 key={getDropZoneId(status, epic.id)}
                                 id={getDropZoneId(status, epic.id)}
+                                mobileHeader={mobileColumnHeader(status, epic.id)}
                                 isEmpty={
                                   getColumnTasks(status, epic.id).length === 0
                                 }
@@ -608,9 +789,9 @@ export function Board({ projectId }: BoardProps) {
 
           {/* Unassigned Lane */}
           {(filterEpicId === "all" || filterEpicId === "unassigned") && (
-            <div class="bg-base-100 rounded-xl shadow-sm overflow-hidden">
+            <div class="surface-panel rounded-2xl overflow-hidden">
               <div
-                class="p-4 flex items-center gap-3 cursor-pointer hover:bg-base-200 transition-colors"
+                class="board-epic-header p-4 flex items-center gap-3 cursor-pointer hover:bg-base-200 transition-colors"
                 onClick={() => toggleEpicCollapse("unassigned")}
               >
                 <ChevronRightIcon
@@ -619,27 +800,26 @@ export function Board({ projectId }: BoardProps) {
                   }`}
                 />
                 <span class="w-3 h-3 rounded-full bg-base-content/40 flex-shrink-0" />
-                <span class="font-semibold">Unassigned</span>
-                <span class="text-base-content/40 text-sm bg-base-200 px-2 py-0.5 rounded">
+                <span class="board-epic-title font-semibold">Unassigned</span>
+                <span class="board-epic-count text-base-content/40 text-sm bg-base-200 px-2 py-0.5 rounded">
                   {getEpicTaskCount(undefined)} task
                   {getEpicTaskCount(undefined) !== 1 ? "s" : ""}
                 </span>
               </div>
 
               {!collapsedEpics.has("unassigned") && (
-                <div class="px-4 pb-4">
-                  <div class="flex gap-4">
+                <div class="board-lane-scroll lane-content-enter px-4 pb-4">
+                  <div class="board-lane-content flex flex-col md:flex-row gap-4">
                     {/* Collapsed Planning Column */}
                     {planningCollapsed && (
                       <div
-                        class="w-8 min-h-[100px] bg-base-200 rounded-lg flex items-center justify-center cursor-pointer hover:bg-base-300 transition-colors relative"
+                        class="board-planning-toggle w-8 min-h-[100px] bg-base-200 rounded-lg flex items-center justify-center cursor-pointer hover:bg-base-300 transition-colors relative"
                         onClick={() => setPlanningCollapsed(false)}
                         title="Show Planning column"
                       >
                         <div class="absolute inset-0 flex items-center justify-center">
                           <span
-                            class="text-xs font-medium text-base-content/60 whitespace-nowrap"
-                            style={{ transform: "rotate(-90deg)" }}
+                            class="board-planning-label text-xs font-medium text-base-content/60 whitespace-nowrap"
                           >
                             Planning (
                             {getColumnTasks("planning", undefined).length})
@@ -652,9 +832,9 @@ export function Board({ projectId }: BoardProps) {
                     {/* Main Columns Container */}
                     <div class="flex-1">
                       <div
-                        class={`grid ${
+                        class={`board-status-grid grid ${
                           planningCollapsed ? "grid-cols-3" : "grid-cols-4"
-                        } gap-4 mb-3`}
+                        } gap-4 mb-3 hidden md:grid`}
                       >
                         {STATUSES.filter(
                           (s) => !planningCollapsed || s !== "planning"
@@ -694,7 +874,7 @@ export function Board({ projectId }: BoardProps) {
                       </div>
 
                       <div
-                        class={`grid ${
+                        class={`board-status-grid grid ${
                           planningCollapsed ? "grid-cols-3" : "grid-cols-4"
                         } gap-4`}
                       >
@@ -704,6 +884,7 @@ export function Board({ projectId }: BoardProps) {
                           <DroppableColumn
                             key={getDropZoneId(status, undefined)}
                             id={getDropZoneId(status, undefined)}
+                            mobileHeader={mobileColumnHeader(status)}
                             isEmpty={
                               getColumnTasks(status, undefined).length === 0
                             }
@@ -713,7 +894,7 @@ export function Board({ projectId }: BoardProps) {
                                 <DraggableTaskCard
                                   key={task.id}
                                   task={task}
-                                  epicColor="#9ca3af"
+                                  epicColor={EPIC_COLOR_UNASSIGNED}
                                   epicTitle="Unassigned"
                                   taskNumber={taskIndex + 1}
                                   onClick={() => openEditTask(task)}
@@ -750,73 +931,70 @@ export function Board({ projectId }: BoardProps) {
         />
 
         {/* Cleanup Dialog */}
-        {cleanupDialogOpen && (
-          <div class="modal modal-open">
-            <div class="modal-box">
-              <h3 class="font-bold text-lg">Clean Up Board</h3>
-              <div class="py-4 space-y-3">
-                <label class="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    class="checkbox"
-                    checked={cleanupArchiveTasks}
-                    onChange={(e) =>
-                      setCleanupArchiveTasks(
-                        (e.target as HTMLInputElement).checked
-                      )
-                    }
-                  />
-                  <span>Archive Done Tasks</span>
-                  {doneTaskCount > 0 && (
-                    <span class="text-base-content/50 text-sm">
-                      ({doneTaskCount} task{doneTaskCount !== 1 ? "s" : ""})
-                    </span>
-                  )}
-                </label>
-                <label class="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    class="checkbox"
-                    checked={cleanupArchiveEpics}
-                    onChange={(e) =>
-                      setCleanupArchiveEpics(
-                        (e.target as HTMLInputElement).checked
-                      )
-                    }
-                  />
-                  <span>Archive Empty Epics</span>
-                </label>
-              </div>
-              <div class="modal-action">
-                <button
-                  class="btn btn-ghost"
-                  onClick={() => {
-                    setCleanupDialogOpen(false);
-                    setCleanupArchiveTasks(true);
-                    setCleanupArchiveEpics(true);
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  class="btn btn-primary"
-                  onClick={handleCleanup}
-                  disabled={!cleanupArchiveTasks && !cleanupArchiveEpics}
-                >
-                  Clean
-                </button>
-              </div>
-            </div>
-            <div
-              class="modal-backdrop bg-black/50"
+        <Modal
+          isOpen={cleanupDialogOpen}
+          onClose={() => {
+            setCleanupDialogOpen(false);
+            setCleanupArchiveTasks(true);
+            setCleanupArchiveEpics(true);
+          }}
+          title="Clean Up Board"
+          subtitle="Archive finished work to keep the board focused"
+          size="sm"
+        >
+          <div class="space-y-3">
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                class="checkbox"
+                checked={cleanupArchiveTasks}
+                onChange={(e) =>
+                  setCleanupArchiveTasks(
+                    (e.target as HTMLInputElement).checked
+                  )
+                }
+              />
+              <span>Archive Done Tasks</span>
+              {doneTaskCount > 0 && (
+                <span class="text-base-content/50 text-sm">
+                  ({doneTaskCount} task{doneTaskCount !== 1 ? "s" : ""})
+                </span>
+              )}
+            </label>
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                class="checkbox"
+                checked={cleanupArchiveEpics}
+                onChange={(e) =>
+                  setCleanupArchiveEpics(
+                    (e.target as HTMLInputElement).checked
+                  )
+                }
+              />
+              <span>Archive Empty Epics</span>
+            </label>
+          </div>
+          <div class="modal-action">
+            <button
+              class="btn btn-ghost"
               onClick={() => {
                 setCleanupDialogOpen(false);
                 setCleanupArchiveTasks(true);
                 setCleanupArchiveEpics(true);
               }}
-            />
+            >
+              Cancel
+            </button>
+            <button
+              class="btn btn-primary"
+              onClick={handleCleanup}
+              disabled={!cleanupArchiveTasks && !cleanupArchiveEpics}
+            >
+              Clean
+            </button>
           </div>
-        )}
+        </Modal>
       </div>
     </DndContext>
   );

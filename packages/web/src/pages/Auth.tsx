@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'preact/hooks'
 import { route, RoutableProps } from 'preact-router'
 import { completeCliAuth, getAuthStatus, getProjects, type ProjectWithStats } from '../stores/api'
 import { setToken, clearToken } from '../stores/auth'
+import { Select } from '../components'
 
 interface AuthProps extends RoutableProps {
   token?: string
@@ -98,7 +99,7 @@ export function Auth({ token: urlToken }: AuthProps) {
 
   if (loading) {
     return (
-      <div class="min-h-screen bg-base-200 flex items-center justify-center">
+      <div class="app-shell flex items-center justify-center p-4">
         <span class="loading loading-spinner loading-lg"></span>
       </div>
     )
@@ -107,8 +108,8 @@ export function Auth({ token: urlToken }: AuthProps) {
   // If not authenticated and this is CLI auth, show login prompt
   if (!authenticated && tokenRef.current) {
     return (
-      <div class="min-h-screen bg-base-200 flex items-center justify-center">
-        <div class="card w-96 bg-base-100 shadow-xl">
+      <div class="app-shell flex items-center justify-center p-4">
+        <div class="card surface-card w-full max-w-96">
           <div class="card-body">
             <h2 class="card-title text-2xl mb-4">Login Required</h2>
             <p class="text-sm opacity-70 mb-4">
@@ -140,8 +141,8 @@ export function Auth({ token: urlToken }: AuthProps) {
   // Success state
   if (success) {
     return (
-      <div class="min-h-screen bg-base-200 flex items-center justify-center">
-        <div class="card w-96 bg-base-100 shadow-xl">
+      <div class="app-shell flex items-center justify-center p-4">
+        <div class="card surface-card w-full max-w-96">
           <div class="card-body text-center">
             <div class="text-6xl mb-4">✓</div>
             <h2 class="card-title text-2xl justify-center mb-4">Authorized!</h2>
@@ -162,8 +163,8 @@ export function Auth({ token: urlToken }: AuthProps) {
   // No token - show login form or auth info
   if (!tokenRef.current) {
     return (
-      <div class="min-h-screen bg-base-200 flex items-center justify-center">
-        <div class="card w-96 bg-base-100 shadow-xl">
+      <div class="app-shell flex items-center justify-center p-4">
+        <div class="card surface-card w-full max-w-96">
           <div class="card-body">
             <h2 class="card-title text-2xl mb-4">Login</h2>
 
@@ -223,8 +224,8 @@ export function Auth({ token: urlToken }: AuthProps) {
 
   // CLI auth form
   return (
-    <div class="min-h-screen bg-base-200 flex items-center justify-center">
-      <div class="card w-96 bg-base-100 shadow-xl">
+    <div class="app-shell flex items-center justify-center p-4">
+      <div class="card surface-card w-full max-w-96">
         <div class="card-body">
           <h2 class="card-title text-2xl mb-4">Authorize CLI</h2>
           <p class="text-sm opacity-70 mb-4">
@@ -256,14 +257,15 @@ export function Auth({ token: urlToken }: AuthProps) {
               <label class="label">
                 <span class="label-text">Access Scope</span>
               </label>
-              <select
-                class="select select-bordered w-full"
+              <Select
+                ariaLabel="Access Scope"
                 value={scope}
-                onChange={(e) => setScope((e.target as HTMLSelectElement).value as 'server' | 'project')}
-              >
-                <option value="server">Full Access (Server Key)</option>
-                <option value="project">Limited to Specific Projects</option>
-              </select>
+                onChange={(v) => setScope(v as 'server' | 'project')}
+                options={[
+                  { value: 'server', label: 'Full Access (Server Key)' },
+                  { value: 'project', label: 'Limited to Specific Projects' },
+                ]}
+              />
             </div>
 
             {scope === 'project' && (

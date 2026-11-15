@@ -2,6 +2,7 @@ import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
+import { secureHeaders } from 'hono/secure-headers';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { existsSync, watchFile, statSync, readFileSync } from 'fs';
@@ -51,15 +52,19 @@ import {
   getBlob as getStoreBlob,
   getBlobs as getStoreBlobs,
   deleteBlob as deleteStoreBlob,
+  getStore,
+  replaceStore,
+  mergeStore,
   type WebhookEventType,
   type KeyScope,
+  type Store,
 } from '@flux/shared';
 import { generateKey, generateTempToken, validateKey, encrypt, decrypt } from '@flux/shared/auth';
 import { findFluxDir, loadEnvLocal, readConfig, resolveDataPath } from '@flux/shared/config';
 import { createAdapter } from '@flux/shared/adapters';
 import { createFilesystemBlobStorage, setBlobStorage, getBlobStorage } from '@flux/shared/blob-storage';
 import { handleWebhookEvent, testWebhookDelivery } from './webhook-service.js';
-import { authMiddleware, filterProjects, canReadProject, canWriteProject, requireServerAccess, type AuthContext } from './middleware/auth.js';
+import { authMiddleware, filterProjects, canReadProject, canWriteProject, requireServerAccess, isAuthRequired, isOpenMode, hasServerAccess, resolveTokenAuth, type AuthContext } from './middleware/auth.js';
 import { rateLimit } from './middleware/rate-limit.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -89,8 +94,11 @@ console.log(`Flux server using: ${DATA_FILE}`);
 // Set up webhook event handler
 setWebhookEventHandler(handleWebhookEvent);
 
-// Validate task fields (acceptance_criteria, guardrails)
+// Validate task fields (description, acceptance_criteria, guardrails)
 function validateTaskFields(body: Record<string, unknown>): { error?: string } {
+  if (body.description !== undefined && body.description !== null && typeof body.description !== 'string') {
+    return { error: 'description must be a string' };
+  }
   if (body.acceptance_criteria !== undefined) {
     if (!Array.isArray(body.acceptance_criteria)) {
       return { error: 'acceptance_criteria must be an array' };
@@ -119,8 +127,52 @@ function validateTaskFields(body: Record<string, unknown>): { error?: string } {
 // Create Hono app with auth context
 const app = new Hono<{ Variables: { auth: AuthContext } }>();
 
-// Enable CORS for development
-app.use('*', cors());
+// Security headers on every response. CSP is scoped to what the built web UI
+// needs: same-origin scripts/connections, inline styles (Tailwind/dnd-kit
+// style attributes), and data:/blob: images.
+app.use(
+  '*',
+  secureHeaders({
+    contentSecurityPolicy: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", 'data:', 'blob:'],
+      connectSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      frameAncestors: ["'self'"],
+    },
+  })
+);
+
+// CORS: same-origin by default. Localhost origins are always allowed (local
+// dev: Vite on :5173 talks to :3000). Additional origins via FLUX_CORS_ORIGINS
+// (comma-separated, e.g. "https://flux.example.com").
+const extraCorsOrigins = (process.env.FLUX_CORS_ORIGINS || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+const isLocalOrigin = (origin: string): boolean => {
+  try {
+    const { hostname } = new URL(origin);
+    return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]';
+  } catch {
+    return false;
+  }
+};
+
+app.use(
+  '*',
+  cors({
+    origin: (origin) => {
+      if (!origin) return origin;
+      if (extraCorsOrigins.includes(origin) || isLocalOrigin(origin)) return origin;
+      return null;
+    },
+  })
+);
 
 // Auth middleware (readonly public, writes require FLUX_API_KEY)
 app.use('/api/*', authMiddleware);
@@ -129,7 +181,11 @@ app.use('/api/*', authMiddleware);
 app.get('/health', (c) => c.json({ status: 'ok' }));
 
 // ============ Live Update Events (SSE) ============
-const sseClients = new Set<ReadableStreamDefaultController<Uint8Array>>();
+type SseClient = {
+  controller: ReadableStreamDefaultController<Uint8Array>;
+  auth: AuthContext;
+};
+const sseClients = new Set<SseClient>();
 const sseEncoder = new TextEncoder();
 let heartbeatInterval: NodeJS.Timeout | null = null;
 let fileChangeTimeout: NodeJS.Timeout | null = null;
@@ -137,24 +193,83 @@ let fileChangeTimeout: NodeJS.Timeout | null = null;
 const broadcastSse = (event: string, data: unknown) => {
   const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
   const encoded = sseEncoder.encode(payload);
-  for (const controller of sseClients) {
+  for (const client of sseClients) {
     try {
-      controller.enqueue(encoded);
+      client.controller.enqueue(encoded);
     } catch {
-      sseClients.delete(controller);
+      sseClients.delete(client);
     }
   }
+};
+
+// Rich change event sent to clients allowed to see the affected project.
+// Events without a project scope go only to clients with server access.
+type ChangeEventInfo = {
+  event: WebhookEventType;
+  project_id?: string;
+  project_name?: string;
+  title?: string;
+  status?: string;
+};
+
+const broadcastChange = (info: ChangeEventInfo) => {
+  const payload = sseEncoder.encode(`event: change\ndata: ${JSON.stringify(info)}\n\n`);
+  for (const client of sseClients) {
+    if (info.project_id) {
+      if (!canReadProject(client.auth, info.project_id)) continue;
+    } else if (!hasServerAccess(client.auth)) {
+      continue;
+    }
+    try {
+      client.controller.enqueue(payload);
+    } catch {
+      sseClients.delete(client);
+    }
+  }
+};
+
+// A stream keeps the auth it connected with, so revoking a key must end the
+// streams opened with it; a reconnect re-authenticates and the revoked token fails.
+const closeSseClientsForKey = (keyId: string) => {
+  for (const client of sseClients) {
+    if (client.auth.apiKey?.id !== keyId) continue;
+    sseClients.delete(client);
+    try {
+      client.controller.close();
+    } catch {
+      // Already closed by the client disconnecting
+    }
+  }
+};
+
+// Emit a mutation event: rich SSE change event for live clients + webhooks.
+const emitEvent = (
+  event: WebhookEventType,
+  data: Parameters<typeof triggerWebhooks>[1],
+  projectId?: string
+) => {
+  const d = data as Record<string, { id?: string; project_id?: string; title?: string; name?: string; status?: string } | undefined>;
+  const pid = projectId ?? d.project?.id ?? d.task?.project_id ?? d.epic?.project_id;
+  const project = pid ? getProject(pid) : undefined;
+  broadcastChange({
+    event,
+    project_id: pid,
+    project_name: project?.name ?? d.project?.name,
+    title: d.task?.title ?? d.epic?.title ?? d.project?.name,
+    status: d.task?.status,
+  });
+  triggerWebhooks(event, data, projectId);
 };
 
 const startHeartbeat = () => {
   if (heartbeatInterval) return;
   heartbeatInterval = setInterval(() => {
     const payload = sseEncoder.encode(': keep-alive\n\n');
-    for (const controller of sseClients) {
+    for (const client of sseClients) {
       try {
-        controller.enqueue(payload);
+        client.controller.enqueue(payload);
       } catch {
-        sseClients.delete(controller);
+        sseClients.delete(client);
       }
     }
     if (sseClients.size === 0 && heartbeatInterval) {
@@ -200,18 +315,27 @@ watchFile(DATA_FILE, { interval: 100 }, handleFileChange);
 // Also watch SQLite WAL file for changes (WAL mode writes here first)
 watchFile(DATA_FILE + '-wal', { interval: 100 }, handleFileChange);
 
-app.get('/api/events', () => {
-  let clientController: ReadableStreamDefaultController<Uint8Array> | null = null;
+app.get('/api/events', (c) => {
+  // EventSource can't send an Authorization header; accept ?token= so
+  // authenticated clients receive change events for their private projects.
+  let auth = c.get('auth');
+  const queryToken = c.req.query('token');
+  if (queryToken) {
+    const resolved = resolveTokenAuth(queryToken);
+    if (resolved) auth = resolved;
+  }
+
+  let client: SseClient | null = null;
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
-      clientController = controller;
-      sseClients.add(controller);
+      client = { controller, auth };
+      sseClients.add(client);
       controller.enqueue(sseEncoder.encode('event: connected\ndata: "ok"\n\n'));
       startHeartbeat();
     },
     cancel() {
-      if (clientController) {
-        sseClients.delete(clientController);
+      if (client) {
+        sseClients.delete(client);
       }
     },
   });
@@ -251,19 +375,40 @@ app.get('/api/projects/:id', (c) => {
   return c.json({ ...project, stats: getProjectStats(project.id) });
 });
 
+// Reject an explicitly bogus visibility rather than silently coercing it, so a
+// caller that meant to publish a project is told it did not happen. The store
+// still normalizes as a backstop for every other code path.
+function invalidVisibility(value: unknown): boolean {
+  return value !== undefined && value !== 'public' && value !== 'private';
+}
+
 app.post('/api/projects', requireServerAccess, async (c) => {
   const body = await c.req.json();
+  if (invalidVisibility(body.visibility)) {
+    return c.json({ error: 'visibility must be "public" or "private"' }, 400);
+  }
   const project = createProject(body.name, body.description, body.visibility);
-  triggerWebhooks('project.created', { project });
+  emitEvent('project.created', { project });
   return c.json(project, 201);
 });
 
 app.patch('/api/projects/:id', requireServerAccess, async (c) => {
   const body = await c.req.json();
+  if (invalidVisibility(body.visibility)) {
+    return c.json({ error: 'visibility must be "public" or "private"' }, 400);
+  }
+  // Only accept fields that are actually updatable - the raw body used to be
+  // spread straight into the stored project, which let a caller rewrite `id`
+  // (orphaning its epics and tasks) or add arbitrary keys.
+  const updates: Record<string, unknown> = {};
+  if (body.name !== undefined) updates.name = body.name;
+  if (body.description !== undefined) updates.description = body.description;
+  if (body.visibility !== undefined) updates.visibility = body.visibility;
+
   const previous = getProject(c.req.param('id'));
-  const project = updateProject(c.req.param('id'), body);
+  const project = updateProject(c.req.param('id'), updates);
   if (!project) return c.json({ error: 'Project not found' }, 404);
-  triggerWebhooks('project.updated', { project, previous }, project.id);
+  emitEvent('project.updated', { project, previous }, project.id);
   return c.json(project);
 });
 
@@ -271,7 +416,7 @@ app.delete('/api/projects/:id', requireServerAccess, (c) => {
   const project = getProject(c.req.param('id'));
   deleteProject(c.req.param('id'));
   if (project) {
-    triggerWebhooks('project.deleted', { project }, project.id);
+    emitEvent('project.deleted', { project }, project.id);
   }
   return c.json({ success: true });
 });
@@ -305,7 +450,7 @@ app.post('/api/projects/:projectId/epics', async (c) => {
   const body = await c.req.json();
   const epic = createEpic(projectId, body.title, body.notes, body.auto);
   // Trigger webhook
-  triggerWebhooks('epic.created', { epic }, projectId);
+  emitEvent('epic.created', { epic }, projectId);
   return c.json(epic, 201);
 });
 
@@ -320,7 +465,7 @@ app.patch('/api/epics/:id', async (c) => {
   const body = await c.req.json();
   const epic = updateEpic(epicId, body);
   if (!epic) return c.json({ error: 'Epic not found' }, 404);
-  triggerWebhooks('epic.updated', { epic, previous }, epic.project_id);
+  emitEvent('epic.updated', { epic, previous }, epic.project_id);
   return c.json(epic);
 });
 
@@ -334,7 +479,7 @@ app.delete('/api/epics/:id', (c) => {
   }
   const success = deleteEpic(epicId);
   if (!success) return c.json({ error: 'Epic not found' }, 404);
-  triggerWebhooks('epic.deleted', { epic }, epic.project_id);
+  emitEvent('epic.deleted', { epic }, epic.project_id);
   return c.json({ success: true });
 });
 
@@ -345,11 +490,21 @@ app.get('/api/projects/:projectId/tasks', (c) => {
   if (!canReadProject(auth, projectId)) {
     return c.json({ error: 'Project not found' }, 404);
   }
-  const tasks = getTasks(projectId).map(t => ({
+  const includeArchived = c.req.query('include_archived') === 'true';
+  const tasks = getTasks(projectId, includeArchived).map(t => ({
     ...t,
     blocked: isTaskBlocked(t.id),
     blocker: isTaskBlocker(t.id),
   }));
+  return c.json(tasks);
+});
+
+// Ready tasks (unblocked, not done, sorted by priority)
+// IMPORTANT: Must be before /api/tasks/:id to avoid :id catching "ready" as a task ID
+app.get('/api/tasks/ready', (c) => {
+  const auth = c.get('auth');
+  const projectId = c.req.query('project_id');
+  const tasks = getReadyTasks(projectId).filter(t => canReadProject(auth, t.project_id));
   return c.json(tasks);
 });
 
@@ -406,11 +561,12 @@ app.post('/api/projects/:projectId/tasks', async (c) => {
   const task = createTask(projectId, body.title, body.epic_id, {
     priority: body.priority,
     depends_on: body.depends_on,
+    description: body.description ?? undefined,
     acceptance_criteria: body.acceptance_criteria,
     guardrails: body.guardrails,
   });
   // Trigger webhook
-  triggerWebhooks('task.created', { task }, projectId);
+  emitEvent('task.created', { task }, projectId);
   return c.json(task, 201);
 });
 
@@ -448,7 +604,7 @@ app.patch('/api/tasks/:id', async (c) => {
     events.push('task.archived');
   }
   for (const event of events) {
-    triggerWebhooks(event, { task, previous }, task.project_id);
+    emitEvent(event, { task, previous }, task.project_id);
   }
 
   return c.json({ ...task, blocked: isTaskBlocked(task.id), blocker: isTaskBlocker(task.id) });
@@ -464,16 +620,8 @@ app.delete('/api/tasks/:id', (c) => {
   }
   const success = deleteTask(taskId);
   if (!success) return c.json({ error: 'Task not found' }, 404);
-  triggerWebhooks('task.deleted', { task }, task.project_id);
+  emitEvent('task.deleted', { task }, task.project_id);
   return c.json({ success: true });
-});
-
-// Ready tasks (unblocked, not done, sorted by priority)
-app.get('/api/tasks/ready', (c) => {
-  const auth = c.get('auth');
-  const projectId = c.req.query('project_id');
-  const tasks = getReadyTasks(projectId).filter(t => canReadProject(auth, t.project_id));
-  return c.json(tasks);
 });
 
 // Cleanup project (archive done tasks and/or delete empty epics)
@@ -489,16 +637,38 @@ app.post('/api/projects/:projectId/cleanup', async (c) => {
 });
 
 // Reset database (wipe all data)
-app.post('/api/reset', requireServerAccess, (c) => {
+const resetRateLimit = rateLimit({ windowMs: 60000, maxRequests: 5 });
+app.post('/api/reset', requireServerAccess, resetRateLimit, (c) => {
   resetStore();
+  return c.json({ success: true });
+});
+
+// Export all data (the shared client's exportAll calls this in server mode)
+app.get('/api/export', requireServerAccess, (c) => {
+  return c.json(getStore());
+});
+
+// Import data, replacing the store or merging into it
+app.post('/api/import', requireServerAccess, async (c) => {
+  const body = await c.req.json() as { data?: Store; merge?: boolean };
+  if (!body.data) {
+    return c.json({ error: 'Missing required field: data' }, 400);
+  }
+  if (body.merge) {
+    mergeStore(body.data);
+  } else {
+    replaceStore(body.data);
+  }
+  notifyDataChange();
   return c.json({ success: true });
 });
 
 // ============ Blob Routes ============
 
 const MAX_BLOB_SIZE = parseInt(process.env.FLUX_MAX_BLOB_SIZE || '') || 10 * 1024 * 1024; // 10MB default
+const blobUploadRateLimit = rateLimit({ windowMs: 60000, maxRequests: 60 });
 
-app.post('/api/blobs', async (c) => {
+app.post('/api/blobs', blobUploadRateLimit, async (c) => {
   const auth = c.get('auth');
   const contentType = c.req.header('content-type') || '';
 
@@ -590,10 +760,13 @@ app.get('/api/blobs/:id/content', (c) => {
   const content = storage.read(blob.hash);
   if (!content) return c.json({ error: 'Blob content not found' }, 404);
 
-  return new Response(content, {
+  // Sanitize filename for the quoted form (header injection / quote escaping);
+  // preserve the original name via RFC 5987 filename*
+  const asciiName = blob.filename.replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '_');
+  return new Response(new Uint8Array(content), {
     headers: {
       'Content-Type': blob.mime_type,
-      'Content-Disposition': `attachment; filename="${blob.filename}"`,
+      'Content-Disposition': `attachment; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(blob.filename)}`,
       'Content-Length': blob.size.toString(),
     },
   });
@@ -704,6 +877,7 @@ app.get('/api/auth/status', (c) => {
     authenticated: auth.keyType !== 'anonymous',
     keyType: auth.keyType,
     projectIds: auth.projectIds,
+    authRequired: !isOpenMode(),
   });
 });
 
@@ -747,8 +921,10 @@ app.post('/api/auth/keys', requireServerAccess, keyCreateRateLimit, async (c) =>
 
 // Delete API key
 app.delete('/api/auth/keys/:id', requireServerAccess, (c) => {
-  const success = deleteApiKey(c.req.param('id'));
+  const keyId = c.req.param('id');
+  const success = deleteApiKey(keyId);
   if (!success) return c.json({ error: 'Key not found' }, 404);
+  closeSseClientsForKey(keyId);
   return c.json({ success: true });
 });
 
@@ -835,10 +1011,32 @@ if (existsSync(webDistPath)) {
 }
 
 // Start server
+const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '::1', '[::1]']);
 const port = parseInt(process.env.PORT || '3000');
+// Loopback by default. The Docker quickstart gets this from its
+// `-p 127.0.0.1:3000:3000` mapping, but running on a host there is no such
+// wrapper, and binding every interface exposes the board to the local network.
+// Set HOST=0.0.0.0 to expose it deliberately.
+const hostname = process.env.HOST || '127.0.0.1';
 console.log(`Flux server running at http://localhost:${port}`);
+if (!LOOPBACK_HOSTS.has(hostname)) {
+  console.log(`Listening on ${hostname}:${port} - reachable from the network`);
+}
+
+if (isAuthRequired()) {
+  console.log('Auth: enabled (API keys configured)');
+} else if (isOpenMode()) {
+  console.log('Auth: DISABLED via FLUX_ALLOW_ANONYMOUS — anyone with network access has full control');
+} else {
+  console.log(
+    'Auth: locked — no API keys configured. All API requests will be rejected.\n' +
+      '      Set FLUX_API_KEY=<secret> to enable authentication,\n' +
+      '      or FLUX_ALLOW_ANONYMOUS=1 to explicitly allow open access.'
+  );
+}
 
 serve({
   fetch: app.fetch,
   port,
+  hostname,
 });

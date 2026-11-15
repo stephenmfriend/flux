@@ -4,8 +4,10 @@ import {
   Cog6ToothIcon,
   ExclamationTriangleIcon,
   PencilSquareIcon,
+  PlusIcon,
 } from "@heroicons/react/24/outline";
 import {
+  deleteProject,
   getProjects,
   resetDatabase,
   updateProject,
@@ -35,6 +37,8 @@ export function ProjectList(_props: RoutableProps) {
   );
   const [resetting, setResetting] = useState(false);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     refreshProjects();
@@ -137,6 +141,26 @@ export function ProjectList(_props: RoutableProps) {
     }
   };
 
+  const handleDelete = () => {
+    if (editingProject && !saving && !deleting) {
+      setDeleteConfirmOpen(true);
+    }
+  };
+
+  const handleDeleteConfirmed = async () => {
+    if (!editingProject || deleting) return;
+    setDeleting(true);
+    try {
+      const deleted = await deleteProject(editingProject.id);
+      if (!deleted) throw new Error("Failed to delete project");
+      await refreshProjects();
+      setDeleteConfirmOpen(false);
+      closeEditModal(true);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const apiOrigin =
     typeof window === "undefined" ? "" : window.location.origin;
   const apiLocation = import.meta.env.DEV
@@ -178,15 +202,15 @@ export function ProjectList(_props: RoutableProps) {
 
   if (loading) {
     return (
-      <div class="min-h-screen bg-base-200 flex items-center justify-center">
+      <div class="app-shell flex items-center justify-center">
         <span class="loading loading-spinner loading-lg"></span>
       </div>
     );
   }
 
   return (
-    <div class="min-h-screen bg-base-200">
-      <div class="navbar bg-base-100 shadow-lg">
+    <div class="app-shell">
+      <div class="navbar app-navbar">
         <div class="flex-1">
           <span class="text-xl font-bold px-4">Flux</span>
         </div>
@@ -202,28 +226,30 @@ export function ProjectList(_props: RoutableProps) {
         </div>
       </div>
 
-      <div class="p-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div class="p-3 sm:p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 stagger-in">
           <button
             type="button"
-            class="card bg-base-100 shadow-md hover:shadow-lg transition-shadow border-2 border-dashed border-base-300 text-left"
+            class="card surface-card border-dashed text-left group"
             onClick={() => route("/new")}
           >
             <div class="card-body items-center justify-center text-center">
-              <div class="text-4xl font-semibold">+</div>
-              <div class="text-lg font-semibold">New Project</div>
+              <div class="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center transition-transform duration-200 group-hover:scale-110 group-hover:rotate-90">
+                <PlusIcon className="h-6 w-6" />
+              </div>
+              <div class="text-lg font-semibold mt-1">New Project</div>
             </div>
           </button>
 
           {projects.map((project) => (
             <div
               key={project.id}
-              class="card bg-base-100 shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+              class="card surface-card cursor-pointer"
               onClick={() => route(`/board/${project.id}`)}
             >
               <div class="card-body">
                 <div class="flex items-start justify-between gap-3">
-                  <h3 class="card-title">{project.name}</h3>
+                  <h3 class="card-title min-w-0 [overflow-wrap:anywhere]">{project.name}</h3>
                   <button
                     type="button"
                     class="btn btn-ghost btn-sm btn-circle"
@@ -241,19 +267,37 @@ export function ProjectList(_props: RoutableProps) {
                     {project.description}
                   </p>
                 )}
-                <div class="mt-2">
+                <div class="mt-3">
                   {project.stats.total === 0 ? (
                     <span class="badge badge-soft badge-sm">No tasks</span>
                   ) : (
-                    <span
-                      class={`badge badge-soft badge-sm ${
-                        project.stats.done === project.stats.total
-                          ? "badge-success"
-                          : ""
-                      }`}
-                    >
-                      {project.stats.done} of {project.stats.total} complete
-                    </span>
+                    <>
+                      <div class="flex items-center justify-between text-xs text-base-content/50 mb-1.5">
+                        <span>
+                          {project.stats.done} of {project.stats.total} complete
+                        </span>
+                        <span class="font-mono">
+                          {Math.round(
+                            (project.stats.done / project.stats.total) * 100
+                          )}
+                          %
+                        </span>
+                      </div>
+                      <div class="h-1.5 rounded-full bg-base-200 overflow-hidden">
+                        <div
+                          class={`h-full rounded-full transition-[width] duration-700 ${
+                            project.stats.done === project.stats.total
+                              ? "bg-success"
+                              : "bg-primary"
+                          }`}
+                          style={{
+                            width: `${
+                              (project.stats.done / project.stats.total) * 100
+                            }%`,
+                          }}
+                        />
+                      </div>
+                    </>
                   )}
                 </div>
               </div>
@@ -266,26 +310,30 @@ export function ProjectList(_props: RoutableProps) {
         isOpen={settingsOpen}
         onClose={() => setSettingsOpen(false)}
         title="Settings"
-        boxClassName="!w-[80vw] !h-[80vh] !max-w-none !max-h-none overflow-y-auto"
+        size="full"
       >
         <div class="grid gap-4 lg:grid-cols-[240px_1fr]">
-          <div class="bg-base-200 rounded-box p-0">
-            <ul class="menu">
+          <div class="bg-base-200/60 rounded-xl p-2">
+            <ul class="menu w-full gap-1">
               {settingsSections.map((section) => {
                 const isActive = settingsSection === section.id;
                 return (
                   <li key={section.id}>
                     <button
                       type="button"
-                      class={`rounded-none flex flex-col items-start gap-0.5 ${
-                        isActive
-                          ? "bg-base-300 border-l-4 border-primary"
-                          : ""
+                      class={`rounded-lg flex flex-col items-start gap-0.5 transition-colors ${
+                        isActive ? "bg-primary/10 text-primary" : ""
                       }`}
                       onClick={() => setSettingsSection(section.id)}
                     >
                       <span class="font-medium">{section.title}</span>
-                      <span class="text-xs text-base-content/60">
+                      <span
+                        class={`text-xs ${
+                          isActive
+                            ? "text-primary/70"
+                            : "text-base-content/60"
+                        }`}
+                      >
                         {section.subtitle}
                       </span>
                     </button>
@@ -295,7 +343,7 @@ export function ProjectList(_props: RoutableProps) {
             </ul>
           </div>
 
-          <div class="bg-base-100 rounded-box border border-base-200 p-4 min-h-[360px]">
+          <div class="min-w-0 bg-base-100 rounded-xl border border-base-200 p-4 min-h-[360px]">
             {settingsSection === "configuration" && (
               <div class="space-y-4">
                 <div>
@@ -309,13 +357,13 @@ export function ProjectList(_props: RoutableProps) {
                     <div class="text-xs uppercase tracking-wide text-base-content/60">
                       API Location
                     </div>
-                    <div class="mt-1 font-mono text-xs">{apiLocation}</div>
+                    <div class="mt-1 font-mono text-xs break-all">{apiLocation}</div>
                   </div>
                   <div class="rounded-lg border border-base-200 p-3">
                     <div class="text-xs uppercase tracking-wide text-base-content/60">
                       Events Stream
                     </div>
-                    <div class="mt-1 font-mono text-xs">{sseLocation}</div>
+                    <div class="mt-1 font-mono text-xs break-all">{sseLocation}</div>
                   </div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -423,6 +471,15 @@ export function ProjectList(_props: RoutableProps) {
           <div class="modal-action">
             <button
               type="button"
+              class="btn btn-error btn-outline"
+              onClick={handleDelete}
+              disabled={saving || deleting}
+            >
+              Delete
+            </button>
+            <div class="flex-1" />
+            <button
+              type="button"
               class="btn btn-ghost"
               onClick={() => closeEditModal()}
             >
@@ -454,6 +511,19 @@ export function ProjectList(_props: RoutableProps) {
           if (!resetting) setResetConfirmOpen(false);
         }}
         isLoading={resetting}
+      />
+
+      <ConfirmModal
+        isOpen={deleteConfirmOpen}
+        title="Delete Project?"
+        description="This will permanently delete the project and ALL its epics and tasks. This action cannot be undone."
+        confirmLabel="Delete"
+        confirmClassName="btn-error"
+        onConfirm={handleDeleteConfirmed}
+        onClose={() => {
+          if (!deleting) setDeleteConfirmOpen(false);
+        }}
+        isLoading={deleting}
       />
     </div>
   );

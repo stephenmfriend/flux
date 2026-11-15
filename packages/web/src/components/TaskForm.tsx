@@ -1,7 +1,14 @@
-import { useState, useEffect } from "preact/hooks";
-import { PaperClipIcon } from "@heroicons/react/24/outline";
+import { useState, useEffect, useRef } from "preact/hooks";
+import {
+  ChatBubbleLeftRightIcon,
+  CheckCircleIcon,
+  PaperClipIcon,
+  ShieldCheckIcon,
+} from "@heroicons/react/24/outline";
 import { ConfirmModal } from "./ConfirmModal";
 import { Modal } from "./Modal";
+import { CollapsibleSection } from "./CollapsibleSection";
+import { Select } from "./Select";
 import {
   createTask,
   updateTask,
@@ -43,6 +50,7 @@ export function TaskForm({
   defaultEpicId,
 }: TaskFormProps) {
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [status, setStatus] = useState<string>("todo");
   const [epicId, setEpicId] = useState<string>("");
   const [epics, setEpics] = useState<Epic[]>([]);
@@ -65,9 +73,13 @@ export function TaskForm({
   const [uploading, setUploading] = useState(false);
 
   const isEdit = !!task;
+  const titleInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen) {
+      // showModal() focuses the first focusable element (the close button);
+      // for a new task, put the cursor in the title instead.
+      if (!task) requestAnimationFrame(() => titleInputRef.current?.focus());
       setDeleteConfirmOpen(false);
       setDeleteCommentId(null);
       loadFormData();
@@ -93,6 +105,7 @@ export function TaskForm({
     setNewGuardrailText("");
     if (task) {
       setTitle(task.title);
+      setDescription(task.description || "");
       setStatus(task.status);
       setEpicId(task.epic_id || "");
       setDependsOn([...task.depends_on]);
@@ -104,6 +117,7 @@ export function TaskForm({
       setBlobs(blobsData);
     } else {
       setTitle("");
+      setDescription("");
       setStatus("todo");
       setEpicId(defaultEpicId || "");
       setDependsOn([]);
@@ -124,18 +138,23 @@ export function TaskForm({
       if (isEdit && task) {
         await updateTask(task.id, {
           title: title.trim(),
+          // Empty string (not undefined, which JSON drops) so clearing persists
+          description: description.trim(),
           status,
           epic_id: epicId || undefined,
           depends_on: dependsOn,
-          blocked_reason: blockedReason.trim() || undefined,
-          acceptance_criteria: acceptanceCriteria.length > 0 ? acceptanceCriteria : undefined,
-          guardrails: guardrails.length > 0 ? guardrails : undefined,
+          blocked_reason: blockedReason.trim(),
+          // Always send the arrays: the store keeps a field the update omits,
+          // so dropping an empty list would leave the last item in place
+          acceptance_criteria: acceptanceCriteria,
+          guardrails,
         });
       } else {
         const newTask = await createTask(
           projectId,
           title.trim(),
-          epicId || undefined
+          epicId || undefined,
+          description.trim() || undefined
         );
         const updates: Partial<Task> = {};
         if (dependsOn.length > 0) updates.depends_on = dependsOn;
@@ -257,49 +276,65 @@ export function TaskForm({
     await onSave();
   };
 
+  // Default-open state comes from the task prop (available synchronously),
+  // keyed by task id so sections reset when a different task is opened.
+  const sectionKey = task?.id ?? "new";
+
   return (
     <>
       <Modal
         isOpen={isOpen}
         onClose={onClose}
         title={isEdit ? "Edit Task" : "New Task"}
-        boxClassName="!w-[70vw] !max-w-none"
+        subtitle={isEdit ? task?.title : undefined}
+        size="xl"
       >
         <form onSubmit={handleSubmit}>
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="form-control mb-4">
+          <label class="label">
+            <span class="label-text">Title *</span>
+          </label>
+          <input
+            ref={titleInputRef}
+            type="text"
+            placeholder="Task title"
+            class="input input-bordered w-full"
+            value={title}
+            onInput={(e) => setTitle((e.target as HTMLInputElement).value)}
+            required
+          />
+        </div>
+
+        <div class="form-control mb-4">
+          <label class="label">
+            <span class="label-text">Description</span>
+          </label>
+          <textarea
+            placeholder="Context, background, approach, links…"
+            class="textarea textarea-bordered w-full min-h-36 resize-y leading-relaxed"
+            value={description}
+            onInput={(e) => setDescription((e.target as HTMLTextAreaElement).value)}
+            rows={6}
+          />
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-2">
           <div>
-            <div class="form-control mb-4">
-              <label class="label">
-                <span class="label-text">Title *</span>
-              </label>
-              <input
-                type="text"
-                placeholder="Task title"
-                class="input input-bordered w-full"
-                value={title}
-                onInput={(e) => setTitle((e.target as HTMLInputElement).value)}
-                required
-              />
-            </div>
 
             {isEdit && (
               <div class="form-control mb-4">
                 <label class="label">
                   <span class="label-text">Status</span>
                 </label>
-                <select
-                  class="select select-bordered w-full"
+                <Select
+                  ariaLabel="Status"
                   value={status}
-                  onChange={(e) =>
-                    setStatus((e.target as HTMLSelectElement).value)
-                  }
-                >
-                  {STATUSES.map((s) => (
-                    <option key={s} value={s}>
-                      {STATUS_CONFIG[s].label}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setStatus}
+                  options={STATUSES.map((s) => ({
+                    value: s,
+                    label: STATUS_CONFIG[s].label,
+                  }))}
+                />
               </div>
             )}
 
@@ -330,18 +365,18 @@ export function TaskForm({
               <label class="label">
                 <span class="label-text">Epic</span>
               </label>
-              <select
-                class="select select-bordered w-full"
+              <Select
+                ariaLabel="Epic"
                 value={epicId}
-                onChange={(e) => setEpicId((e.target as HTMLSelectElement).value)}
-              >
-                <option value="">Unassigned</option>
-                {epics.map((epic) => (
-                  <option key={epic.id} value={epic.id}>
-                    {epic.title}
-                  </option>
-                ))}
-              </select>
+                onChange={setEpicId}
+                options={[
+                  { value: "", label: "Unassigned" },
+                  ...epics.map((epic) => ({
+                    value: epic.id,
+                    label: epic.title,
+                  })),
+                ]}
+              />
             </div>
 
             <div class="form-control mb-6">
@@ -356,12 +391,12 @@ export function TaskForm({
                   No other tasks available
                 </p>
               ) : (
-                <div class="border border-base-300 rounded-lg">
+                <div class="border border-base-300 rounded-xl overflow-hidden">
                   {availableTasks.length > 3 && (
-                    <div class="px-3 py-2 border-b border-base-300">
+                    <div class="px-3 py-2 border-b border-base-300 bg-base-200/50">
                       <input
                         type="text"
-                        placeholder="Filter tasks..."
+                        placeholder="Search tasks..."
                         class="input input-bordered input-sm w-full"
                         value={dependencyFilter}
                         onInput={(e) =>
@@ -372,7 +407,7 @@ export function TaskForm({
                       />
                     </div>
                   )}
-                  <div class="max-h-32 overflow-y-auto">
+                  <div class="max-h-48 overflow-y-auto">
                     {availableTasks
                       .filter(
                         (t) =>
@@ -405,15 +440,15 @@ export function TaskForm({
             </div>
           </div>
 
-          <div class="max-h-[60vh] overflow-y-auto pr-1">
-            {/* Acceptance Criteria */}
-            <div class="form-control mb-4">
-              <label class="label">
-                <span class="label-text">Acceptance Criteria</span>
-                {acceptanceCriteria.length > 0 && (
-                  <span class="label-text-alt">{acceptanceCriteria.length}</span>
-                )}
-              </label>
+          <div>
+            <CollapsibleSection
+              key={`ac-${sectionKey}`}
+              title="Acceptance Criteria"
+              hint="Observable outcomes"
+              count={acceptanceCriteria.length}
+              icon={<CheckCircleIcon className="h-4 w-4 text-success/70" />}
+              defaultOpen={(task?.acceptance_criteria?.length ?? 0) > 0}
+            >
               <p class="text-xs text-base-content/50 mb-2">
                 Observable outcomes to verify task completion
               </p>
@@ -421,12 +456,13 @@ export function TaskForm({
                 {acceptanceCriteria.map((criterion, index) => (
                   <div
                     key={index}
-                    class="flex items-start gap-2 border border-base-300 rounded-lg p-2"
+                    class="flex items-start gap-2 bg-base-200/60 rounded-lg px-3 py-2"
                   >
                     <span class="text-sm flex-1">{criterion}</span>
                     <button
                       type="button"
                       class="btn btn-ghost btn-xs"
+                      aria-label="Remove criterion"
                       onClick={() => removeCriterion(index)}
                     >
                       ×
@@ -437,7 +473,7 @@ export function TaskForm({
                   <input
                     type="text"
                     placeholder="Add criterion..."
-                    class="input input-bordered input-sm flex-1"
+                    class="input input-bordered input-sm min-w-0 flex-1"
                     value={newCriterion}
                     onInput={(e) => setNewCriterion((e.target as HTMLInputElement).value)}
                     onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addCriterion())}
@@ -452,16 +488,16 @@ export function TaskForm({
                   </button>
                 </div>
               </div>
-            </div>
+            </CollapsibleSection>
 
-            {/* Guardrails */}
-            <div class="form-control mb-4">
-              <label class="label">
-                <span class="label-text">Guardrails</span>
-                {guardrails.length > 0 && (
-                  <span class="label-text-alt">{guardrails.length}</span>
-                )}
-              </label>
+            <CollapsibleSection
+              key={`gr-${sectionKey}`}
+              title="Guardrails"
+              hint="Constraints for agents"
+              count={guardrails.length}
+              icon={<ShieldCheckIcon className="h-4 w-4 text-info/70" />}
+              defaultOpen={(task?.guardrails?.length ?? 0) > 0}
+            >
               <p class="text-xs text-base-content/50 mb-2">
                 Numbered constraints (higher number = more critical)
               </p>
@@ -471,22 +507,24 @@ export function TaskForm({
                   .map((guardrail) => (
                     <div
                       key={guardrail.id}
-                      class="flex items-start gap-2 border border-base-300 rounded-lg p-2"
+                      class="flex items-start gap-2.5 bg-base-200/60 rounded-lg px-3 py-2"
                     >
-                      <span class="badge badge-outline badge-sm font-mono">
+                      <span class="inline-flex items-center gap-1 rounded-full bg-info/10 text-info border border-info/25 px-2 py-0.5 text-xs font-mono font-semibold flex-shrink-0">
+                        <ShieldCheckIcon className="h-3 w-3" />
                         {guardrail.number}
                       </span>
                       <span class="text-sm flex-1">{guardrail.text}</span>
                       <button
                         type="button"
                         class="btn btn-ghost btn-xs"
+                        aria-label="Remove guardrail"
                         onClick={() => removeGuardrail(guardrail.id)}
                       >
                         ×
                       </button>
                     </div>
                   ))}
-                <div class="flex gap-2">
+                <div class="guardrail-inputs flex gap-2">
                   <input
                     type="number"
                     placeholder="999"
@@ -497,7 +535,7 @@ export function TaskForm({
                   <input
                     type="text"
                     placeholder="Guardrail instruction..."
-                    class="input input-bordered input-sm flex-1"
+                    class="input input-bordered input-sm min-w-0 flex-1"
                     value={newGuardrailText}
                     onInput={(e) => setNewGuardrailText((e.target as HTMLInputElement).value)}
                     onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addGuardrail())}
@@ -512,27 +550,28 @@ export function TaskForm({
                   </button>
                 </div>
               </div>
-            </div>
+            </CollapsibleSection>
 
             {isEdit && (
-              <div class="form-control mb-4">
-                <label class="label">
-                  <span class="label-text">Attachments</span>
-                  {blobs.length > 0 && (
-                    <span class="label-text-alt">{blobs.length}</span>
-                  )}
-                </label>
+              <CollapsibleSection
+                key={`at-${sectionKey}`}
+                title="Attachments"
+                hint="Files and images"
+                count={blobs.length}
+                icon={<PaperClipIcon className="h-4 w-4 text-base-content/50" />}
+                defaultOpen={(task?.blob_ids?.length ?? 0) > 0}
+              >
                 <div class="space-y-2">
                   {blobs.map((blob) => (
                     <div
                       key={blob.id}
-                      class="flex items-center gap-2 border border-base-300 rounded-lg p-2"
+                      class="flex items-center gap-2 bg-base-200/60 rounded-lg px-3 py-2"
                     >
                       {blob.mime_type.startsWith("image/") ? (
                         <img
                           src={getBlobContentUrl(blob.id)}
                           alt={blob.filename}
-                          class="w-10 h-10 object-cover rounded"
+                          class="w-10 h-10 object-cover rounded-lg"
                         />
                       ) : (
                         <PaperClipIcon className="h-5 w-5 text-base-content/50 flex-shrink-0" />
@@ -552,6 +591,7 @@ export function TaskForm({
                       <button
                         type="button"
                         class="btn btn-ghost btn-xs"
+                        aria-label="Remove attachment"
                         onClick={() => handleDeleteBlob(blob.id)}
                       >
                         ×
@@ -575,29 +615,30 @@ export function TaskForm({
                     />
                   </label>
                 </div>
-              </div>
+              </CollapsibleSection>
             )}
 
             {isEdit && (
-              <div class="form-control mb-4">
-                <label class="label">
-                  <span class="label-text">Comments</span>
-                  {comments.length > 0 && (
-                    <span class="label-text-alt">{comments.length}</span>
-                  )}
-                </label>
+              <CollapsibleSection
+                key={`cm-${sectionKey}`}
+                title="Comments"
+                hint="Agent memory and notes"
+                count={comments.length}
+                icon={<ChatBubbleLeftRightIcon className="h-4 w-4 text-base-content/50" />}
+                defaultOpen
+              >
                 <div class="space-y-3">
                   {comments.length > 0 ? (
-                    <div class="space-y-2">
+                    <div class="space-y-2 max-h-72 overflow-y-auto pr-1">
                       {comments.map((comment) => (
                         <div
                           key={comment.id}
-                          class="border border-base-300 rounded-lg p-3 text-sm"
+                          class="bg-base-200/60 rounded-lg p-3 text-sm"
                         >
                           <div class="flex items-center justify-between gap-2 mb-2">
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-2 min-w-0">
                               <span
-                                class={`badge badge-sm ${
+                                class={`badge badge-sm flex-shrink-0 ${
                                   comment.author === "mcp"
                                     ? "badge-secondary"
                                     : "badge-ghost"
@@ -606,12 +647,17 @@ export function TaskForm({
                                 {comment.author === "mcp" ? "MCP" : "User"}
                               </span>
                               {comment.agent_name && (
-                                <span class="badge badge-primary badge-xs">
-                                  {comment.agent_name}
+                                <span
+                                  class="worker-chip"
+                                  title={comment.agent_name}
+                                >
+                                  <span class="worker-chip-name">
+                                    {comment.agent_name}
+                                  </span>
                                 </span>
                               )}
                               {comment.created_at && (
-                                <span class="text-xs text-base-content/50">
+                                <span class="text-xs text-base-content/50 truncate">
                                   {new Date(
                                     comment.created_at
                                   ).toLocaleString()}
@@ -620,7 +666,7 @@ export function TaskForm({
                             </div>
                             <button
                               type="button"
-                              class="btn btn-ghost btn-xs"
+                              class="btn btn-ghost btn-xs flex-shrink-0"
                               onClick={() => handleDeleteComment(comment.id)}
                               disabled={commentSubmitting}
                             >
@@ -662,12 +708,12 @@ export function TaskForm({
                     </div>
                   </div>
                 </div>
-              </div>
+              </CollapsibleSection>
             )}
           </div>
         </div>
 
-        <div class="modal-action">
+        <div class="task-form-actions modal-action sticky bottom-0 -mx-6 -mb-5 mt-6 px-6 py-4 bg-base-100 border-t border-base-200">
           {isEdit && (
             <button
               type="button"
@@ -678,6 +724,7 @@ export function TaskForm({
               Delete
             </button>
           )}
+          <div class="flex-1" />
           <button type="button" class="btn btn-ghost" onClick={onClose}>
             Cancel
           </button>

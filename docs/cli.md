@@ -37,7 +37,7 @@ Connect to any Flux server (local or remote):
 # Connect to hosted instance (with API key for writes)
 flux init --server https://flux.example.com --api-key '$FLUX_API_KEY'
 
-# Or local server (no auth needed in dev mode)
+# Or local server (works keyless only if it runs with FLUX_ALLOW_ANONYMOUS=1)
 flux init --server http://localhost:3000
 
 # All commands now use the API
@@ -74,7 +74,8 @@ Config is stored in `.flux/config.json` and can be committed to share with your 
 
 ```bash
 flux project list                        # List all projects
-flux project create <name>               # Create project
+flux project create <name>               # Create project (private by default)
+flux project create <name> --public      # Create a publicly readable project
 flux project update <id> --name <n>      # Rename project
 flux project delete <id>                 # Delete project
 ```
@@ -114,7 +115,9 @@ flux task delete <id>                    # Delete task
 ### Quick Commands
 
 ```bash
-flux ready                   # Show unblocked tasks sorted by priority
+flux ready                   # Unblocked tasks in the default project, by priority
+flux ready <project>         # Unblocked tasks in a specific project
+flux ready --all             # Unblocked tasks across every project
 flux ready --json            # JSON output
 flux show <id>               # Show task details with comments
 ```
@@ -157,6 +160,7 @@ Reads `.flux/config.json` to determine storage backend. Serves both the web dash
 | Flag | Description |
 |------|-------------|
 | `--json` | Output as JSON |
+| `--all` | Ready tasks across every project instead of the default one (`ready`) |
 | `-P, --priority` | Priority: 0 (P0), 1 (P1), 2 (P2) |
 | `-e, --epic` | Epic ID |
 | `--note` | Add note/comment |

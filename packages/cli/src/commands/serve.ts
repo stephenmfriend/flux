@@ -27,6 +27,7 @@ import {
   addTaskComment,
   deleteTaskComment,
   isTaskBlocked,
+  getReadyTasks,
   cleanupProject,
   getStore,
   replaceStore,
@@ -36,6 +37,9 @@ import { createAdapter } from '@flux/shared/adapters';
 import { findFluxDir, readConfig } from '../config.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// Same set the server uses: a bind to any of these is not reachable from off-box.
+const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '::1', '[::1]']);
 
 function createApp() {
   const app = new Hono();
@@ -90,9 +94,12 @@ function createApp() {
 
   // Tasks
   app.get('/api/projects/:projectId/tasks', (c) => {
-    const tasks = getTasks(c.req.param('projectId')).map(t => ({ ...t, blocked: isTaskBlocked(t.id) }));
+    const includeArchived = c.req.query('include_archived') === 'true';
+    const tasks = getTasks(c.req.param('projectId'), includeArchived).map(t => ({ ...t, blocked: isTaskBlocked(t.id) }));
     return c.json(tasks);
   });
+  // Registered before /api/tasks/:id, which would otherwise match "ready" as an ID
+  app.get('/api/tasks/ready', (c) => c.json(getReadyTasks(c.req.query('project_id'))));
   app.get('/api/tasks/:id', (c) => {
     const task = getTask(c.req.param('id'));
     if (!task) return c.json({ error: 'Not found' }, 404);
@@ -100,7 +107,16 @@ function createApp() {
   });
   app.post('/api/projects/:projectId/tasks', async (c) => {
     const body = await c.req.json();
-    return c.json(createTask(c.req.param('projectId'), body.title, body.epic_id), 201);
+    return c.json(
+      createTask(c.req.param('projectId'), body.title, body.epic_id, {
+        priority: body.priority,
+        depends_on: body.depends_on,
+        description: body.description ?? undefined,
+        acceptance_criteria: body.acceptance_criteria,
+        guardrails: body.guardrails,
+      }),
+      201
+    );
   });
   app.patch('/api/tasks/:id', async (c) => {
     const body = await c.req.json();
@@ -262,7 +278,15 @@ export async function serveCommand(
     app.get('/', (c) => c.text('Web UI not found. API available at /api/*'));
   }
 
+  // Loopback by default, matching the URL printed below. Binding every
+  // interface would expose the board to the local network; set HOST=0.0.0.0
+  // to do that deliberately.
+  const hostname = process.env.HOST || '127.0.0.1';
+
   console.log(`Starting server on http://localhost:${port}`);
+  if (!LOOPBACK_HOSTS.has(hostname)) {
+    console.log(`Listening on ${hostname}:${port} - reachable from the network`);
+  }
   console.log(`Data file: ${dataFile}`);
   if (webDistPath) {
     console.log(`Web UI: ${webDistPath}`);
@@ -272,5 +296,5 @@ export async function serveCommand(
   console.log('');
   console.log('Press Ctrl+C to stop');
 
-  serve({ fetch: app.fetch, port });
+  serve({ fetch: app.fetch, port, hostname });
 }

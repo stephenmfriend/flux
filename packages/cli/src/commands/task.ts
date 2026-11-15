@@ -143,7 +143,7 @@ export async function taskCommand(
           console.error(`Task not found: ${id}`);
           process.exit(1);
         }
-        if (!flags.title && flags.desc === undefined && !flags.status && !flags.epic && !flags.P && !flags.priority && flags.blocked === undefined && !flags.ac && !flags.guardrail && !flags['clear-ac'] && !flags['clear-guardrails']) {
+        if (!flags.title && flags.desc === undefined && !flags.status && !flags.epic && !flags.P && !flags.priority && !flags.depends && !flags.d && flags.blocked === undefined && !flags.ac && !flags.guardrail && !flags['clear-ac'] && !flags['clear-guardrails']) {
           const task = await getTask(id);
           output(json ? task : `Added comment to task: ${id}`, json);
           return;

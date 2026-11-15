@@ -68,7 +68,8 @@ jobs:
         run: npx semantic-release --dry-run
 
       - name: Release
-        if: github.event_name == 'push'
+        # Publishes flux-tasks to npm; only upstream owns that package, so forks dry-run only
+        if: github.event_name == 'push' && github.repository == 'sirsjg/flux'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_CONFIG_PROVENANCE: true

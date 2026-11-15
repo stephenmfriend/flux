@@ -861,8 +861,8 @@ ${c.bold}Commands:${c.reset}
   ${c.cyan}flux epic delete${c.reset} ${c.yellow}<id>${c.reset}
 
   ${c.cyan}flux task list${c.reset} ${c.green}[project] [--json] [--epic] [--status]${c.reset}
-  ${c.cyan}flux task create${c.reset} ${c.green}[project]${c.reset} ${c.yellow}<title>${c.reset} ${c.green}[-P 0|1|2] [-e epic] [--desc ...] [--ac ...] [--guardrail ...]${c.reset}
-  ${c.cyan}flux task update${c.reset} ${c.yellow}<id>${c.reset} ${c.green}[--title] [--desc] [--status] [--note] [--epic] [--blocked] [--ac ...] [--guardrail ...]${c.reset}
+  ${c.cyan}flux task create${c.reset} ${c.green}[project]${c.reset} ${c.yellow}<title>${c.reset} ${c.green}[-P 0|1|2] [-e epic] [-d id,...] [--desc ...] [--ac ...] [--guardrail ...]${c.reset}
+  ${c.cyan}flux task update${c.reset} ${c.yellow}<id>${c.reset} ${c.green}[--title] [--desc] [--status] [--note] [--epic] [-P 0|1|2] [-d id,...] [--blocked] [--ac ...] [--guardrail ...]${c.reset}
   ${c.cyan}flux task done${c.reset} ${c.yellow}<id>${c.reset} ${c.green}[--note]${c.reset}       Mark task done
   ${c.cyan}flux task start${c.reset} ${c.yellow}<id>${c.reset}               Mark task in_progress
 
@@ -897,6 +897,7 @@ ${c.bold}Flags:${c.reset}
   ${c.green}--force${c.reset}                            Overwrite config without prompting (init)
   ${c.green}-P, --priority${c.reset}                     Priority (0=P0, 1=P1, 2=P2)
   ${c.green}-e, --epic${c.reset}                         Epic ID
+  ${c.green}-d, --depends${c.reset}                      Task IDs this task depends on (comma-separated)
   ${c.green}--desc${c.reset}                             Task description ("clear" to remove)
   ${c.green}--blocked${c.reset}                          External blocker ("reason" or "clear")
   ${c.green}--ac${c.reset}                               Acceptance criterion (repeatable)

@@ -33,7 +33,8 @@ jobs:
     name: publish docker image
     runs-on: ubuntu-latest
     needs: build
-    if: github.ref == 'refs/heads/main'
+    # Pushes sirsjg/flux-mcp; forks build their image locally instead
+    if: github.ref == 'refs/heads/main' && github.repository == 'sirsjg/flux'
     permissions:
       contents: read
     steps:

@@ -94,7 +94,8 @@ function createApp() {
 
   // Tasks
   app.get('/api/projects/:projectId/tasks', (c) => {
-    const tasks = getTasks(c.req.param('projectId')).map(t => ({ ...t, blocked: isTaskBlocked(t.id) }));
+    const includeArchived = c.req.query('include_archived') === 'true';
+    const tasks = getTasks(c.req.param('projectId'), includeArchived).map(t => ({ ...t, blocked: isTaskBlocked(t.id) }));
     return c.json(tasks);
   });
   // Registered before /api/tasks/:id, which would otherwise match "ready" as an ID

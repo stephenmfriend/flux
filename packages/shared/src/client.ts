@@ -235,11 +235,12 @@ export async function deleteEpic(id: string): Promise<boolean> {
 }
 
 // Tasks
-export async function getTasks(projectId: string): Promise<Task[]> {
+export async function getTasks(projectId: string, includeArchived = false): Promise<Task[]> {
   if (serverUrl) {
-    return http('GET', `/api/projects/${projectId}/tasks`);
+    const qs = includeArchived ? '?include_archived=true' : '';
+    return http('GET', `/api/projects/${projectId}/tasks${qs}`);
   }
-  return localGetTasks(projectId);
+  return localGetTasks(projectId, includeArchived);
 }
 
 export async function getTask(id: string): Promise<Task | undefined> {

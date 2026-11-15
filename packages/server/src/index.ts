@@ -52,8 +52,12 @@ import {
   getBlob as getStoreBlob,
   getBlobs as getStoreBlobs,
   deleteBlob as deleteStoreBlob,
+  getStore,
+  replaceStore,
+  mergeStore,
   type WebhookEventType,
   type KeyScope,
+  type Store,
 } from '@flux/shared';
 import { generateKey, generateTempToken, validateKey, encrypt, decrypt } from '@flux/shared/auth';
 import { findFluxDir, loadEnvLocal, readConfig, resolveDataPath } from '@flux/shared/config';
@@ -486,7 +490,8 @@ app.get('/api/projects/:projectId/tasks', (c) => {
   if (!canReadProject(auth, projectId)) {
     return c.json({ error: 'Project not found' }, 404);
   }
-  const tasks = getTasks(projectId).map(t => ({
+  const includeArchived = c.req.query('include_archived') === 'true';
+  const tasks = getTasks(projectId, includeArchived).map(t => ({
     ...t,
     blocked: isTaskBlocked(t.id),
     blocker: isTaskBlocker(t.id),
@@ -635,6 +640,26 @@ app.post('/api/projects/:projectId/cleanup', async (c) => {
 const resetRateLimit = rateLimit({ windowMs: 60000, maxRequests: 5 });
 app.post('/api/reset', requireServerAccess, resetRateLimit, (c) => {
   resetStore();
+  return c.json({ success: true });
+});
+
+// Export all data (the shared client's exportAll calls this in server mode)
+app.get('/api/export', requireServerAccess, (c) => {
+  return c.json(getStore());
+});
+
+// Import data, replacing the store or merging into it
+app.post('/api/import', requireServerAccess, async (c) => {
+  const body = await c.req.json() as { data?: Store; merge?: boolean };
+  if (!body.data) {
+    return c.json({ error: 'Missing required field: data' }, 400);
+  }
+  if (body.merge) {
+    mergeStore(body.data);
+  } else {
+    replaceStore(body.data);
+  }
+  notifyDataChange();
   return c.json({ success: true });
 });
 

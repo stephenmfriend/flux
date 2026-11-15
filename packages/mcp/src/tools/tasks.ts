@@ -57,12 +57,13 @@ export function registerTaskTools(server: McpServer): void {
         epic_id: z.string().optional().describe('Optional: filter by epic ID'),
         status: statusSchema.optional().describe('Optional: filter by status'),
         priority: prioritySchema.optional().describe('Optional: filter by priority (0=urgent, 1=normal, 2=low)'),
+        include_archived: z.boolean().optional().describe('Optional: include archived tasks (default false)'),
       },
       outputSchema: { tasks: z.array(taskSchema) },
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
-    async ({ project_id, epic_id, status, priority }) => {
-      let taskList = await getTasks(project_id);
+    async ({ project_id, epic_id, status, priority, include_archived }) => {
+      let taskList = await getTasks(project_id, include_archived ?? false);
       if (epic_id) taskList = taskList.filter((t) => t.epic_id === epic_id);
       if (status) taskList = taskList.filter((t) => t.status === status);
       if (priority !== undefined) taskList = taskList.filter((t) => t.priority === priority);

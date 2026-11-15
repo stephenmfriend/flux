@@ -318,8 +318,8 @@ export function deleteEpic(id: string): boolean {
 
 // ============ Task Operations ============
 
-export function getTasks(projectId: string): Task[] {
-  return [...db.data.tasks.filter(t => t.project_id === projectId && !t.archived)];
+export function getTasks(projectId: string, includeArchived = false): Task[] {
+  return [...db.data.tasks.filter(t => t.project_id === projectId && (includeArchived || !t.archived))];
 }
 
 export function getAllTasks(): Task[] {

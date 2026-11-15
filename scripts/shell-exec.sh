@@ -10,8 +10,9 @@
 #   3. Any other Codex agent shell (CODEX_CI=1, which Codex injects into every command
 #      it runs locally or in cloud; Codex Desktop also sets CODEX_SHELL=1): Reuse cached
 #      direnv env, else hydrate via direnv exec, else run directly
-#   4. Already in Nix shell: Ensure Nix paths prioritised, run directly
-#   5. Outside Nix: Enter nix develop first when the repo has a flake
+#   4. Already in this repo's Nix shell: Ensure Nix paths prioritised, run directly
+#      (a devshell whose PRJ_ROOT is another repo does not count)
+#   5. Outside Nix: Enter this repo's flake (nix develop <repo_root>) when it has one
 #
 # Usage: ./shell-exec.sh <command> [args...]
 # Example: ./shell-exec.sh pnpm run test
@@ -25,7 +26,7 @@ if [[ $# -eq 0 ]]; then
 fi
 
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
-repo_root="${SHELL_EXEC_REPO_ROOT:-$(cd "${script_dir}/.." && pwd -P)}"
+repo_root=$(cd "${SHELL_EXEC_REPO_ROOT:-${script_dir}/..}" && pwd -P)
 
 prepend_path_if_dir() {
   local path_entry="$1"
@@ -94,18 +95,33 @@ if [[ -n "${CODEX_CI:-}" || -n "${CODEX_SHELL:-}" ]]; then
   exec "$@"
 fi
 
-# If already in Nix shell, ensure Nix paths are first then run directly
-if [[ -n "${IN_NIX_SHELL:-}" ]]; then
-  # Reorder PATH to prioritise Nix store paths (handles tools that mangle PATH)
-  nix_paths=$(echo "$PATH" | tr ':' '\n' | grep '^/nix/store' | tr '\n' ':')
-  other_paths=$(echo "$PATH" | tr ':' '\n' | grep -v '^/nix/store' | tr '\n' ':')
+# A devshell exports PRJ_ROOT for the repo it was entered for. An inherited
+# shell whose PRJ_ROOT is another repo carries that repo's toolchain, so it must
+# not satisfy the IN_NIX_SHELL shortcut below.
+in_foreign_devshell() {
+  local prj_root
+  [[ -n "${PRJ_ROOT:-}" ]] || return 1
+  prj_root=$(cd "$PRJ_ROOT" 2>/dev/null && pwd -P) || return 0
+  [[ "$prj_root" != "$repo_root" ]]
+}
+
+# If already in this repo's Nix shell, ensure Nix paths are first then run directly
+if [[ -n "${IN_NIX_SHELL:-}" ]] && ! in_foreign_devshell; then
+  # Reorder PATH to prioritise Nix store paths (handles tools that mangle PATH).
+  # Either filter may match nothing (PATH stripped of Nix paths, or a pure shell
+  # with only Nix paths); `|| true` keeps pipefail from aborting the wrapper.
+  nix_paths=$(echo "$PATH" | tr ':' '\n' | { grep '^/nix/store' || true; } | tr '\n' ':')
+  other_paths=$(echo "$PATH" | tr ':' '\n' | { grep -v '^/nix/store' || true; } | tr '\n' ':')
   export PATH="${nix_paths}${other_paths%:}"
   exec "$@"
 fi
 
-# Otherwise, enter nix develop first for flake-backed repos.
+# Otherwise, enter this repo's flake first for flake-backed repos. The flake is
+# named explicitly: a bare `nix develop` would use the caller's working
+# directory, which differs from repo_root under `task --dir` or absolute-path
+# invocation. SHELL_EXEC_NIX_BIN exists so tests can stub the Nix binary.
 if [[ ! -f "${repo_root}/flake.nix" ]]; then
   exec "$@"
 fi
 
-exec /nix/var/nix/profiles/default/bin/nix develop --command "$@"
+exec "${SHELL_EXEC_NIX_BIN:-/nix/var/nix/profiles/default/bin/nix}" develop "${repo_root}" --command "$@"

@@ -27,6 +27,7 @@ import {
   addTaskComment,
   deleteTaskComment,
   isTaskBlocked,
+  getReadyTasks,
   cleanupProject,
   getStore,
   replaceStore,
@@ -96,6 +97,8 @@ function createApp() {
     const tasks = getTasks(c.req.param('projectId')).map(t => ({ ...t, blocked: isTaskBlocked(t.id) }));
     return c.json(tasks);
   });
+  // Registered before /api/tasks/:id, which would otherwise match "ready" as an ID
+  app.get('/api/tasks/ready', (c) => c.json(getReadyTasks(c.req.query('project_id'))));
   app.get('/api/tasks/:id', (c) => {
     const task = getTask(c.req.param('id'));
     if (!task) return c.json({ error: 'Not found' }, 404);
@@ -103,7 +106,16 @@ function createApp() {
   });
   app.post('/api/projects/:projectId/tasks', async (c) => {
     const body = await c.req.json();
-    return c.json(createTask(c.req.param('projectId'), body.title, body.epic_id), 201);
+    return c.json(
+      createTask(c.req.param('projectId'), body.title, body.epic_id, {
+        priority: body.priority,
+        depends_on: body.depends_on,
+        description: body.description ?? undefined,
+        acceptance_criteria: body.acceptance_criteria,
+        guardrails: body.guardrails,
+      }),
+      201
+    );
   });
   app.patch('/api/tasks/:id', async (c) => {
     const body = await c.req.json();

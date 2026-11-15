@@ -56,8 +56,9 @@ export async function updateProject(id: string, updates: Partial<Omit<Project, '
   return res.json();
 }
 
-export async function deleteProject(id: string): Promise<void> {
-  await fetch(`${API_BASE}/projects/${id}`, { method: 'DELETE' });
+export async function deleteProject(id: string): Promise<boolean> {
+  const res = await authFetch(`${API_BASE}/projects/${id}`, { method: 'DELETE' });
+  return res.ok;
 }
 
 // ============ Epic Operations ============
@@ -113,12 +114,13 @@ export async function getTask(id: string): Promise<TaskWithBlocked | null> {
 export async function createTask(
   projectId: string,
   title: string,
-  epicId?: string
+  epicId?: string,
+  description?: string
 ): Promise<Task> {
   const res = await authFetch(`${API_BASE}/projects/${projectId}/tasks`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ title, epic_id: epicId }),
+    body: JSON.stringify({ title, epic_id: epicId, description }),
   });
   return res.json();
 }
@@ -240,6 +242,7 @@ export interface AuthStatus {
   authenticated: boolean;
   keyType: 'server' | 'project' | 'env' | 'anonymous';
   projectIds?: string[];
+  authRequired?: boolean;
 }
 
 export interface ApiKeyInfo {

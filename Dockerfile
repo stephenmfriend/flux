@@ -1,7 +1,7 @@
 # Flux - Kanban Board with MCP Server
 # Multi-stage build using Bun
 
-FROM oven/bun:1.3.5 AS base
+FROM oven/bun:1.3.14 AS base
 WORKDIR /app
 
 # ============ Build Stage ============
@@ -17,10 +17,10 @@ ENV BUILD_TIME=$BUILD_TIME
 COPY . .
 
 # Install dependencies and build
-RUN bun install && bun run build
+RUN bun install --frozen-lockfile && bun run build
 
 # ============ Production Stage ============
-FROM oven/bun:1.3.5-slim AS runner
+FROM oven/bun:1.3.14-slim AS runner
 
 WORKDIR /app
 
@@ -31,6 +31,11 @@ ENV BUILD_SHA=$BUILD_SHA
 ENV BUILD_TIME=$BUILD_TIME
 ENV NODE_ENV=production
 ENV HOME=/tmp/flux
+# The server binds loopback by default; inside a container that would make it
+# unreachable through published ports, since Docker cannot forward to the
+# container's own loopback. Network isolation here comes from the container's
+# namespace, and restricting exposure is the host's job via `-p 127.0.0.1:3000:3000`.
+ENV HOST=0.0.0.0
 
 # Create non-root user for security
 RUN groupadd --system --gid 1001 flux && \

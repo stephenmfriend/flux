@@ -1,4 +1,4 @@
-import type { Task, Epic, Project, Store, Blob, Webhook, WebhookDelivery, WebhookEventType, WebhookPayload, StoreWithWebhooks, Priority, CommentAuthor, TaskComment, Guardrail, ApiKey, KeyScope, CliAuthRequest } from './types.js';
+import type { Task, Epic, Project, ProjectVisibility, Store, Blob, Webhook, WebhookDelivery, WebhookEventType, WebhookPayload, StoreWithWebhooks, Priority, CommentAuthor, TaskComment, Guardrail, ApiKey, KeyScope, CliAuthRequest } from './types.js';
 
 // Auth functions injected at runtime (server-side only, uses Node crypto)
 type AuthFunctions = {
@@ -196,12 +196,20 @@ export function getProject(id: string): Project | undefined {
   return (db.data.projects || []).find(p => p.id === id);
 }
 
+// Only the literal 'public' opens a project up. Anything else - undefined, null,
+// 'PUBLIC', or any other value that reached us from untyped JSON - resolves to
+// private, because the auth layer keys off `visibility !== 'private'` and would
+// otherwise treat an unrecognised value as world-readable.
+function normalizeVisibility(value: unknown): ProjectVisibility {
+  return value === 'public' ? 'public' : 'private';
+}
+
 export function createProject(name: string, description?: string, visibility?: 'public' | 'private'): Project {
   const project: Project = {
     id: generateId(),
     name,
     description,
-    visibility,
+    visibility: normalizeVisibility(visibility),
   };
   if (!db.data.projects) db.data.projects = [];
   db.data.projects.push(project);
@@ -212,9 +220,20 @@ export function createProject(name: string, description?: string, visibility?: '
 export function updateProject(id: string, updates: Partial<Omit<Project, 'id'>>): Project | undefined {
   const index = db.data.projects.findIndex(p => p.id === id);
   if (index === -1) return undefined;
-  db.data.projects[index] = { ...db.data.projects[index], ...updates };
+
+  // Callers hand us untyped request bodies, so the Omit<> above is not enforced
+  // at runtime: drop `id` (changing it orphans the project's epics and tasks)
+  // and re-normalize visibility so an unexpected value cannot make a private
+  // project readable.
+  const { id: _ignoredId, ...safe } = updates as Partial<Project>;
+  const next: Project = { ...db.data.projects[index], ...safe };
+  if ('visibility' in safe) {
+    next.visibility = normalizeVisibility(safe.visibility);
+  }
+
+  db.data.projects[index] = next;
   db.write();
-  return db.data.projects[index];
+  return next;
 }
 
 export function deleteProject(id: string): void {
@@ -323,7 +342,7 @@ export function createTask(
   projectId: string,
   title: string,
   epicId?: string,
-  options?: { priority?: Priority; depends_on?: string[]; acceptance_criteria?: string[]; guardrails?: Guardrail[] }
+  options?: { priority?: Priority; depends_on?: string[]; description?: string; acceptance_criteria?: string[]; guardrails?: Guardrail[] }
 ): Task {
   const now = new Date().toISOString();
   const id = generateId();
@@ -343,6 +362,7 @@ export function createTask(
     epic_id: epicId,
     project_id: projectId,
     priority: options?.priority,
+    description: options?.description || undefined,
     acceptance_criteria: options?.acceptance_criteria,
     guardrails: ensureGuardrailIds(options?.guardrails),
     created_at: now,
@@ -369,17 +389,17 @@ export function updateTask(id: string, updates: Partial<Omit<Task, 'id'>>): Task
   }
   const processedUpdates = {
     ...updates,
-    guardrails: updates.guardrails !== undefined ? ensureGuardrailIds(updates.guardrails) : undefined,
+    // Empty strings clear these fields (undefined is dropped from JSON over HTTP)
+    ...(updates.description !== undefined && { description: updates.description || undefined }),
+    ...(updates.blocked_reason !== undefined && { blocked_reason: updates.blocked_reason || undefined }),
+    // Only touch guardrails when provided, otherwise they'd be wiped on every update
+    ...(updates.guardrails !== undefined && { guardrails: ensureGuardrailIds(updates.guardrails) }),
   };
   db.data.tasks[index] = {
     ...db.data.tasks[index],
     ...processedUpdates,
     updated_at: new Date().toISOString(),
   };
-  // Explicit null clears optional fields (null survives JSON transport, undefined does not)
-  if (db.data.tasks[index].blocked_reason == null) {
-    delete db.data.tasks[index].blocked_reason;
-  }
   db.write();
   return db.data.tasks[index];
 }

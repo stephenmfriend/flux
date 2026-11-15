@@ -3,8 +3,15 @@ import { timingSafeEqual } from 'crypto';
 import { validateApiKey, hasApiKeys, getProject, getProjects } from '@flux/shared';
 import type { ApiKey, KeyScope } from '@flux/shared';
 
-// Read env var dynamically to support testing
+// Read env vars dynamically to support testing
 const getEnvKey = () => process.env.FLUX_API_KEY;
+
+// Keyless (anonymous) full access must be explicitly opted into.
+// Without this flag, a server with no keys configured rejects all API requests.
+const isAnonymousAllowed = () => {
+  const value = process.env.FLUX_ALLOW_ANONYMOUS?.trim().toLowerCase();
+  return value === '1' || value === 'true' || value === 'yes';
+};
 
 // Auth context attached to requests
 export type AuthContext = {
@@ -31,16 +38,32 @@ function safeCompare(a: string, b: string): boolean {
  * - Stored project keys: Access to specific projects
  * - Anonymous: Read public projects only
  *
- * Dev mode (no keys configured): All access allowed
+ * No keys configured: all requests are rejected unless FLUX_ALLOW_ANONYMOUS
+ * is explicitly set, in which case all access is allowed (open mode).
  */
 export const authMiddleware = createMiddleware<{ Variables: { auth: AuthContext } }>(async (c, next) => {
   const hasStoredKeys = hasApiKeys();
   const envKey = getEnvKey();
 
-  // Dev mode: no keys configured at all
+  // No keys configured at all
   if (!hasStoredKeys && !envKey) {
-    c.set('auth', { keyType: 'anonymous' });
-    return next();
+    if (isAnonymousAllowed()) {
+      c.set('auth', { keyType: 'anonymous' });
+      return next();
+    }
+    // Let clients discover that login is required without a key
+    if (c.req.method === 'GET' && c.req.path === '/api/auth/status') {
+      c.set('auth', { keyType: 'anonymous' });
+      return next();
+    }
+    return c.json(
+      {
+        error:
+          'Unauthorized: no API keys are configured. Set FLUX_API_KEY to enable authentication, ' +
+          'or set FLUX_ALLOW_ANONYMOUS=1 to explicitly allow open access.',
+      },
+      401
+    );
   }
 
   const authHeader = c.req.header('Authorization');
@@ -56,24 +79,9 @@ export const authMiddleware = createMiddleware<{ Variables: { auth: AuthContext 
     return c.json({ error: 'Unauthorized' }, 401);
   }
 
-  // Check env key first (backwards compat)
-  if (envKey && safeCompare(token, envKey)) {
-    c.set('auth', { keyType: 'env' });
-    return next();
-  }
-
-  // Check stored keys
-  const apiKey = validateApiKey(token);
-  if (apiKey) {
-    if (apiKey.scope.type === 'server') {
-      c.set('auth', { keyType: 'server', apiKey });
-    } else {
-      c.set('auth', {
-        keyType: 'project',
-        projectIds: apiKey.scope.project_ids,
-        apiKey
-      });
-    }
+  const resolved = resolveTokenAuth(token);
+  if (resolved) {
+    c.set('auth', resolved);
     return next();
   }
 
@@ -81,10 +89,39 @@ export const authMiddleware = createMiddleware<{ Variables: { auth: AuthContext 
 });
 
 /**
+ * Resolve a raw bearer token to an auth context.
+ * Used by the auth middleware and by transports that can't send headers
+ * (e.g. EventSource passing ?token=).
+ */
+export function resolveTokenAuth(token: string): AuthContext | null {
+  const envKey = getEnvKey();
+
+  // Check env key first (backwards compat)
+  if (envKey && safeCompare(token, envKey)) {
+    return { keyType: 'env' };
+  }
+
+  // Check stored keys
+  const apiKey = validateApiKey(token);
+  if (apiKey) {
+    if (apiKey.scope.type === 'server') {
+      return { keyType: 'server', apiKey };
+    }
+    return {
+      keyType: 'project',
+      projectIds: apiKey.scope.project_ids,
+      apiKey,
+    };
+  }
+
+  return null;
+}
+
+/**
  * Check if the current auth context allows write access to a project
  */
 export function canWriteProject(auth: AuthContext, projectId: string): boolean {
-  if (!isAuthRequired()) return true;
+  if (isOpenMode()) return true;
   if (auth.keyType === 'env' || auth.keyType === 'server') return true;
   if (auth.keyType === 'project' && auth.projectIds) {
     return auth.projectIds.includes(projectId);
@@ -97,6 +134,8 @@ export function canWriteProject(auth: AuthContext, projectId: string): boolean {
  * Public projects can be read by anyone, private requires key access
  */
 export function canReadProject(auth: AuthContext, projectId: string): boolean {
+  if (isOpenMode()) return true;
+
   // Server/env keys can read anything
   if (auth.keyType === 'env' || auth.keyType === 'server') return true;
 
@@ -117,6 +156,9 @@ export function canReadProject(auth: AuthContext, projectId: string): boolean {
  */
 export function filterProjects(auth: AuthContext): ReturnType<typeof getProjects> {
   const projects = getProjects();
+
+  // Open mode grants full access, so nothing is hidden
+  if (isOpenMode()) return projects;
 
   // Server/env keys see everything
   if (auth.keyType === 'env' || auth.keyType === 'server') return projects;
@@ -140,11 +182,19 @@ export function isAuthRequired(): boolean {
 }
 
 /**
+ * Open mode: no keys configured AND anonymous access explicitly allowed.
+ * Every request is granted full access. Requires FLUX_ALLOW_ANONYMOUS.
+ */
+export function isOpenMode(): boolean {
+  return !isAuthRequired() && isAnonymousAllowed();
+}
+
+/**
  * Check if auth context has server-level access
- * In dev mode (no auth configured), always returns true
+ * In open mode (FLUX_ALLOW_ANONYMOUS, no keys), always returns true
  */
 export function hasServerAccess(auth: AuthContext): boolean {
-  if (!isAuthRequired()) return true;
+  if (isOpenMode()) return true;
   return auth.keyType === 'env' || auth.keyType === 'server';
 }
 

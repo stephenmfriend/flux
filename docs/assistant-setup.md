@@ -1,6 +1,6 @@
 # Assistant Setup
 
-Ready to make Flux the brains of your workflow? Here is how to wire it into Claude Desktop and ChatGPT, plus the best practices that make it feel like the next big thing.
+How to connect Flux to Claude Desktop, Claude Cowork, and ChatGPT, plus best practices for reliable agent-driven task management.
 
 ## Claude Desktop
 
@@ -39,6 +39,45 @@ Use a local build of the MCP server:
 }
 ```
 
+## Claude Cowork
+
+Claude Cowork does not support local stdio MCP servers — connectors are configured on your Claude account and the connection to your MCP server originates from **Anthropic's infrastructure**, not your machine. That means Flux must be reachable over the public internet as a Streamable HTTP endpoint.
+
+### 1. Run the MCP server in HTTP mode with OAuth
+
+```bash
+# Serves the MCP Streamable HTTP transport at /mcp (requires Bun)
+FLUX_MCP_PASSWORD=<secret> bun packages/mcp/dist/index.js --http --port=3001
+```
+
+Use `FLUX_MCP_PASSWORD`, not `FLUX_MCP_TOKEN`. Cowork connects from Anthropic's
+infrastructure and can only authenticate over OAuth — the custom connector UI
+has no field for a static bearer token, so a server behind `FLUX_MCP_TOKEN`
+alone will simply fail to connect. `FLUX_MCP_PASSWORD` enables the built-in
+OAuth authorization server; the password is what you type on the consent screen
+when authorising the connector. See the OAuth section of `docs/mcp.md`.
+
+Set both variables if you also want to reach the same endpoint from Claude Code
+or scripts with a static header.
+
+To point the MCP server at a hosted Flux API instead of local storage, set `FLUX_SERVER` and `FLUX_API_KEY` — see `docs/mcp.md`.
+
+### 2. Make it publicly reachable
+
+`localhost` will not work. Options:
+
+- A hosted deployment behind HTTPS (recommended for anything long-lived)
+- A reverse proxy on a server you control
+- A tunnel such as `cloudflared` or `ngrok` for quick testing
+
+### 3. Add the custom connector
+
+1. On claude.ai, go to **Settings → Connectors** (Team/Enterprise: an Owner adds it under **Organization settings → Connectors** first).
+2. Click **Add custom connector** and enter the public server URL, e.g. `https://your-host/mcp`.
+3. Enable the connector in Cowork and confirm the Flux tools appear.
+
+Because the endpoint is internet-facing, always use HTTPS, set `FLUX_MCP_PASSWORD`, and scope any `FLUX_API_KEY` to the minimum permissions the assistant needs. OAuth gates who can reach the MCP endpoint; the `FLUX_API_KEY` still decides what those requests can do inside Flux.
+
 ## ChatGPT
 
 If your ChatGPT client supports MCP servers, add Flux as a custom MCP server using the same Docker or local command shown above. The exact menu name can vary by client, but look for MCP or Connectors in Settings.
@@ -68,5 +107,3 @@ If your ChatGPT client does not support MCP servers, you can still use Flux via 
 - Turn on webhooks for your favorite tools and set a secret for signatures. It is the fastest path to automations that feel alive.
 - Back up `packages/data/flux.sqlite` or your local data folder. That file is the single source of truth.
 - Start every session by listing projects and tasks. It primes the assistant and cuts down on surprises.
-
-If you want, I can add a ready-made agent prompt template and a minimal webhook example next.

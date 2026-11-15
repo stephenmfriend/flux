@@ -56,20 +56,31 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const FLUX_INSTRUCTIONS = `<!-- FLUX:START -->
 ## Flux Task Management
 
-You have access to Flux for task management via MCP or CLI.
+You have access to Flux for task management, via MCP tools or the \`flux\` CLI.
 
-**Rules:**
-- All work MUST belong to exactly one project_id
-- Do NOT guess or invent a project_id
-- Track all work as tasks; update status as you progress
-- Close tasks immediately when complete
+**Project scope:**
+- All work belongs to exactly one project. On startup, list projects
+  (\`flux project list\`), then select or create one and confirm its project_id
+  before doing any work.
+- Include that project_id in every Flux call. Never guess a project_id, and
+  never switch projects without explicit instruction.
 
-**Startup:**
-1. List projects (\`flux project list\`)
-2. Select or create ONE project
-3. Confirm active project_id before any work
+**Working a task:**
+- Track all work as tasks. Pick the next task with \`list_ready_tasks\` (or
+  \`flux ready\`) — it excludes blocked tasks and sorts by priority (P0 first).
+- Set status to in_progress when you start and done as soon as you finish.
+  Tasks in planning must move to todo before in_progress.
+- Pass your agent_name on status changes so the board shows who is working.
+- Don't start a task whose dependencies aren't done.
 
-**If context is lost:** Re-list projects/tasks. Ask user if ambiguous.
+**Memory and scope:**
+- Record decisions, findings, and blockers as task comments — they are your
+  memory across sessions. Check a task's comments before starting it.
+- When you discover new work, create a task for it (with acceptance criteria)
+  rather than expanding the current task's scope.
+
+**If context is lost:** stop, re-list projects and tasks, and ask the user if
+ambiguity remains.
 <!-- FLUX:END -->`;
 
 // Update AGENTS.md or CLAUDE.md with flux instructions
@@ -753,7 +764,7 @@ async function main() {
       break;
     case 'ready':
       // ready doesn't have a subcommand, so subcommand IS the first arg
-      await readyCommand(parsed.subcommand ? [parsed.subcommand, ...parsed.args] : parsed.args, parsed.flags, json);
+      await readyCommand(parsed.subcommand ? [parsed.subcommand, ...parsed.args] : parsed.args, parsed.flags, json, defaultProject);
       break;
     case 'show':
       // show doesn't have a subcommand, so subcommand IS the task ID
@@ -834,13 +845,13 @@ ${c.cyan}╚═╝     ╚══════╝ ╚═════╝ ╚═╝ 
 
 ${c.bold}Commands:${c.reset}
   ${c.cyan}flux init${c.reset} ${c.green}[--server URL] [--api-key KEY] [--sqlite] [--git] [--force]${c.reset}  Initialize .flux
-  ${c.cyan}flux ready${c.reset} ${c.green}[--json]${c.reset}                Show unblocked tasks sorted by priority
+  ${c.cyan}flux ready${c.reset} ${c.yellow}[project]${c.reset} ${c.green}[--all] [--json]${c.reset}  Show unblocked tasks sorted by priority
   ${c.cyan}flux show${c.reset} ${c.yellow}<id>${c.reset} ${c.green}[--json]${c.reset}            Show task details with comments
   ${c.cyan}flux prime${c.reset} ${c.green}[--mcp] [--full]${c.reset}        Output workflow context for AI hooks
 
   ${c.cyan}flux project list${c.reset} ${c.green}[--json]${c.reset}         List all projects (* = current)
   ${c.cyan}flux project use${c.reset} ${c.yellow}<id>${c.reset}              Set default project
-  ${c.cyan}flux project create${c.reset} ${c.yellow}<name>${c.reset} ${c.green}[--private]${c.reset}  Create a project
+  ${c.cyan}flux project create${c.reset} ${c.yellow}<name>${c.reset} ${c.green}[--public]${c.reset}  Create a project (private by default)
   ${c.cyan}flux project update${c.reset} ${c.yellow}<id>${c.reset} ${c.green}[--name] [--desc] [--private|--public]${c.reset}
   ${c.cyan}flux project delete${c.reset} ${c.yellow}<id>${c.reset}
 
@@ -850,8 +861,8 @@ ${c.bold}Commands:${c.reset}
   ${c.cyan}flux epic delete${c.reset} ${c.yellow}<id>${c.reset}
 
   ${c.cyan}flux task list${c.reset} ${c.green}[project] [--json] [--epic] [--status]${c.reset}
-  ${c.cyan}flux task create${c.reset} ${c.green}[project]${c.reset} ${c.yellow}<title>${c.reset} ${c.green}[-P 0|1|2] [-e epic] [--ac ...] [--guardrail ...]${c.reset}
-  ${c.cyan}flux task update${c.reset} ${c.yellow}<id>${c.reset} ${c.green}[--title] [--status] [--note] [--epic] [--blocked] [--ac ...] [--guardrail ...]${c.reset}
+  ${c.cyan}flux task create${c.reset} ${c.green}[project]${c.reset} ${c.yellow}<title>${c.reset} ${c.green}[-P 0|1|2] [-e epic] [--desc ...] [--ac ...] [--guardrail ...]${c.reset}
+  ${c.cyan}flux task update${c.reset} ${c.yellow}<id>${c.reset} ${c.green}[--title] [--desc] [--status] [--note] [--epic] [--blocked] [--ac ...] [--guardrail ...]${c.reset}
   ${c.cyan}flux task done${c.reset} ${c.yellow}<id>${c.reset} ${c.green}[--note]${c.reset}       Mark task done
   ${c.cyan}flux task start${c.reset} ${c.yellow}<id>${c.reset}               Mark task in_progress
 
@@ -882,9 +893,11 @@ ${c.bold}Auth:${c.reset} ${c.dim}(server mode only)${c.reset}
 
 ${c.bold}Flags:${c.reset}
   ${c.green}--json${c.reset}                             Output as JSON
+  ${c.green}--all${c.reset}                              Ready tasks across every project (ready)
   ${c.green}--force${c.reset}                            Overwrite config without prompting (init)
   ${c.green}-P, --priority${c.reset}                     Priority (0=P0, 1=P1, 2=P2)
   ${c.green}-e, --epic${c.reset}                         Epic ID
+  ${c.green}--desc${c.reset}                             Task description ("clear" to remove)
   ${c.green}--blocked${c.reset}                          External blocker ("reason" or "clear")
   ${c.green}--ac${c.reset}                               Acceptance criterion (repeatable)
   ${c.green}--guardrail${c.reset}                        Guardrail as "999:text" (repeatable)

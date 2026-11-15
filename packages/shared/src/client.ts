@@ -258,7 +258,7 @@ export async function createTask(
   projectId: string,
   title: string,
   epicId?: string,
-  options?: { priority?: Priority; depends_on?: string[]; acceptance_criteria?: string[]; guardrails?: Guardrail[] }
+  options?: { priority?: Priority; depends_on?: string[]; description?: string; acceptance_criteria?: string[]; guardrails?: Guardrail[] }
 ): Promise<Task> {
   if (serverUrl) {
     return http('POST', `/api/projects/${projectId}/tasks`, {
@@ -266,6 +266,7 @@ export async function createTask(
       epic_id: epicId,
       priority: options?.priority,
       depends_on: options?.depends_on,
+      description: options?.description,
       acceptance_criteria: options?.acceptance_criteria,
       guardrails: options?.guardrails,
     });
@@ -464,7 +465,9 @@ export async function uploadBlob(
 ): Promise<Blob> {
   if (serverUrl) {
     const formData = new FormData();
-    formData.append('file', new File([content], filename, { type: mime_type }));
+    // Copy into an ArrayBuffer-backed view. Node Buffers may be backed by a
+    // SharedArrayBuffer, which is not a valid BlobPart in the DOM typings.
+    formData.append('file', new File([new Uint8Array(content)], filename, { type: mime_type }));
     if (task_id) formData.append('task_id', task_id);
 
     const url = `${serverUrl}/api/blobs`;

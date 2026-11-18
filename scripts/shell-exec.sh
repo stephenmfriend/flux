@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Synchronised script: update ~/.dotfiles/sync/scripts/shell-exec.sh, then run
-# ~/.dotfiles/script/dotfiles-sync.sh --sync scripts to refresh repo copies.
+# ~/.dotfiles/script/shell-exec.sh ~/.dotfiles/script/dotfiles-sync.sh --sync scripts
+# to refresh repo copies (the sync needs the devshell's yq).
 # Execute commands in the correct shell environment.
 #
 # Handles five scenarios:
@@ -12,7 +13,9 @@
 #      direnv env, else hydrate via direnv exec, else run directly
 #   4. Already in this repo's Nix shell: Ensure Nix paths prioritised, run directly
 #      (a devshell whose PRJ_ROOT is another repo does not count)
-#   5. Outside Nix: Enter this repo's flake (nix develop <repo_root>) when it has one
+#   5. Outside Nix: Enter this repo's flake (nix develop <repo_root>) when it has one,
+#      started from repo_root so the devshell's PRJ_ROOT is this repo; the command
+#      itself still runs in the caller's directory
 #
 # Usage: ./shell-exec.sh <command> [args...]
 # Example: ./shell-exec.sh pnpm run test
@@ -119,9 +122,16 @@ fi
 # Otherwise, enter this repo's flake first for flake-backed repos. The flake is
 # named explicitly: a bare `nix develop` would use the caller's working
 # directory, which differs from repo_root under `task --dir` or absolute-path
-# invocation. SHELL_EXEC_NIX_BIN exists so tests can stub the Nix binary.
+# invocation. nix develop also starts from repo_root, because the devshell sets
+# PRJ_ROOT to the directory it starts in, and its relative PATH prefixes
+# (bin/tools) and startup hooks resolve against PRJ_ROOT. The inner bash then
+# returns to the caller's directory, so relative arguments keep their meaning.
+# SHELL_EXEC_NIX_BIN exists so tests can stub the Nix binary.
 if [[ ! -f "${repo_root}/flake.nix" ]]; then
   exec "$@"
 fi
 
-exec "${SHELL_EXEC_NIX_BIN:-/nix/var/nix/profiles/default/bin/nix}" develop "${repo_root}" --command "$@"
+caller_dir="$PWD"
+cd "$repo_root"
+exec "${SHELL_EXEC_NIX_BIN:-/nix/var/nix/profiles/default/bin/nix}" develop "${repo_root}" \
+  --command bash -c 'cd -- "$0" && exec "$@"' "$caller_dir" "$@"
